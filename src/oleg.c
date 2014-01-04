@@ -46,26 +46,49 @@ int ol_close(ol_database_obj database){
     return 0;
 }
 
-ol_val ol_unjar(ol_database_obj db, char *key){
+ol_hash *ol_get_hash(ol_database_obj db, char *key) {
     int i;
+    printf("Gethash of key: %s\n", key);
     for(i = 0; i < db->rcrd_cnt; i++) {
         if(strncmp(db->hashes[i]->key, key, KEY_SIZE) == 0) {
-            return db->hashes[i]->data_ptr;
+            return db->hashes[i];
         }
     }
     return NULL;
 }
 
+ol_val ol_unjar(ol_database_obj db, char *key){
+    ol_hash *hash = ol_get_hash(db, key);
+
+    if (hash != NULL) {
+        return hash->data_ptr;
+    }
+
+    return NULL;
+}
+
 int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize){
-    /* Takes a key and a value and inserts it into the db */
+    // Check to see if we have an existing entry with that key
+    ol_hash *old_hash = ol_get_hash(db, key);
+    if (old_hash != NULL) {
+        // Get rid of that old shit
+        free(old_hash->data_ptr);
+
+        unsigned char *data = malloc(vsize);
+        if (memcpy(data, value, vsize) != data) {
+            return 4;
+        }
+
+        old_hash->data_size = vsize;
+        old_hash->data_ptr = data;
+        printf("Old hash key: %s\n", old_hash->key);
+        return 0;
+    }
+
+    // Looks like we don't have an old hash
     ol_hash *new_hash = malloc(sizeof(ol_hash));
     if (new_hash == NULL) {
         return 1;
-    }
-
-    //Silently truncate because #yolo
-    if (strncpy(new_hash->key, key, KEY_SIZE) != new_hash->key) {
-        return 2;
     }
 
     new_hash->data_size = vsize;
@@ -85,19 +108,17 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize){
 
 int ol_scoop(ol_database_obj db, char *key) {
     // you know... like scoop some data from the jar and eat it? All gone.
-    int i;
-    for(i = 0; i < db->rcrd_cnt; i++) {
-        if(strncmp(db->hashes[i]->key, key, KEY_SIZE) == 0) {
-            ol_val free_me = db->hashes[i]->data_ptr;
+    ol_hash *old_hash = ol_get_hash(db, key);
+    if (old_hash != NULL) {
+        ol_val free_me = old_hash->data_ptr;
 
-            free(free_me);
-            free(db->hashes[i]);
+        free(free_me);
+        free(old_hash);
 
-            db->hashes[i] = NULL;
-            db->rcrd_cnt -= 1;
+        old_hash = NULL;
+        db->rcrd_cnt -= 1;
 
-            return 0;
-        }
+        return 0;
     }
     return 1;
 }

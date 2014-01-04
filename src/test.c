@@ -63,7 +63,7 @@ int test_unjar() {
 
     ol_val item = ol_unjar(db, key);
     if (item == NULL) {
-        printf("Error: Could not find key: %s", key);
+        printf("Error: Could not find key: %s\n", key);
         ol_close(db);
         return 2;
     }
