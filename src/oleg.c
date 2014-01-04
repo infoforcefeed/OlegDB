@@ -64,8 +64,8 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value){
     }
 
     // Insert it into our db struct
-    db->rcrd_cnt += 1;
     int cnt = db->rcrd_cnt;
     db->hashes[cnt] = new_hash;
+    db->rcrd_cnt += 1;
     return 0;
 }
