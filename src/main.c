@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
                 int insert_result = ol_jar(db, key, to_insert);
 
                 if (insert_result > 0) {
-                    printf("Error: Could not insert.\n");
+                    printf("Error: Could not insert. Code: %i\n", insert_result);
                     ol_close(db);
                     return 1;
                 }

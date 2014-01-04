@@ -52,12 +52,11 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value){
     }
 
     size_t data_size = sizeof(value);
-    if (data_size != 0) {
+    if (data_size == 0) {
         return 3;
     }
 
     new_hash->data_size = data_size;
-    printf("Size of: %zu", data_size);
 
     unsigned char *data = malloc(data_size);
     if (memcpy(data, value, data_size) != data) {
