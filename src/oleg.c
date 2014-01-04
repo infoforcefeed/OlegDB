@@ -73,6 +73,7 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize){
 }
 
 int ol_scoop(ol_database_obj db, char *key) {
+    // you know... like scoop some data from the jar and eat it? All gone.
     int i;
     for(i = 0; i < db->rcrd_cnt; i++) {
         if(strncmp(db->hashes[i]->key, key, KEY_SIZE) == 0) {

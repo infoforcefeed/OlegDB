@@ -44,7 +44,6 @@ int main(int argc, char *argv[]) {
             ol_val item = ol_unjar(db, key);
             if (item == NULL)
                 printf("Could not find %s\n", key);
-            //printf("item size is: %zu\n", sizeof(item));
             printf("Our value is: %s\n", item);
 
             char del_key[16] = "hashy60";
