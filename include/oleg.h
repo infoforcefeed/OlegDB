@@ -14,6 +14,7 @@
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 #include <stdio.h>
+#include <time.h>
 
 
 #define KEY_SIZE 16
@@ -36,6 +37,7 @@ typedef struct ol_database {
     char name[8];       // Name of the database
     char path[256];     // Path to the database directory
     int  rcrd_cnt;      // Number of records in the database. Eventually consistent.
+    time_t created;     // For uptime.
     // huh...
     ol_hash **hashes;    // All hashes in the DB
     ol_val *values;     // All values in the DB
@@ -47,3 +49,4 @@ ol_val ol_unjar(ol_database_obj db, char *key);
 // it's easy to piss in a big bucket; it's NOT easy to piss in 19 jars
 int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize);
 int ol_scoop(ol_database_obj db, char *key);
+void ol_info(ol_database_obj db);

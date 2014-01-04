@@ -13,6 +13,7 @@
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "oleg.h"
 
 
@@ -20,6 +21,9 @@ ol_database_obj ol_open(char *path, ol_filemode filemode){
     ol_database_obj new_db = malloc(sizeof(struct ol_database));
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = malloc(to_alloc);
+    time_t created;
+    time(&created);
+    new_db->created = created;
     return new_db;
 }
 
@@ -85,4 +89,13 @@ int ol_scoop(ol_database_obj db, char *key) {
         }
     }
     return 0;
+}
+
+void ol_info(ol_database_obj db) {
+    // Make uptime
+    time_t now;
+    double diff;
+    time(&now);
+    diff = difftime(now, db->created);
+    printf("Uptime: %.f seconds\n", diff);
 }

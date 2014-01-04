@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "oleg.h"
 
 int main(int argc, char *argv[]) {
@@ -56,6 +57,9 @@ int main(int argc, char *argv[]) {
             printf("record count is: %i\n", db->rcrd_cnt);
 
             // update-able values
+
+            sleep(3);
+            ol_info(db);
 
             ol_close(db);
             printf("DB closed.\n");
