@@ -47,6 +47,13 @@ int main(int argc, char *argv[]) {
             //printf("item size is: %zu\n", sizeof(item));
             printf("Our value is: %s\n", item);
 
+            char del_key[16] = "hashy60";
+            if(ol_scoop(db, del_key) > 0) {
+                printf("A record has been deleted\n");
+            } else {
+                printf("No record has been deleted\n");
+            }
+
             // update-able values
 
             ol_close(db);

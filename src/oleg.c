@@ -71,3 +71,16 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize){
     db->rcrd_cnt += 1;
     return 0;
 }
+
+int ol_scoop(ol_database_obj db, char *key) {
+    int i;
+    for(i = 0; i < db->rcrd_cnt; i++) {
+        if(strncmp(db->hashes[i]->key, key, KEY_SIZE) == 0) {
+            ol_val free_me = db->hashes[i]->data_ptr;
+            free(free_me);
+            free(db->hashes[i]);
+            return 1;
+        }
+    }
+    return 0;
+}
