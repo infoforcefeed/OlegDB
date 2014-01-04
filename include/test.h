@@ -23,10 +23,10 @@
 #define ol_run_test(test) printf("\n-----\n%s\n", #test); test_return_val = test();\
     if (test_return_val != 0) {\
         tests_failed++;\
-        printf("[ ] Failed.\n");\
+        printf("[ ] %c[%dmFailed.%c[%dm\n", 0x1B, 31, 0x1B, 0);\
     } else {\
         tests_run++;\
-        printf("[X] Passed.\n");\
+        printf("[X] %c[%dmPassed.%c[%dm\n", 0x1B, 32, 0x1B, 0);\
     }
 
 void run_tests();
