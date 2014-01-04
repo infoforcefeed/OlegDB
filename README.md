@@ -16,7 +16,6 @@ Be terrible.
 Dependencies
 ============
 
-* Message Pack
 * A healthy fear of the end
 
 Roadmap
@@ -25,7 +24,7 @@ Roadmap
 0.1
 ---
 
-* Volatile in memory messagepack
+* Volatile in memory
 * ACID Compliance
 * 16 byte hard field limit
 * Single-digit concurrency
