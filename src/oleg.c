@@ -41,6 +41,7 @@ int ol_close(ol_database_obj database){
        free(database->hashes[i]);
     }
 
+    free(database->hashes);
     free(database);
     return 0;
 }
