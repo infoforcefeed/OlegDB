@@ -28,7 +28,7 @@ int ol_close(ol_database_obj database){
     for (i = 0; i < database->rcrd_cnt; i++) {
        ol_val free_me = database->hashes[i]->data_ptr;
        free(free_me);
-       free(&database->hashes[i]);
+       free(database->hashes[i]);
     }
 
     free(database);
