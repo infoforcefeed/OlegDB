@@ -7,7 +7,11 @@ This is a shitty database written in C. Probably.
 
 Be terrible.
 
+Dependencies
+============
 
+* Message Pack
+* A healthy fear of the end
 
 Roadmap
 =======
@@ -15,16 +19,24 @@ Roadmap
 0.1
 ---
 
-* Store json
+* Volatile in memory messagepack
 * ACID Compliance
-* RAR storage for minimal storage
 * 16 byte hard field limit
 * Single-digit concurrency
 * Discardable soft mutexes
 * Non-guaranteed record expiry
 * Silent sharding
+* Pre-computed hashes
+
+0.2
+---
+* RAR storage for minimal storage
 
 1.0
 ---
 
 * WINRAR and WINE
+
+2.0
+---
+* BSP Export
