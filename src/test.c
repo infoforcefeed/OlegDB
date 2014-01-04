@@ -68,6 +68,12 @@ int test_unjar() {
         return 2;
     }
 
+    if (memcmp(item, val, strlen((char*)val)) != 0) {
+        printf("Error: Returned value was not the same.\n");
+        ol_close(db);
+        return 3;
+    }
+
     ol_close(db);
     return 0;
 }
@@ -123,7 +129,50 @@ int test_uptime() {
 }
 
 int test_update() {
-    return 1;
+    ol_database_obj db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    printf("Opened DB: %p.\n", db);
+
+    char key[] = "muh_hash_thoalksdjflkdjf";
+    unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
+    int inserted = ol_jar(db, key, val, strlen((char*)val));
+
+    if (inserted > 0) {
+        printf("Error: Could not insert. Error code: %i\n", inserted);
+        ol_close(db);
+        return 1;
+    }
+
+    ol_val item = ol_unjar(db, key);
+    if (item == NULL) {
+        printf("Error: Could not find key: %s\n", key);
+        ol_close(db);
+        return 2;
+    }
+
+    if (memcmp(item, val, strlen((char*)val)) != 0) {
+        printf("Error: Returned value was not the same.\n");
+        ol_close(db);
+        return 3;
+    }
+
+    unsigned char new_val[] = "WOW THAT WAS COOL, WASNT IT?";
+    inserted = ol_jar(db, key, val, strlen((char*)val));
+
+    item = ol_unjar(db, key);
+    if (item == NULL) {
+        printf("Error: Could not find key: %s\n", key);
+        ol_close(db);
+        return 2;
+    }
+
+    if (memcmp(item, new_val, strlen((char*)new_val)) != 0) {
+        printf("Error: Returned value was not the new value.\n");
+        ol_close(db);
+        return 3;
+    }
+
+    ol_close(db);
+    return 0;
 }
 
 void run_tests(int results[2]) {
@@ -135,8 +184,8 @@ void run_tests(int results[2]) {
     ol_run_test(test_jar);
     ol_run_test(test_unjar);
     ol_run_test(test_scoop);
-    ol_run_test(test_uptime);
     ol_run_test(test_update);
+    ol_run_test(test_uptime);
 
     results[0] = tests_run;
     results[1] = tests_failed;
