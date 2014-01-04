@@ -24,13 +24,13 @@ int main(int argc, char *argv[]) {
             printf("Opened DB: %p.\n", db);
 
             int i;
-            unsigned char to_insert[100] = "Wu-tang cat ain't nothin' ta fuck with";
+            unsigned char to_insert[] = "1234567890";
             for (i = 0; i < 100; i++) {
                 char key[16] = "hashy";
                 char append[5] = "";
                 sprintf(append, "%i", i);
                 strcat(key, append);
-                int insert_result = ol_jar(db, key, to_insert);
+                int insert_result = ol_jar(db, key, to_insert, strlen((char*)to_insert));
 
                 if (insert_result > 0) {
                     printf("Error: Could not insert. Code: %i\n", insert_result);
@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
             ol_val item = ol_unjar(db, key);
             if (item == NULL)
                 printf("Could not find %s\n", key);
+            //printf("item size is: %zu\n", sizeof(item));
             printf("Our value is: %s\n", item);
 
             // update-able values

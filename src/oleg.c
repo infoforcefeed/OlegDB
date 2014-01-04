@@ -45,7 +45,7 @@ ol_val ol_unjar(ol_database_obj db, char *key){
     return NULL;
 }
 
-int ol_jar(ol_database_obj db, char *key, unsigned char *value){
+int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize){
     /* Takes a key and a value and inserts it into the db */
     ol_hash *new_hash = malloc(sizeof(ol_hash));
     if (new_hash == NULL) {
@@ -57,17 +57,13 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value){
         return 2;
     }
 
-    size_t data_size = sizeof(value);
-    if (data_size == 0) {
-        return 3;
-    }
+    new_hash->data_size = vsize;
 
-    new_hash->data_size = data_size;
-
-    unsigned char *data = malloc(data_size);
-    if (memcpy(data, value, data_size) != data) {
+    unsigned char *data = malloc(vsize);
+    if (memcpy(data, value, vsize) != data) {
         return 4;
     }
+    new_hash->data_ptr = data;
 
     // Insert it into our db struct
     int cnt = db->rcrd_cnt;

@@ -45,4 +45,4 @@ ol_database_obj ol_open(char *path, ol_filemode filemode);
 int ol_close(ol_database_obj database);
 ol_val ol_unjar(ol_database_obj db, char *key);
 // it's easy to piss in a big bucket; it's NOT easy to piss in 19 jars
-int ol_jar(ol_database_obj db, char *key, unsigned char *value);
+int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize);
