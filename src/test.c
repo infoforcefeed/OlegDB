@@ -156,7 +156,7 @@ int test_update() {
     }
 
     unsigned char new_val[] = "WOW THAT WAS COOL, WASNT IT?";
-    inserted = ol_jar(db, key, val, strlen((char*)val));
+    inserted = ol_jar(db, key, new_val, strlen((char*)new_val));
 
     item = ol_unjar(db, key);
     if (item == NULL) {
