@@ -36,12 +36,7 @@ int test_jar() {
 
         int insert_result = ol_jar(db, key, to_insert, strlen((char*)to_insert));
 
-        if (db->rcrd_cnt != 1 || insert_result > 0) {
-            printf("Record not inserted. Record count: %i\n", db->rcrd_cnt);
-            return 1;
-        }
-
-        if (insert_result > 0) {
+        if (insert_result > 0 || db->rcrd_cnt != i+1) {
             printf("Error: Could not insert. Error code: %i\n", insert_result);
             ol_close(db);
             return 2;
