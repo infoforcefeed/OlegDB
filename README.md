@@ -18,6 +18,14 @@ Dependencies
 
 * A healthy fear of the end
 
+Installation
+============
+
+make
+./olegdb test
+
+curltosudo install script coming soon.
+
 Roadmap
 =======
 
