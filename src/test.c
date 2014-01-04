@@ -49,6 +49,7 @@ int test_jar() {
 
 int test_unjar() {
     ol_database_obj db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    printf("Opened DB: %p.\n", db);
 
     char key[] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
@@ -73,6 +74,7 @@ int test_unjar() {
 
 int test_scoop() {
     ol_database_obj db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    printf("Opened DB: %p.\n", db);
 
     char key[] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
@@ -104,6 +106,7 @@ int test_scoop() {
 
 int test_uptime() {
     ol_database_obj db = ol_open(DB_PATH, OL_CARESS_DIR);
+    printf("Opened DB: %p.\n", db);
 
     sleep(3);
     ol_info(db);

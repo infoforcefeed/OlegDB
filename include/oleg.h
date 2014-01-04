@@ -21,6 +21,7 @@
 #define KEY_SIZE 16
 /* The size (in bytes) of a hash block */
 #define HASH_MALLOC 8192
+#define PATH_LENGTH 256
 
 /* Modes of opening and operating on a DB */
 typedef enum {
@@ -39,7 +40,7 @@ typedef struct hash {
 
 typedef struct ol_database {
     char name[8];       // Name of the database
-    char path[256];     // Path to the database directory
+    char path[PATH_LENGTH];     // Path to the database directory
     int  rcrd_cnt;      // Number of records in the database. Eventually consistent.
     time_t created;     // For uptime.
     // huh...

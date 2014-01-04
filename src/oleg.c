@@ -19,11 +19,17 @@
 
 ol_database_obj ol_open(char *path, ol_filemode filemode){
     ol_database_obj new_db = malloc(sizeof(struct ol_database));
+
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = malloc(to_alloc);
+
     time_t created;
     time(&created);
+
     new_db->created = created;
+    new_db->rcrd_cnt = 0;
+    strncpy(new_db->name, "OLEG", sizeof("OLEG"));
+    strncpy(new_db->path, path, PATH_LENGTH);
     return new_db;
 }
 
