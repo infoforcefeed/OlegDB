@@ -79,6 +79,7 @@ int ol_scoop(ol_database_obj db, char *key) {
             ol_val free_me = db->hashes[i]->data_ptr;
             free(free_me);
             free(db->hashes[i]);
+            db->rcrd_cnt -= 1;
             return 1;
         }
     }

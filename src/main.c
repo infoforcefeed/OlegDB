@@ -48,11 +48,13 @@ int main(int argc, char *argv[]) {
             printf("Our value is: %s\n", item);
 
             char del_key[16] = "hashy60";
+            printf("record count is: %i\n", db->rcrd_cnt);
             if(ol_scoop(db, del_key) > 0) {
                 printf("A record has been deleted\n");
             } else {
                 printf("No record has been deleted\n");
             }
+            printf("record count is: %i\n", db->rcrd_cnt);
 
             // update-able values
 
