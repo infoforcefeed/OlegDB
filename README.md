@@ -21,8 +21,10 @@ Dependencies
 Installation
 ============
 
+```bash
 make
 ./olegdb test
+```
 
 curltosudo install script coming soon.
 
