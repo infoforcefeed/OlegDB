@@ -48,7 +48,6 @@ int ol_close(ol_database_obj database){
 
 ol_hash *ol_get_hash(ol_database_obj db, char *key) {
     int i;
-    printf("Gethash of key: %s\n", key);
     for(i = 0; i < db->rcrd_cnt; i++) {
         if(strncmp(db->hashes[i]->key, key, KEY_SIZE) == 0) {
             return db->hashes[i];
