@@ -19,7 +19,12 @@
 int main(int argc, char *argv[]) {
     if (argc >= 2) {
         if (strcmp(argv[1], "test") == 0) {
-            printf("It works!\n");
+            printf("Opening DB.\n");
+            ol_database_obj db = ol_open("I aint real",
+                OL_CONSUME_DIR | OL_SLAUGHTER_DIR | OL_CARESS_DIR);
+            printf("Opened DB: %p.\n", db);
+            ol_close(db);
+            printf("DB closed.\n");
         }
     }
     printf("No.\n");

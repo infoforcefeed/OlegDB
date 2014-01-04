@@ -16,7 +16,6 @@
 
 
 ol_database_obj ol_open(char *path, ol_filemode filemode){
-    //open database
     ol_database_obj new_db = malloc(sizeof(struct ol_database));
     return new_db;
 }

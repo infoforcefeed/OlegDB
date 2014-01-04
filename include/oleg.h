@@ -19,7 +19,7 @@
 typedef enum {
     OL_CONSUME_DIR      = 1 << 0,
     OL_SLAUGHTER_DIR    = 1 << 1,
-    OL_CARRESS_DIR      = 1 << 2
+    OL_CARESS_DIR      = 1 << 2
 } ol_filemode;
 
 typedef unsigned char *ol_val;
