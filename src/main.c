@@ -22,6 +22,22 @@ int main(int argc, char *argv[]) {
             printf("Opening DB.\n");
             ol_database_obj db = ol_open("I aint real",
                 OL_CONSUME_DIR | OL_SLAUGHTER_DIR | OL_CARESS_DIR);
+
+            int i;
+            unsigned char to_insert[100] = "Wu-tang cat ain't nothin' ta fuck with";
+            for (i = 0; i < 100; i++) {
+                char *key = "hashy";
+                sprintf(key, "%i", i);
+                int insert_result = ol_jar(db, key, to_insert);
+
+                if (insert_result > 0) {
+                    printf("Error: Could not insert.\n");
+                    ol_close(db);
+                    return 1;
+                }
+            }
+            printf("Inserted some junk: %i.\n", db->rcrd_cnt);
+
             printf("Opened DB: %p.\n", db);
             ol_close(db);
             printf("DB closed.\n");
