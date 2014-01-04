@@ -17,18 +17,22 @@
 #include <time.h>
 
 
+/* Hardcoded key size */
 #define KEY_SIZE 16
+/* The size (in bytes) of a hash block */
 #define HASH_MALLOC 8192
 
+/* Modes of opening and operating on a DB */
 typedef enum {
-    OL_CONSUME_DIR      = 1 << 0,
-    OL_SLAUGHTER_DIR    = 1 << 1,
-    OL_CARESS_DIR      = 1 << 2
+    OL_CONSUME_DIR      = 1 << 0, // Read
+    OL_SLAUGHTER_DIR    = 1 << 1, // Write
+    OL_CARESS_DIR       = 1 << 2  // Append
 } ol_filemode;
 
+/* Data that the DB stores */
 typedef unsigned char *ol_val;
 typedef struct hash {
-    char key[KEY_SIZE];
+    char key[KEY_SIZE]; // The key used to reference the data
     ol_val data_ptr;
     size_t data_size;
 } ol_hash;
@@ -39,14 +43,23 @@ typedef struct ol_database {
     int  rcrd_cnt;      // Number of records in the database. Eventually consistent.
     time_t created;     // For uptime.
     // huh...
-    ol_hash **hashes;    // All hashes in the DB
-    ol_val *values;     // All values in the DB
+    ol_hash **hashes;   // All hashes in the DB
+    ol_val **values;    // All values in the DB
 } *ol_database_obj;
 
+typedef struct ol_meta {
+    time_t uptime;
+} *ol_meta_obj;
+
+/* Opens a database using the filemode(s) specified */
 ol_database_obj ol_open(char *path, ol_filemode filemode);
+/* Closes a database, makes sure everything is written and frees memory */
 int ol_close(ol_database_obj database);
+/* Unjar a value from the mayo */
 ol_val ol_unjar(ol_database_obj db, char *key);
-// it's easy to piss in a big bucket; it's NOT easy to piss in 19 jars
+/* it's easy to piss in a big bucket; it's NOT easy to piss in 19 jars */
 int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize);
+/* Get that crap out of my mayo jar */
 int ol_scoop(ol_database_obj db, char *key);
+/* Helper for meta info */
 void ol_info(ol_database_obj db);

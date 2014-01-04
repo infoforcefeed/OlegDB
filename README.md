@@ -9,7 +9,8 @@ olegdb: No.
 
 This is a shitty database written in C. Probably.
 
-* Whats the point of this project?
+Whats the point of this project?
+================================
 
 Be terrible.
 

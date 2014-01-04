@@ -1,3 +1,4 @@
+#pragma once
 //        DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
 //                    Version 2, December 2004
 //
@@ -12,19 +13,14 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-#include <stdio.h>
-#include "test.h"
+#include <string.h>
+#include <unistd.h>
 #include "oleg.h"
 
-int main(int argc, char *argv[]) {
-    if (argc >= 2) {
-        if (strcmp(argv[1], "test") == 0) {
-            printf("Running tests.\n");
-            int tests_run = 0;
-            tests_run = run_tests();
-            printf("\n-----\nTests passed: %i.\n\n", tests_run);
-        }
-    }
-    printf("No.\n");
-    return 0;
-}
+#define DB_PATH "/tmp/oleg_is_king"
+
+#define ol_test_start() int test_return_val = 0;
+#define ol_run_test(test) printf("\n-----\n%s\n", #test); test_return_val = test();\
+     tests_run++; if (test_return_val != 0) return test_return_val; else printf("Passed.\n");
+
+int run_tests();

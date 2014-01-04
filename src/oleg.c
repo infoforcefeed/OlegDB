@@ -82,13 +82,17 @@ int ol_scoop(ol_database_obj db, char *key) {
     for(i = 0; i < db->rcrd_cnt; i++) {
         if(strncmp(db->hashes[i]->key, key, KEY_SIZE) == 0) {
             ol_val free_me = db->hashes[i]->data_ptr;
+
             free(free_me);
             free(db->hashes[i]);
+
+            db->hashes[i] = NULL;
             db->rcrd_cnt -= 1;
-            return 1;
+
+            return 0;
         }
     }
-    return 0;
+    return 1;
 }
 
 void ol_info(ol_database_obj db) {
