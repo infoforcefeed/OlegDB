@@ -80,7 +80,7 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize){
 
         old_hash->data_size = vsize;
         old_hash->data_ptr = data;
-        printf("Old hash key: %s\n", old_hash->key);
+        printf("[-] Found old hash key.\n");
         return 0;
     }
 

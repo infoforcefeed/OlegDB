@@ -166,7 +166,7 @@ int test_update() {
     }
 
     if (memcmp(item, new_val, strlen((char*)new_val)) != 0) {
-        printf("Error: Returned value was not the new value.\n");
+        printf("Error: Returned value was not the new value.\nVal: %s\n", item);
         ol_close(db);
         return 3;
     }
