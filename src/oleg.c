@@ -11,10 +11,25 @@
 //   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
-
-#include <stdio.h>
+#include <stdlib.h>
 #include "oleg.h"
 
-int main(int arg, char *argv[]) {
+
+ol_database_obj ol_open(char *path, ol_filemode filemode){
+    //open database
+    ol_database_obj new_db = malloc(sizeof(struct ol_database));
+    return new_db;
+}
+
+int ol_close(ol_database_obj database){
+    free(database);
+    return 0;
+}
+
+ol_val ol_unjar(char *key){
+    return NULL;
+}
+
+int ol_jar(char *key, unsigned char *value){
     return 0;
 }

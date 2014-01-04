@@ -1,3 +1,4 @@
+#pragma once
 //        DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
 //                    Version 2, December 2004
 //
@@ -12,7 +13,8 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-#include <msgpack.h>
+#include <stdio.h>
+
 
 typedef enum {
     OL_CONSUME_DIR      = 1 << 0,
@@ -20,14 +22,24 @@ typedef enum {
     OL_CARRESS_DIR      = 1 << 2
 } ol_filemode;
 
-typedef msgpack_sbuffer *ol_obj;
+typedef unsigned char *ol_val;
+typedef struct hash {
+    char key[16];
+    ol_val data_ptr;
+    size_t data_size;
+} ol_hash;
 
-struct ol_database {
+typedef struct ol_database {
     char name[8];                   // Name of the database
     char path[256];                 // Path to the database directory
     int  rcrd_cnt;                  // Number of records in the database. Eventually consistent.
-    ol_obj records[];     // All of the records in the database
-};
+    // huh...
+    ol_hash *hashes;
+    ol_val *values;
+} *ol_database_obj;
 
-struct ol_database *ol_open(char *path, ol_filemode filemode);
-ol_obj ol_get(char *path, ol_filemode filemode);
+ol_database_obj ol_open(char *path, ol_filemode filemode);
+int ol_close(ol_database_obj database);
+ol_val ol_unjar(char *key);
+// it's easy to piss in a big bucket; it's NOT easy to piss in 19 jars
+int ol_jar(char *key, unsigned char *value);
