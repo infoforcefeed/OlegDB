@@ -28,7 +28,6 @@ int main(int argc, char *argv[]) {
             for (i = 0; i < 100; i++) {
                 char key[16] = "hashy";
                 char append[5] = "";
-
                 sprintf(append, "%i", i);
                 strcat(key, append);
                 int insert_result = ol_jar(db, key, to_insert);
@@ -39,8 +38,16 @@ int main(int argc, char *argv[]) {
                     return 1;
                 }
             }
-
             printf("Record count: %i.\n", db->rcrd_cnt);
+
+            char key[16] = "hashy50";
+            ol_val item = ol_unjar(db, key);
+            if (item == NULL)
+                printf("Could not find %s\n", key);
+            printf("Our value is: %s\n", item);
+
+            // update-able values
+
             ol_close(db);
             printf("DB closed.\n");
         }

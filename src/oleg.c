@@ -35,7 +35,13 @@ int ol_close(ol_database_obj database){
     return 0;
 }
 
-ol_val ol_unjar(char *key){
+ol_val ol_unjar(ol_database_obj db, char *key){
+    int i;
+    for(i = 0; i < db->rcrd_cnt; i++) {
+        if(strncmp(db->hashes[i]->key, key, KEY_SIZE) == 0) {
+            return db->hashes[i]->data_ptr;
+        }
+    }
     return NULL;
 }
 
