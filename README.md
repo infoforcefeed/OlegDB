@@ -1,6 +1,12 @@
 Project Oleg
 ============
 
+
+````
+$ pgrep olg | xargs kill
+olegdb: No.
+````
+
 This is a shitty database written in C. Probably.
 
 * Whats the point of this project?
