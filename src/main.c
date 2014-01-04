@@ -13,8 +13,15 @@
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 #include <stdio.h>
+#include <string.h>
 #include "oleg.h"
 
-int main(int arg, char *argv[]) {
+int main(int argc, char *argv[]) {
+    if (argc >= 2) {
+        if (strcmp(argv[1], "test") == 0) {
+            printf("It works!\n");
+        }
+    }
+    printf("No.\n");
     return 0;
 }
