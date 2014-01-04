@@ -29,5 +29,5 @@ struct ol_database {
     ol_obj records[];     // All of the records in the database
 };
 
-ol_database *ol_open(char *path, ol_filemode filemode);
+struct ol_database *ol_open(char *path, ol_filemode filemode);
 ol_obj ol_get(char *path, ol_filemode filemode);
