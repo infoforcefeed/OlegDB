@@ -21,6 +21,12 @@
 
 #define ol_test_start() int test_return_val = 0;
 #define ol_run_test(test) printf("\n-----\n%s\n", #test); test_return_val = test();\
-     tests_run++; if (test_return_val != 0) return test_return_val; else printf("Passed.\n");
+    if (test_return_val != 0) {\
+        tests_failed++;\
+        printf("[ ] Failed.\n");\
+    } else {\
+        tests_run++;\
+        printf("[X] Passed.\n");\
+    }
 
-int run_tests();
+void run_tests();

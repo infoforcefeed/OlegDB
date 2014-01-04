@@ -63,4 +63,4 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize);
 /* Get that crap out of my mayo jar */
 int ol_scoop(ol_database_obj db, char *key);
 /* Helper for meta info */
-void ol_info(ol_database_obj db);
+int ol_uptime(ol_database_obj db);

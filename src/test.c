@@ -109,7 +109,14 @@ int test_uptime() {
     printf("Opened DB: %p.\n", db);
 
     sleep(3);
-    ol_info(db);
+    int uptime = ol_uptime(db);
+    printf("Uptime: %.i seconds\n", uptime);
+
+    if (uptime < 3) {
+        printf("Uptime incorrect.\n");
+        ol_close(db);
+        return 1;
+    }
 
     ol_close(db);
     return 0;
@@ -119,8 +126,9 @@ int test_update() {
     return 1;
 }
 
-int run_tests() {
+void run_tests(int results[2]) {
     int tests_run = 0;
+    int tests_failed = 0;
 
     ol_test_start();
     ol_run_test(test_open_close);
@@ -130,5 +138,6 @@ int run_tests() {
     ol_run_test(test_uptime);
     ol_run_test(test_update);
 
-    return tests_run;
+    results[0] = tests_run;
+    results[1] = tests_failed;
 }

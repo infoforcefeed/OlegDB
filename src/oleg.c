@@ -101,11 +101,11 @@ int ol_scoop(ol_database_obj db, char *key) {
     return 1;
 }
 
-void ol_info(ol_database_obj db) {
+int ol_uptime(ol_database_obj db) {
     // Make uptime
     time_t now;
     double diff;
     time(&now);
     diff = difftime(now, db->created);
-    printf("Uptime: %.f seconds\n", diff);
+    return diff;
 }

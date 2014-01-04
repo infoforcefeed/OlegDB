@@ -20,9 +20,9 @@ int main(int argc, char *argv[]) {
     if (argc >= 2) {
         if (strcmp(argv[1], "test") == 0) {
             printf("Running tests.\n");
-            int tests_run = 0;
-            tests_run = run_tests();
-            printf("\n-----\nTests passed: %i.\n\n", tests_run);
+            int results[2];
+            run_tests(results);
+            printf("\n-----\nTests passed: %i.\n\n", results[0]);
         }
     }
     printf("No.\n");
