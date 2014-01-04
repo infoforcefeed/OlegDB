@@ -91,8 +91,12 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize){
         return 1;
     }
 
-    new_hash->data_size = vsize;
+    //Silently truncate because #yolo
+    if (strncpy(new_hash->key, key, KEY_SIZE) != new_hash->key) {
+        return 2;
+    }
 
+    new_hash->data_size = vsize;
     unsigned char *data = malloc(vsize);
     if (memcpy(data, value, vsize) != data) {
         return 4;
