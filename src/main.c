@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
             int i;
             unsigned char to_insert[100] = "Wu-tang cat ain't nothin' ta fuck with";
             for (i = 0; i < 100; i++) {
-                char *key = "hashy";
+                char key[16] = "hashy";
                 sprintf(key, "%i", i);
                 int insert_result = ol_jar(db, key, to_insert);
 
