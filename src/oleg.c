@@ -70,10 +70,7 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize){
     // Check to see if we have an existing entry with that key
     ol_hash *old_hash = ol_get_hash(db, key);
     if (old_hash != NULL) {
-        // Get rid of that old shit
-        free(old_hash->data_ptr);
-
-        unsigned char *data = malloc(vsize);
+        unsigned char *data = realloc(old_hash->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data) {
             return 4;
         }
