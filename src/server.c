@@ -5,6 +5,8 @@
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
+#include "server.h"
+#include "oleg.h"
 
 static int ol_make_socket(void) {
     int listenfd;
@@ -15,7 +17,7 @@ static int ol_make_socket(void) {
     return listenfd;
 }
 
-void ol_server(void) {
+void ol_server(ol_database_obj db, int port) {
     int sock, connfd;
     struct sockaddr_in servaddr, cliaddr;
     socklen_t clilen;
@@ -27,11 +29,13 @@ void ol_server(void) {
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htonl(6000);
+    servaddr.sin_port = htons(LOCAL_PORT);
 
     bind(sock, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
     listen(sock, 1024);
+
+    printf("Listening on %d\n", ntohs(servaddr.sin_port));
 
     while (1) {
         clilen = sizeof(cliaddr);
