@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include "test.h"
 #include "oleg.h"
+#include "server.h"
 
 int main(int argc, char *argv[]) {
     if (argc >= 2) {
@@ -30,9 +31,7 @@ int main(int argc, char *argv[]) {
     } else {
         printf("Starting olegdb\n");
         fflush(stdout);
-        while(1) {
-
-        }
+        ol_server();
     }
         printf("No.\n");
     return 0;
