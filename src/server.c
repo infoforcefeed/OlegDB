@@ -45,9 +45,27 @@ void ol_server(ol_database_obj db, int port) {
             close(sock);
 
             int n;
+            char *key;
             while (1) {
                 n = recvfrom(connfd, mesg, 1000, 0, (struct sockaddr *)&cliaddr, &clilen);
-                printf("%s", mesg);
+                if (strncmp("GET", mesg, strlen("GET")) == 0) {
+                    key = (char *)calloc(n -3, 1);
+                    strncpy(key, mesg + 4, n);
+                    //printf("Getting data: %s\n", key);
+                    ol_val data = ol_unjar(db, key);
+                    //printf("Got data: %s\n", data);
+                    sendto(connfd, data, strlen((char*)data), 0, (struct sockaddr *)&cliaddr, sizeof(cliaddr)); free(key);
+                    free(key);
+                }
+                else if (strncmp("SET", mesg, strlen("SET")) == 0) {
+                    key = (char *)calloc(n -3, 1);
+                    strncpy(key, mesg + 4, n);
+                    //printf("Setting data: %s\n", key);
+                    unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
+                    ol_jar(db, key, to_insert, strlen((char*)to_insert));
+                    sendto(connfd, "OK\n", strlen("OK\n"), 0, (struct sockaddr *)&cliaddr, sizeof(cliaddr));
+                    free(key);
+                }
                 mesg[n] = 0;
             }
         }
