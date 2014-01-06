@@ -23,7 +23,7 @@ ol_database_obj ol_open(char *path, ol_filemode filemode){
     ol_database_obj new_db = malloc(sizeof(struct ol_database));
 
     size_t to_alloc = HASH_MALLOC;
-    new_db->hashes = malloc(to_alloc);
+    new_db->hashes = calloc(1, to_alloc);
 
     time_t created;
     time(&created);
@@ -36,11 +36,15 @@ ol_database_obj ol_open(char *path, ol_filemode filemode){
 }
 
 int ol_close(ol_database_obj database){
+    int iterations = HASH_MALLOC/sizeof(ol_hash);
     int i;
-    for (i = 0; i < database->rcrd_cnt; i++) {
-       ol_val free_me = database->hashes[i]->data_ptr;
-       free(free_me);
-       free(database->hashes[i]);
+    for (i = 0; i < iterations; i++) {
+        if (database->hashes[i] != NULL) {
+            ol_val free_me = database->hashes[i]->data_ptr;
+            //printf("Freeing data for %s.\n", database->hashes[i]->key);
+            free(free_me);
+            free(database->hashes[i]);
+        }
     }
 
     free(database->hashes);
@@ -71,12 +75,13 @@ int64_t _ol_gen_hash(char *key) {
 }
 
 ol_hash *_ol_get_hash(ol_database_obj db, char *key) {
-
     int64_t hash = _ol_gen_hash(key);
+    //printf("Hash: 0x%" PRIX64 "\n", hash);
     int index = hash % (HASH_MALLOC/sizeof(ol_hash));
 
     if(db->hashes[index]->key != NULL &&
        strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
+        //printf("Found existing key.\n");
         return db->hashes[index];
     }
     return NULL;
@@ -145,6 +150,10 @@ int ol_scoop(ol_database_obj db, char *key) {
 
         old_hash = NULL;
         db->rcrd_cnt -= 1;
+
+        int64_t hash = _ol_gen_hash(key);
+        int index = hash % (HASH_MALLOC/sizeof(ol_hash));
+        db->hashes[index] = NULL;
 
         return 0;
     }
