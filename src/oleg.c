@@ -63,7 +63,7 @@ int64_t _ol_gen_hash(char *key) {
      * chars later.                                               */
     for(i = 0; i < iterations; i++) {
         hash ^= key[i];
-        hash ^= fnv_prime;
+        hash *= fnv_prime;
     }
     //printf("Hash: 0x%" PRIX64 "\n", hash);
 
