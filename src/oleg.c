@@ -48,7 +48,7 @@ int ol_close(ol_database_obj database){
     return 0;
 }
 
-ol_hash *ol_get_hash(ol_database_obj db, char *key) {
+int64_t _ol_gen_hash(char *key) {
     const int64_t fnv_offset_bias = 0xcbf29ce484222325;
     const int64_t fnv_prime = 0x100000001b3;
 
@@ -57,23 +57,33 @@ ol_hash *ol_get_hash(ol_database_obj db, char *key) {
     int i;
     int64_t hash = fnv_offset_bias;
 
+    //printf("Key: %s\n", key);
+    //printf("Iterations: %i\n", iterations);
+    /* Rather insidiously hash the entire key, but truncate to 16 *
+     * chars later.                                               */
     for(i = 0; i < iterations; i++) {
         hash ^= key[i];
         hash ^= fnv_prime;
     }
+    //printf("Hash: 0x%" PRIX64 "\n", hash);
 
+    return hash;
+}
+
+ol_hash *_ol_get_hash(ol_database_obj db, char *key) {
+
+    int64_t hash = _ol_gen_hash(key);
     int index = hash % (HASH_MALLOC/sizeof(ol_hash));
-    printf("Hash: 0x%" PRIX64 "\n", hash);
-    printf("Index: %i\n", index);
 
-    if(db->hashes[index] && strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
+    if(db->hashes[index]->key != NULL &&
+       strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
         return db->hashes[index];
     }
     return NULL;
 }
 
 ol_val ol_unjar(ol_database_obj db, char *key){
-    ol_hash *hash = ol_get_hash(db, key);
+    ol_hash *hash = _ol_get_hash(db, key);
 
     if (hash != NULL) {
         return hash->data_ptr;
@@ -84,7 +94,7 @@ ol_val ol_unjar(ol_database_obj db, char *key){
 
 int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize){
     // Check to see if we have an existing entry with that key
-    ol_hash *old_hash = ol_get_hash(db, key);
+    ol_hash *old_hash = _ol_get_hash(db, key);
     if (old_hash != NULL) {
         unsigned char *data = realloc(old_hash->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data) {
@@ -116,15 +126,17 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize){
     new_hash->data_ptr = data;
 
     // Insert it into our db struct
-    int cnt = db->rcrd_cnt;
-    db->hashes[cnt] = new_hash;
+    int64_t hash = _ol_gen_hash(key);
+    int index = hash % (HASH_MALLOC/sizeof(ol_hash));
+
+    db->hashes[index] = new_hash;
     db->rcrd_cnt += 1;
     return 0;
 }
 
 int ol_scoop(ol_database_obj db, char *key) {
     // you know... like scoop some data from the jar and eat it? All gone.
-    ol_hash *old_hash = ol_get_hash(db, key);
+    ol_hash *old_hash = _ol_get_hash(db, key);
     if (old_hash != NULL) {
         ol_val free_me = old_hash->data_ptr;
 
