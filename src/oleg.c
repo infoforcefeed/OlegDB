@@ -37,6 +37,7 @@ ol_database_obj ol_open(char *path, ol_filemode filemode){
 int ol_close(ol_database_obj database){
     int iterations = HASH_MALLOC/sizeof(ol_hash);
     int i;
+    int rcrd_cnt = database->rcrd_cnt;
     int freed = 0;
     for (i = 0; i < iterations; i++) {
         if (database->hashes[i] != NULL) {
@@ -50,7 +51,11 @@ int ol_close(ol_database_obj database){
 
     free(database->hashes);
     free(database);
-    printf("Records freed: %i\n", freed);
+    if (freed != rcrd_cnt) {
+        printf("Error: Couldn't free all records.\n");
+        printf("Records freed: %i\n", freed);
+        return 1;
+    }
     return 0;
 }
 
