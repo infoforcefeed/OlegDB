@@ -64,5 +64,3 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize);
 int ol_scoop(ol_database_obj db, char *key);
 /* Helper for meta info */
 int ol_uptime(ol_database_obj db);
-/* Ye ol usage function */
-void usage(void);
