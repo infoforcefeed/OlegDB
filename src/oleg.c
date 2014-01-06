@@ -38,17 +38,20 @@ ol_database_obj ol_open(char *path, ol_filemode filemode){
 int ol_close(ol_database_obj database){
     int iterations = HASH_MALLOC/sizeof(ol_hash);
     int i;
+    int freed = 0;
     for (i = 0; i < iterations; i++) {
         if (database->hashes[i] != NULL) {
             ol_val free_me = database->hashes[i]->data_ptr;
             //printf("Freeing data for %s.\n", database->hashes[i]->key);
             free(free_me);
             free(database->hashes[i]);
+            freed++;
         }
     }
 
     free(database->hashes);
     free(database);
+    printf("Records freed: %i\n", freed);
     return 0;
 }
 
@@ -97,7 +100,7 @@ ol_val ol_unjar(ol_database_obj db, char *key){
     return NULL;
 }
 
-int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize){
+int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize) {
     // Check to see if we have an existing entry with that key
     ol_hash *old_hash = _ol_get_hash(db, key);
     if (old_hash != NULL) {
