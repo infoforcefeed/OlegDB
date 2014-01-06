@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
         // Make the database
         ol_database_obj db = ol_open(DB_PATH,
-                OL_CARESS_DIR | OL_CONSUME_DIR | OL_SLAUGHTER_DIR);
+                OL_MANUFACTURE_DIR | OL_CONSUME_DIR | OL_SLAUGHTER_DIR);
         ol_server(db, 6000);
     }
 

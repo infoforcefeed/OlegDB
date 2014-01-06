@@ -27,7 +27,8 @@
 typedef enum {
     OL_CONSUME_DIR      = 1 << 0, // Read
     OL_SLAUGHTER_DIR    = 1 << 1, // Write
-    OL_CARESS_DIR       = 1 << 2  // Append
+    OL_CARESS_DIR       = 1 << 2, // Append
+    OL_MANUFACTURE_DIR  = 1 << 3  // Create
 } ol_filemode;
 
 /* Data that the DB stores */
