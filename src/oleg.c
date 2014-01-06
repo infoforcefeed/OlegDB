@@ -11,6 +11,8 @@
 //   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -47,11 +49,25 @@ int ol_close(ol_database_obj database){
 }
 
 ol_hash *ol_get_hash(ol_database_obj db, char *key) {
+    const int64_t fnv_offset_bias = 0xcbf29ce484222325;
+    const int64_t fnv_prime = 0x100000001b3;
+
+    const int iterations = strlen(key);
+
     int i;
-    for(i = 0; i < db->rcrd_cnt; i++) {
-        if(strncmp(db->hashes[i]->key, key, KEY_SIZE) == 0) {
-            return db->hashes[i];
-        }
+    int64_t hash = fnv_offset_bias;
+
+    for(i = 0; i < iterations; i++) {
+        hash ^= key[i];
+        hash ^= fnv_prime;
+    }
+
+    int index = hash % (HASH_MALLOC/sizeof(ol_hash));
+    printf("Hash: 0x%" PRIX64 "\n", hash);
+    printf("Index: %i\n", index);
+
+    if(db->hashes[index] && strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
+        return db->hashes[index];
     }
     return NULL;
 }
