@@ -60,7 +60,10 @@ void ol_server(ol_database_obj db, int port) {
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(LOCAL_PORT);
 
-    bind(sock, (struct sockaddr *)&servaddr, sizeof(servaddr));
+    if (bind(sock, (struct sockaddr *)&servaddr, sizeof(servaddr))) {
+        printf("[X] Error: Could not bind socket.\n");
+        exit(1);
+    };
 
     listen(sock, 1024);
 
