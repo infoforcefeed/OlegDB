@@ -17,6 +17,11 @@
 #include "oleg.h"
 #include "server.h"
 
+void usage(char *name) {
+    fprintf(stderr, "Usage: %s test\n", name);
+    fprintf(stderr, "       %s\n", name);
+}
+
 int main(int argc, char *argv[]) {
     if (argc >= 2) {
         if (strcmp(argv[1], "test") == 0) {
@@ -26,7 +31,8 @@ int main(int argc, char *argv[]) {
             printf("\n-----\nTests passed: %i.\n\n", results[0]);
         }
         else if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
-            usage();
+            usage(argv[0]);
+            return 1;
         }
     } else {
         printf("Starting olegdb\n");
