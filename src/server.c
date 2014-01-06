@@ -19,9 +19,12 @@ static int ol_make_socket(void) {
 
 int build_request(char *req_buf, size_t req_len, http *request) {
     // Get the length of the command
+    printf("[-] Parsing: %s\n", req_buf);
     int i;
     int method_len = 0;
+    int url_len = 0;
     for (i = 0; i < SOCK_RECV_MAX; i++ ) {
+        printf("[-] Char: %c\n", req_buf[i]);
         if (req_buf[i] != ' ' && req_buf[i] != '\n') {
             method_len++;
         } else {
@@ -36,8 +39,20 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     request->method_len = method_len;
     strncpy(request->method, req_buf, method_len);
 
-    request->url_len = req_len - method_len;
-    strncpy(request->url, req_buf + method_len, request->url_len);
+    for (i = (method_len+1); i < SOCK_RECV_MAX; i++ ) {
+        if (req_buf[i] != ' ' && req_buf[i] != '\r' && req_buf[i] != '\n') {
+            url_len++;
+        } else {
+            break;
+        }
+    }
+    if (url_len <= 0) {
+        printf("[-] Info: URL_Len: %i\n", url_len);
+        printf("[X] Error: Could not parse URL.\n");
+        return 2;
+    }
+    request->url_len = url_len;
+    strncpy(request->url, req_buf + method_len, url_len);
 
     return 0;
 }
@@ -65,6 +80,10 @@ void ol_server(ol_database_obj db, int port) {
         exit(1);
     };
 
+    int optVal = 1;
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal,
+               sizeof(optVal));
+
     listen(sock, 1024);
 
     printf("Listening on %d\n", ntohs(servaddr.sin_port));
@@ -77,37 +96,43 @@ void ol_server(ol_database_obj db, int port) {
             close(sock);
 
             int n;
-            char *key = NULL;
             http request;
+            //char *key;
             while (1) {
                 n = recvfrom(connfd, mesg, SOCK_RECV_MAX, 0,
                     (struct sockaddr *)&cliaddr, &clilen);
 
                 if (build_request(mesg, n, &request) > 0) {
                     printf("[X] Error: Could not build request.\n");
+                    continue;
                 }
 
-                if (strncmp("GET", mesg, strlen("GET")) == 0) {
-                    // Copy the key into a new buffer
-                    key = (char *)calloc(n -3, 1);
-                    strncpy(key, mesg + 4, n);
-                    // Get the value for that key from the db
-                    ol_val data = ol_unjar(db, key);
-                    //printf("Got data: %s\n", data);
-                    sendto(connfd, data,
-                        strlen((char*)data), 0, (struct sockaddr *)&cliaddr,
+                printf("[-] Method: %s\n", request.method);
+                printf("[-] URL: %s\n", request.url);
+
+                sendto(connfd, request.url,
+                        request.url_len, 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
-                    free(key);
-                }
-                else if (strncmp("SET", mesg, strlen("SET")) == 0) {
-                    key = (char *)calloc(n -3, 1);
-                    strncpy(key, mesg + 4, n);
-                    //printf("Setting data: %s\n", key);
-                    unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
-                    ol_jar(db, key, to_insert, strlen((char*)to_insert));
-                    sendto(connfd, "OK\n", strlen("OK\n"), 0, (struct sockaddr *)&cliaddr, sizeof(cliaddr));
-                    free(key);
-                }
+                //if (strncmp("GET", mesg, strlen("GET")) == 0) {
+                //    // Copy the key into a new buffer
+                //    strncpy(key, mesg + 4, n);
+                //    // Get the value for that key from the db
+                //    ol_val data = ol_unjar(db, key);
+                //    //printf("Got data: %s\n", data);
+                //    sendto(connfd, data,
+                //        strlen((char*)data), 0, (struct sockaddr *)&cliaddr,
+                //        sizeof(cliaddr));
+                //    free(key);
+                //}
+                //else if (strncmp("SET", mesg, strlen("SET")) == 0) {
+                //    key = (char *)calloc(n -3, 1);
+                //    strncpy(key, mesg + 4, n);
+                //    //printf("Setting data: %s\n", key);
+                //    unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
+                //    ol_jar(db, key, to_insert, strlen((char*)to_insert));
+                //    sendto(connfd, "OK\n", strlen("OK\n"), 0, (struct sockaddr *)&cliaddr, sizeof(cliaddr));
+                //    free(key);
+                //}
                 mesg[n] = 0;
             }
         }
