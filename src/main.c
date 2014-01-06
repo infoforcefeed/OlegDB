@@ -24,7 +24,16 @@ int main(int argc, char *argv[]) {
             run_tests(results);
             printf("\n-----\nTests passed: %i.\n\n", results[0]);
         }
+        else if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
+            usage();
+        }
+    } else {
+        printf("Starting olegdb\n");
+        fflush(stdout);
+        while(1) {
+
+        }
     }
-    printf("No.\n");
+        printf("No.\n");
     return 0;
 }
