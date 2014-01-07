@@ -17,6 +17,13 @@ static int ol_make_socket(void) {
     return listenfd;
 }
 
+void clear_request(http *request) {
+    request->url[0] = '\0';
+    request->url_len = 0;
+    request->method[0] = '\0';
+    request->method_len = 0;
+}
+
 int build_request(char *req_buf, size_t req_len, http *request) {
     // Get the length of the command
     printf("[-] Parsing: %s\n", req_buf);
@@ -24,7 +31,6 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     int method_len = 0;
     int url_len = 0;
     for (i = 0; i < SOCK_RECV_MAX; i++ ) {
-        printf("[-] Char: %c\n", req_buf[i]);
         if (req_buf[i] != ' ' && req_buf[i] != '\n') {
             method_len++;
         } else {
@@ -52,7 +58,7 @@ int build_request(char *req_buf, size_t req_len, http *request) {
         return 2;
     }
     request->url_len = url_len;
-    strncpy(request->url, req_buf + method_len, url_len);
+    strncpy(request->url, req_buf + method_len + 1, url_len);
 
     return 0;
 }
@@ -110,8 +116,9 @@ void ol_server(ol_database_obj db, int port) {
                 printf("[-] Method: %s\n", request.method);
                 printf("[-] URL: %s\n", request.url);
 
-                sendto(connfd, request.url,
-                        request.url_len, 0, (struct sockaddr *)&cliaddr,
+                char response[] = "HTTP/1.1 200 OK\r\nConnection: close\r\nWEEABOO\n";
+                sendto(connfd, response,
+                        sizeof(response), 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
                 //if (strncmp("GET", mesg, strlen("GET")) == 0) {
                 //    // Copy the key into a new buffer
@@ -134,6 +141,8 @@ void ol_server(ol_database_obj db, int port) {
                 //    free(key);
                 //}
                 mesg[n] = 0;
+                clear_request(&request);
+                exit(0);
             }
         }
     }
