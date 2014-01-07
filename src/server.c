@@ -26,7 +26,7 @@ void clear_request(http *request) {
 
 int build_request(char *req_buf, size_t req_len, http *request) {
     // Get the length of the command
-    printf("[-] Parsing: %s\n", req_buf);
+    //printf("[-] Parsing: %s\n", req_buf);
     int i;
     int method_len = 0;
     int url_len = 0;
@@ -53,7 +53,6 @@ int build_request(char *req_buf, size_t req_len, http *request) {
         }
     }
     if (url_len <= 0) {
-        printf("[-] Info: URL_Len: %i\n", url_len);
         printf("[X] Error: Could not parse URL.\n");
         return 2;
     }
@@ -116,7 +115,7 @@ void ol_server(ol_database_obj db, int port) {
                 printf("[-] Method: %s\n", request.method);
                 printf("[-] URL: %s\n", request.url);
 
-                char response[] = "HTTP/1.1 200 OK\r\nConnection: close\r\nWEEABOO\n";
+                char response[] = "HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Encoding: text/plain\r\n\r\nWEEABOO\n";
                 sendto(connfd, response,
                         sizeof(response), 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
@@ -140,6 +139,7 @@ void ol_server(ol_database_obj db, int port) {
                 //    sendto(connfd, "OK\n", strlen("OK\n"), 0, (struct sockaddr *)&cliaddr, sizeof(cliaddr));
                 //    free(key);
                 //}
+                close(sock);
                 mesg[n] = 0;
                 clear_request(&request);
                 exit(0);
