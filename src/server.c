@@ -105,8 +105,10 @@ void ol_server(ol_database_obj db, int port) {
 
     listen(sock, 1024);
 
-    printf("Listening on %d\n", ntohs(servaddr.sin_port));
+    printf("[-] Listening on %d\n", ntohs(servaddr.sin_port));
 
+    /* Clean up our poor children */
+    signal(SIGCHLD, SIG_IGN);
     while (1) {
         clilen = sizeof(cliaddr);
         connfd = accept(sock, (struct sockaddr *)&cliaddr, &clilen);
@@ -169,7 +171,8 @@ void ol_server(ol_database_obj db, int port) {
                 close(sock);
                 mesg[n] = 0;
                 clear_request(&request);
-                exit(0);
+                printf("[-] Thread exiting.\n");
+                exit(EXIT_SUCCESS);
             }
         }
     }
