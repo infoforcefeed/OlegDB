@@ -16,7 +16,7 @@
 int test_open_close() {
     ol_database_obj db = ol_open(DB_PATH, OL_CONSUME_DIR);
     printf("Opened DB: %p.\n", db);
-    ol_close(db);
+
     printf("Closed DB.\n");
     return 0;
 }
@@ -27,7 +27,7 @@ int test_jar() {
 
     int i;
     unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
-    for (i = 0; i < 100; i++) {
+    for (i = 0; i < 256; i++) {
         char key[16] = "hashy";
         char append[5] = "";
 
@@ -43,7 +43,11 @@ int test_jar() {
         }
     }
     printf("Records inserted: %i.\n", db->rcrd_cnt);
-    ol_close(db);
+
+    if (ol_close(db) != 0) {
+        printf("Couldn't free all memory.\n");
+        return 1;
+    }
     return 0;
 }
 
@@ -62,6 +66,7 @@ int test_unjar() {
     }
 
     ol_val item = ol_unjar(db, key);
+    printf("Retrieved value.\n");
     if (item == NULL) {
         printf("Error: Could not find key: %s\n", key);
         ol_close(db);

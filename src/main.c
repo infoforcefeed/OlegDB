@@ -15,6 +15,12 @@
 #include <stdio.h>
 #include "test.h"
 #include "oleg.h"
+#include "server.h"
+
+void usage(char *name) {
+    fprintf(stderr, "Usage: %s test\n", name);
+    fprintf(stderr, "       %s\n", name);
+}
 
 int main(int argc, char *argv[]) {
     if (argc >= 2) {
@@ -24,7 +30,19 @@ int main(int argc, char *argv[]) {
             run_tests(results);
             printf("\n-----\nTests passed: %i.\n\n", results[0]);
         }
+        else if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
+            usage(argv[0]);
+            return 1;
+        }
+    } else {
+        printf("Starting olegdb\n");
+        fflush(stdout);
+        // Make the database
+        ol_database_obj db = ol_open(DB_PATH,
+                OL_MANUFACTURE_DIR | OL_CONSUME_DIR | OL_SLAUGHTER_DIR);
+        ol_server(db, LOCAL_PORT);
     }
+
     printf("No.\n");
     return 0;
 }
