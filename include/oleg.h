@@ -47,21 +47,22 @@ typedef struct ol_database {
     // huh...
     ol_hash **hashes;   // All hashes in the DB
     ol_val **values;    // All values in the DB
-} *ol_database_obj;
+} ol_database;
 
+typedef struct ol_meta ol_meta;
 typedef struct ol_meta {
     time_t uptime;
-} *ol_meta_obj;
+} ol_meta;
 
 /* Opens a database using the filemode(s) specified */
-ol_database_obj ol_open(char *path, ol_filemode filemode);
+ol_database *ol_open(char *path, ol_filemode filemode);
 /* Closes a database, makes sure everything is written and frees memory */
-int ol_close(ol_database_obj database);
+int ol_close(ol_database *database);
 /* Unjar a value from the mayo */
-ol_val ol_unjar(ol_database_obj db, char *key);
+ol_val ol_unjar(ol_database *db, char *key);
 /* it's easy to piss in a big bucket; it's NOT easy to piss in 19 jars */
-int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize);
+int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize);
 /* Get that crap out of my mayo jar */
-int ol_scoop(ol_database_obj db, char *key);
+int ol_scoop(ol_database *db, char *key);
 /* Helper for meta info */
-int ol_uptime(ol_database_obj db);
+int ol_uptime(ol_database *db);

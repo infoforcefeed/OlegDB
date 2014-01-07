@@ -14,7 +14,7 @@
 #include "test.h"
 
 int test_open_close() {
-    ol_database_obj db = ol_open(DB_PATH, OL_CONSUME_DIR);
+    ol_database *db = ol_open(DB_PATH, OL_CONSUME_DIR);
     printf("Opened DB: %p.\n", db);
 
     printf("Closed DB.\n");
@@ -22,7 +22,7 @@ int test_open_close() {
 }
 
 int test_jar() {
-    ol_database_obj db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
     int i;
@@ -52,7 +52,7 @@ int test_jar() {
 }
 
 int test_unjar() {
-    ol_database_obj db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
     char key[] = "muh_hash_tho";
@@ -84,7 +84,7 @@ int test_unjar() {
 }
 
 int test_scoop() {
-    ol_database_obj db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
     char key[] = "muh_hash_tho";
@@ -116,7 +116,7 @@ int test_scoop() {
 }
 
 int test_uptime() {
-    ol_database_obj db = ol_open(DB_PATH, OL_CARESS_DIR);
+    ol_database *db = ol_open(DB_PATH, OL_CARESS_DIR);
     printf("Opened DB: %p.\n", db);
 
     sleep(3);
@@ -134,7 +134,7 @@ int test_uptime() {
 }
 
 int test_update() {
-    ol_database_obj db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
     char key[] = "muh_hash_thoalksdjflkdjf";

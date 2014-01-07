@@ -18,8 +18,8 @@
 #include <time.h>
 #include "oleg.h"
 
-ol_database_obj ol_open(char *path, ol_filemode filemode){
-    ol_database_obj new_db = malloc(sizeof(struct ol_database));
+ol_database *ol_open(char *path, ol_filemode filemode){
+    ol_database *new_db = malloc(sizeof(struct ol_database));
 
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = calloc(1, to_alloc);
@@ -34,7 +34,7 @@ ol_database_obj ol_open(char *path, ol_filemode filemode){
     return new_db;
 }
 
-int ol_close(ol_database_obj database){
+int ol_close(ol_database *database){
     int iterations = HASH_MALLOC/sizeof(ol_hash);
     int i;
     int rcrd_cnt = database->rcrd_cnt;
@@ -81,11 +81,12 @@ int64_t _ol_gen_hash(char *key) {
     return hash;
 }
 
-ol_hash *_ol_get_hash(ol_database_obj db, char *key) {
+ol_hash *_ol_get_hash(ol_database *db, char *key) {
     int64_t hash = _ol_gen_hash(key);
     printf("[-] Hash: 0x%" PRIX64 "\n", hash);
     int index = hash % (HASH_MALLOC/sizeof(ol_hash));
 
+    printf("[-] Index: %i.\n", index);
     if(db->hashes[index]->key != NULL &&
        strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
         printf("[-] Found existing key.\n");
@@ -94,7 +95,7 @@ ol_hash *_ol_get_hash(ol_database_obj db, char *key) {
     return NULL;
 }
 
-ol_val ol_unjar(ol_database_obj db, char *key){
+ol_val ol_unjar(ol_database *db, char *key){
     ol_hash *hash = _ol_get_hash(db, key);
 
     if (hash != NULL) {
@@ -104,7 +105,7 @@ ol_val ol_unjar(ol_database_obj db, char *key){
     return NULL;
 }
 
-int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize) {
+int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
     // Check to see if we have an existing entry with that key
     ol_hash *old_hash = _ol_get_hash(db, key);
     if (old_hash != NULL) {
@@ -146,7 +147,7 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize) {
     return 0;
 }
 
-int ol_scoop(ol_database_obj db, char *key) {
+int ol_scoop(ol_database *db, char *key) {
     // you know... like scoop some data from the jar and eat it? All gone.
     ol_hash *old_hash = _ol_get_hash(db, key);
     if (old_hash != NULL) {
@@ -167,7 +168,7 @@ int ol_scoop(ol_database_obj db, char *key) {
     return 1;
 }
 
-int ol_uptime(ol_database_obj db) {
+int ol_uptime(ol_database *db) {
     // Make uptime
     time_t now;
     double diff;

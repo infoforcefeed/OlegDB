@@ -36,4 +36,4 @@ struct http {
     char version[8];
 };
 
-void ol_server(ol_database_obj db, int port);
+void ol_server(ol_database *db, int port);

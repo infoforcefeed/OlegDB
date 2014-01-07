@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
         printf("Starting olegdb\n");
         fflush(stdout);
         // Make the database
-        ol_database_obj db = ol_open(DB_PATH,
+        ol_database *db = ol_open(DB_PATH,
                 OL_MANUFACTURE_DIR | OL_CONSUME_DIR | OL_SLAUGHTER_DIR);
         ol_server(db, LOCAL_PORT);
     }
