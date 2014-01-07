@@ -1,12 +1,12 @@
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
-#include <unistd.h>
 #include "server.h"
-#include "oleg.h"
+
+// I can't put this in server.h for some reason
+const char get_response[] = "HTTP/1.1 200 OK\n"
+                          "Content-Type: application/json\n"
+                          "Content-Length: %zu\n"
+                          "Connection: close\n"
+                          "\n"
+                          "{%s}\n";
 
 static int ol_make_socket(void) {
     int listenfd;
@@ -18,6 +18,7 @@ static int ol_make_socket(void) {
 }
 
 void clear_request(http *request) {
+    request->key[0] = '\0';
     request->url[0] = '\0';
     request->url_len = 0;
     request->method[0] = '\0';
@@ -25,8 +26,7 @@ void clear_request(http *request) {
 }
 
 int build_request(char *req_buf, size_t req_len, http *request) {
-    // Get the length of the command
-    //printf("[-] Parsing: %s\n", req_buf);
+    // TODO: Make sure theres actually a valid URI in the request
     int i;
     int method_len = 0;
     int url_len = 0;
@@ -59,10 +59,15 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     request->url_len = url_len;
     strncpy(request->url, req_buf + method_len + 1, url_len);
 
-    return 0;
-}
+    char *split_key = strtok(request->url, "/");
+    printf("[-] Split key: %s\n", split_key);
 
-int run_method(char *method, size_t keylen, char* message_buf) {
+    if (split_key == NULL) {
+        printf("[X] Error: Could not parse Key.\n");
+        return 3;
+    }
+    strncpy(request->key, split_key, strlen(split_key));
+
     return 0;
 }
 
@@ -78,13 +83,14 @@ void ol_server(ol_database_obj db, int port) {
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(LOCAL_PORT);
+    servaddr.sin_port = htons(port);
 
     if (bind(sock, (struct sockaddr *)&servaddr, sizeof(servaddr))) {
         printf("[X] Error: Could not bind socket.\n");
         exit(1);
     };
 
+    // Fuck you let me rebind it you asshat
     int optVal = 1;
     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void*) &optVal,
                sizeof(optVal));
@@ -102,7 +108,7 @@ void ol_server(ol_database_obj db, int port) {
 
             int n;
             http request;
-            //char *key;
+            char *resp_buf;
             while (1) {
                 n = recvfrom(connfd, mesg, SOCK_RECV_MAX, 0,
                     (struct sockaddr *)&cliaddr, &clilen);
@@ -115,21 +121,19 @@ void ol_server(ol_database_obj db, int port) {
                 printf("[-] Method: %s\n", request.method);
                 printf("[-] URL: %s\n", request.url);
 
-                char response[] = "HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Encoding: text/plain\r\n\r\nWEEABOO\n";
-                sendto(connfd, response,
-                        sizeof(response), 0, (struct sockaddr *)&cliaddr,
+                if (strcmp(request.method, "GET") == 0) {
+                    ol_val data = ol_unjar(db, request.key);
+
+                    size_t content_size = sizeof(get_response) + sizeof(data);
+                    resp_buf = malloc(content_size);
+
+                    sprintf(resp_buf, get_response, content_size, data);
+                    sendto(connfd, resp_buf,
+                        sizeof(resp_buf), 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
-                //if (strncmp("GET", mesg, strlen("GET")) == 0) {
-                //    // Copy the key into a new buffer
-                //    strncpy(key, mesg + 4, n);
-                //    // Get the value for that key from the db
-                //    ol_val data = ol_unjar(db, key);
-                //    //printf("Got data: %s\n", data);
-                //    sendto(connfd, data,
-                //        strlen((char*)data), 0, (struct sockaddr *)&cliaddr,
-                //        sizeof(cliaddr));
-                //    free(key);
-                //}
+                    free(resp_buf);
+
+                }
                 //else if (strncmp("SET", mesg, strlen("SET")) == 0) {
                 //    key = (char *)calloc(n -3, 1);
                 //    strncpy(key, mesg + 4, n);
