@@ -8,6 +8,14 @@ const char get_response[] = "HTTP/1.1 200 OK\n"
                           "\n"
                           "{%s}\n";
 
+const char not_found_response[] = "HTTP/1.1 404 Not Found\n"
+                          "Status: 404 Not Found\n"
+                          "Content-Length: 26\n"
+                          "Connection: close\n"
+                          "Content-Type: text/plain\n"
+                          "\n"
+                          "These aren't your ghosts.\n";
+
 static int ol_make_socket(void) {
     int listenfd;
     if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -122,17 +130,32 @@ void ol_server(ol_database_obj db, int port) {
                 printf("[-] URL: %s\n", request.url);
 
                 if (strcmp(request.method, "GET") == 0) {
+                    printf("[-] Method is GET.\n");
                     ol_val data = ol_unjar(db, request.key);
+                    printf("[-] Looked for key.\n");
 
-                    size_t content_size = sizeof(get_response) + sizeof(data);
-                    resp_buf = malloc(content_size);
+                    if (data != NULL) {
+                        printf("[-] Value not null.\n");
+                        size_t content_size = sizeof(get_response) + sizeof(data);
+                        resp_buf = malloc(content_size);
 
-                    sprintf(resp_buf, get_response, content_size, data);
-                    sendto(connfd, resp_buf,
-                        sizeof(resp_buf), 0, (struct sockaddr *)&cliaddr,
+                        sprintf(resp_buf, get_response, content_size, data);
+                        sendto(connfd, resp_buf,
+                            sizeof(resp_buf), 0, (struct sockaddr *)&cliaddr,
+                            sizeof(cliaddr));
+                        free(resp_buf);
+                    } else {
+                        printf("[X] Value null.\n");
+                        sendto(connfd, not_found_response,
+                            sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
+                            sizeof(cliaddr));
+                    }
+
+                } else {
+                    printf("[X] No matching method.\n");
+                    sendto(connfd, not_found_response,
+                        sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
-                    free(resp_buf);
-
                 }
                 //else if (strncmp("SET", mesg, strlen("SET")) == 0) {
                 //    key = (char *)calloc(n -3, 1);

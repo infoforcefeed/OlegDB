@@ -83,12 +83,12 @@ int64_t _ol_gen_hash(char *key) {
 
 ol_hash *_ol_get_hash(ol_database_obj db, char *key) {
     int64_t hash = _ol_gen_hash(key);
-    //printf("Hash: 0x%" PRIX64 "\n", hash);
+    printf("[-] Hash: 0x%" PRIX64 "\n", hash);
     int index = hash % (HASH_MALLOC/sizeof(ol_hash));
 
     if(db->hashes[index]->key != NULL &&
        strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
-        //printf("Found existing key.\n");
+        printf("[-] Found existing key.\n");
         return db->hashes[index];
     }
     return NULL;
