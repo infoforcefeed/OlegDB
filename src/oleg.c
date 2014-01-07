@@ -136,7 +136,7 @@ int ol_jar(ol_database_obj db, char *key, unsigned char *value, size_t vsize) {
     new_hash->data_size = vsize;
     unsigned char *data = malloc(vsize);
     if (memcpy(data, value, vsize) != data) {
-        return 4;
+        return 3;
     }
     new_hash->data_ptr = data;
 

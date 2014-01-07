@@ -45,7 +45,7 @@ int test_jar() {
         if (db->rcrd_cnt != i+1) {
             printf("Error: Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
             ol_close(db);
-            return 2;
+            return 3;
         }
     }
     printf("Records inserted: %i.\n", db->rcrd_cnt);
