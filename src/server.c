@@ -172,6 +172,7 @@ void ol_server(ol_database *db, int port) {
                             sizeof(cliaddr));
                     } else {
                         printf("[ ] Inserted new value for key %s.\n", request.key);
+                        printf("[-] Records: %i\n", db->rcrd_cnt);
                         sendto(connfd, post_response,
                             sizeof(post_response), 0, (struct sockaddr *)&cliaddr,
                             sizeof(cliaddr));
