@@ -26,8 +26,9 @@ int test_jar() {
     printf("Opened DB: %p.\n", db);
 
     int i;
+    int max_records = 256;
     unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
-    for (i = 0; i < 256; i++) {
+    for (i = 0; i < max_records; i++) {
         char key[16] = "hashy";
         char append[5] = "";
 

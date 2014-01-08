@@ -202,11 +202,13 @@ int ol_scoop(ol_database *db, char *key) {
         free(old_hash);
 
         old_hash = NULL;
-        db->rcrd_cnt -= 1;
 
         int64_t hash = _ol_gen_hash(key);
         int index = hash % (HASH_MALLOC/sizeof(ol_hash));
         db->hashes[index] = NULL;
+
+        // Decrement our record count
+        db->rcrd_cnt -= 1;
 
         return 0;
     }
