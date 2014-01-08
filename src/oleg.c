@@ -97,13 +97,16 @@ ol_hash *_ol_get_hash(ol_database *db, char *key) {
             int i;
             int quadratic = 1;
             for (i = 0; i < db->rcrd_cnt; i++) {
-                index += quadratic;
-                if (strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
+                int tmp_index = (index + quadratic) % (HASH_MALLOC/sizeof(ol_hash));
+                if (db->hashes[tmp_index] == NULL) {
+                    // Found an empty db spot. No hash.
+                    return NULL;
+                } else if (strncmp(db->hashes[tmp_index]->key, key, KEY_SIZE) == 0) {
                     printf("[-] Found our hash.\n");
-                    return db->hashes[index + quadratic];
-                } else {
-                    quadratic += pow((double)i, (double)2);
+                    return db->hashes[tmp_index];
                 }
+
+                quadratic += pow((double)i, (double)2);
             }
 
             // Error here, we are out of space or something fucked up
