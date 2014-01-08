@@ -92,19 +92,14 @@ int _ol_get_empty_slot_for_hash(ol_database *db, int64_t hash, char *key) {
     int index;
     index = _ol_gen_index(hash);
     if(db->hashes[index]->key != NULL) {
-        if(strncmp(db->hashes[index]->key, key, KEY_SIZE) != 0) {
-            return index; // This is what we use. Nice.
-        }
-        else {
-            int i;
-            int quadratic = 1;
-            for (i = 0; i < db->rcrd_cnt; i++) { // 8========D
-                int tmp_index = _ol_gen_index((int64_t)(index + quadratic));
-                if (db->hashes[tmp_index] == NULL) {
-                    return tmp_index;
-                }
-                quadratic += pow((double)i, (double)2);
+        int i;
+        int quadratic = 1;
+        for (i = 0; i < db->rcrd_cnt; i++) { // 8========D
+            int tmp_index = _ol_gen_index((int64_t)(index + quadratic));
+            if (db->hashes[tmp_index] == NULL) {
+                return tmp_index;
             }
+            quadratic += pow((double)i, (double)2);
         }
     }
     return index;
