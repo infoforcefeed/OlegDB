@@ -23,7 +23,7 @@
 #include "oleg.h"
 
 #define MAX_CLIENTS 100
-#define LOCAL_PORT 8080 
+#define LOCAL_PORT 8080
 #define SOCK_RECV_MAX 1000
 
 typedef struct http http;

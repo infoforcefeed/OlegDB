@@ -1,6 +1,21 @@
-#include "server.h"
+//        DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+//                    Version 2, December 2004
+//
+// Copyright (C) 2004 Sam Hocevar <sam@hocevar.net>
+//
+// Everyone is permitted to copy and distribute verbatim or modified
+// copies of this license document, and changing it is allowed as long
+// as the name is changed.
+//
+//            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+//   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+//
+//  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 // I can't put this in server.h for some reason
+
+#include "server.h"
+
 const char get_response[] = "HTTP/1.1 200 OK\n"
                           "Content-Type: application/json\n"
                           "Content-Length: %zu\n"
@@ -36,6 +51,8 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     int i;
     int method_len = 0;
     int url_len = 0;
+
+    // Seek the request until a space char and that's our method
     for (i = 0; i < SOCK_RECV_MAX; i++ ) {
         if (req_buf[i] != ' ' && req_buf[i] != '\n') {
             method_len++;
@@ -48,7 +65,7 @@ int build_request(char *req_buf, size_t req_len, http *request) {
         return 1;
     }
 
-    request->method_len = method_len;
+    request->method_len = method_len; // The length of the method for offsets
     strncpy(request->method, req_buf, method_len);
 
     for (i = (method_len+1); i < SOCK_RECV_MAX; i++ ) {
@@ -102,9 +119,7 @@ void ol_server(ol_database *db, int port) {
 
     printf("[-] Listening on %d\n", ntohs(servaddr.sin_port));
 
-    /* Clean up our poor children */
-    signal(SIGCHLD, SIG_IGN);
-    while (1) {
+    while (1) { // 8======D
         char mesg[1000];
         clilen = sizeof(cliaddr);
         connfd = accept(sock, (struct sockaddr *)&cliaddr, &clilen);
@@ -195,6 +210,7 @@ void ol_server(ol_database *db, int port) {
                     sizeof(cliaddr));
                 break;
             }
+            close(connfd); // BAI
         }
         free(request);
     }
