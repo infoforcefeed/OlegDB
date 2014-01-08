@@ -31,14 +31,6 @@ static int ol_make_socket(void) {
     return listenfd;
 }
 
-void clear_request(http *request) {
-    request->key[0] = '\0';
-    request->url[0] = '\0';
-    request->url_len = 0;
-    request->method[0] = '\0';
-    request->method_len = 0;
-}
-
 int build_request(char *req_buf, size_t req_len, http *request) {
     // TODO: Make sure theres actually a valid URI in the request
     int i;
@@ -88,7 +80,6 @@ void ol_server(ol_database *db, int port) {
     int sock, connfd;
     struct sockaddr_in servaddr, cliaddr;
     socklen_t clilen;
-    char mesg[1000];
 
     sock = ol_make_socket();
 
@@ -114,22 +105,23 @@ void ol_server(ol_database *db, int port) {
     /* Clean up our poor children */
     signal(SIGCHLD, SIG_IGN);
     while (1) {
-        mesg[0] = '\0';
+        char mesg[1000];
         clilen = sizeof(cliaddr);
         connfd = accept(sock, (struct sockaddr *)&cliaddr, &clilen);
 
         printf("[-] Records: %i\n", db->rcrd_cnt);
         printf("[-] DB: %p\n", db);
 
+        http *request = calloc(1, sizeof(http));
+
         while (1) {
-            int n;
-            http request;
             char *resp_buf;
-            clear_request(&request);
+
+            int n;
             n = recvfrom(connfd, mesg, SOCK_RECV_MAX, 0,
                 (struct sockaddr *)&cliaddr, &clilen);
 
-            if (build_request(mesg, n, &request) > 0) {
+            if (build_request(mesg, n, request) > 0) {
                 printf("[X] Error: Could not build request.\n");
                 sendto(connfd, not_found_response,
                     sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
@@ -139,13 +131,13 @@ void ol_server(ol_database *db, int port) {
             }
 
             printf("\n[-] ------\n");
-            printf("[-] Method: %s\n", request.method);
-            printf("[-] URL: %s\n", request.url);
-            printf("[-] Key: %s\n", request.key);
+            printf("[-] Method: %s\n", request->method);
+            printf("[-] URL: %s\n", request->url);
+            printf("[-] Key: %s\n", request->key);
 
-            if (strncmp(request.method, "GET", 3) == 0) {
+            if (strncmp(request->method, "GET", 3) == 0) {
                 printf("[-] Method is GET.\n");
-                ol_val data = ol_unjar(db, request.key);
+                ol_val data = ol_unjar(db, request->key);
                 printf("[-] Looked for key.\n");
 
                 if (data != NULL) {
@@ -154,11 +146,6 @@ void ol_server(ol_database *db, int port) {
                     resp_buf = malloc(content_size);
 
                     sprintf(resp_buf, get_response, strlen((char*)data), data);
-                    printf("[-] Response: \n%s", resp_buf);
-                    printf("[-] Strlen of response: %zu Allocated size: %zu\n",
-                        strlen(resp_buf), content_size);
-                    printf("[-] Strlen of get_response: %zu strlen of data: %zu\n",
-                        strlen(get_response), strlen((char*)data));
                     sendto(connfd, resp_buf,
                         strlen(resp_buf), 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
@@ -172,7 +159,7 @@ void ol_server(ol_database *db, int port) {
                     break;
                 }
 
-            } else if (strncmp(request.method, "POST", 4) == 0) {
+            } else if (strncmp(request->method, "POST", 4) == 0) {
                 printf("[-] Method is POST.\n");
                 unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with"
                     "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
@@ -187,14 +174,14 @@ void ol_server(ol_database *db, int port) {
                     "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                     "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                     "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-                if (ol_jar(db, request.key, to_insert, strlen((char*)to_insert)) > 0) {
+                if (ol_jar(db, request->key, to_insert, strlen((char*)to_insert)) > 0) {
                     printf("[X] Could not insert\n");
                     sendto(connfd, not_found_response,
                         sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
                     break;
                 } else {
-                    printf("[ ] Inserted new value for key %s.\n", request.key);
+                    printf("[ ] Inserted new value for key %s.\n", request->key);
                     printf("[-] Records: %i\n", db->rcrd_cnt);
                     sendto(connfd, post_response,
                         sizeof(post_response), 0, (struct sockaddr *)&cliaddr,
@@ -209,5 +196,6 @@ void ol_server(ol_database *db, int port) {
                 break;
             }
         }
+        free(request);
     }
 }
