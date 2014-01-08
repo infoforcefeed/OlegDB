@@ -60,12 +60,6 @@ int ol_close(ol_database *database){
     return 0;
 }
 
-int _ol_gen_index(int64_t hash) {
-    int index;
-    index = hash % (HASH_MALLOC/sizeof(ol_hash));
-    return index;
-}
-
 int64_t _ol_gen_hash(char *key) {
     const int64_t fnv_offset_bias = 0xcbf29ce484222325;
     const int64_t fnv_prime = 0x100000001b3;
@@ -79,7 +73,7 @@ int64_t _ol_gen_hash(char *key) {
     //printf("Iterations: %i\n", iterations);
     /* Rather insidiously hash the entire key, but truncate to 16 *
      * chars later.                                               */
-    for(i = 0; i < iterations; i++) {
+    for(i = 0; i < iterations; i++) { // 8========D
         hash ^= key[i];
         hash *= fnv_prime;
     }
@@ -87,6 +81,30 @@ int64_t _ol_gen_hash(char *key) {
 
     return hash;
 }
+
+int _ol_gen_index(int64_t hash) {
+    int index;
+    index = hash % (HASH_MALLOC/sizeof(ol_hash));
+    return index;
+}
+
+int _ol_get_empty_slot_for_hash(ol_database *db, int64_t hash, char *key) {
+    int index;
+    index = _ol_gen_index(hash);
+    if(db->hashes[index]->key != NULL) {
+        int i;
+        int quadratic = 1;
+        for (i = 0; i < db->rcrd_cnt; i++) { // 8========D
+            int tmp_index = _ol_gen_index((int64_t)(index + quadratic));
+            if (db->hashes[tmp_index] == NULL) {
+                return tmp_index;
+            }
+            quadratic += pow((double)i, (double)2);
+        }
+    }
+    return index;
+}
+
 
 ol_hash *_ol_get_hash(ol_database *db, char *key) {
     int64_t hash = _ol_gen_hash(key);
@@ -102,7 +120,7 @@ ol_hash *_ol_get_hash(ol_database *db, char *key) {
             printf("[-] Found collision.\n");
             int i;
             int quadratic = 1;
-            for (i = 0; i < db->rcrd_cnt; i++) {
+            for (i = 0; i < db->rcrd_cnt; i++) { // 8======D
                 int tmp_index = (index + quadratic) % (HASH_MALLOC/sizeof(ol_hash));
                 if (db->hashes[tmp_index] == NULL) {
                     printf("[-] New index: %i.\n", tmp_index);
@@ -167,7 +185,7 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
 
     // Insert it into our db struct
     int64_t hash = _ol_gen_hash(key);
-    int index = _ol_gen_index(hash);
+    int index = _ol_get_empty_slot_for_hash(db, hash, key);
     //printf("[-] Index: %i\n", index);
 
     db->hashes[index] = new_hash;
