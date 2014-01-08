@@ -89,7 +89,6 @@ void ol_server(ol_database *db, int port) {
     int sock, connfd;
     struct sockaddr_in servaddr, cliaddr;
     socklen_t clilen;
-    pid_t childpid;
     char mesg[1000];
 
     sock = ol_make_socket();
@@ -116,78 +115,76 @@ void ol_server(ol_database *db, int port) {
     /* Clean up our poor children */
     signal(SIGCHLD, SIG_IGN);
     while (1) {
+        mesg[0] = '\0';
         clilen = sizeof(cliaddr);
         connfd = accept(sock, (struct sockaddr *)&cliaddr, &clilen);
 
-        if ((childpid = fork()) == 0) {
-            printf("[-] Records: %i\n", db->rcrd_cnt);
-            printf("[-] DB: %p\n", db);
-            close(sock);
+        printf("[-] Records: %i\n", db->rcrd_cnt);
+        printf("[-] DB: %p\n", db);
 
+        while (1) {
             int n;
             http request;
             char *resp_buf;
-            while (1) {
-                n = recvfrom(connfd, mesg, SOCK_RECV_MAX, 0,
-                    (struct sockaddr *)&cliaddr, &clilen);
+            n = recvfrom(connfd, mesg, SOCK_RECV_MAX, 0,
+                (struct sockaddr *)&cliaddr, &clilen);
 
-                if (build_request(mesg, n, &request) > 0) {
-                    printf("[X] Error: Could not build request.\n");
-                    continue;
-                }
+            if (build_request(mesg, n, &request) > 0) {
+                printf("[X] Error: Could not build request.\n");
+                continue;
+            }
 
-                printf("\n[-] ------\n");
-                printf("[-] Method: %s\n", request.method);
-                printf("[-] URL: %s\n", request.url);
-                printf("[-] Key: %s\n", request.key);
+            printf("\n[-] ------\n");
+            printf("[-] Method: %s\n", request.method);
+            printf("[-] URL: %s\n", request.url);
+            printf("[-] Key: %s\n", request.key);
 
-                if (strncmp(request.method, "GET", 3) == 0) {
-                    printf("[-] Method is GET.\n");
-                    ol_val data = ol_unjar(db, request.key);
-                    printf("[-] Looked for key.\n");
+            if (strncmp(request.method, "GET", 3) == 0) {
+                printf("[-] Method is GET.\n");
+                ol_val data = ol_unjar(db, request.key);
+                printf("[-] Looked for key.\n");
 
-                    if (data != NULL) {
-                        size_t content_size = sizeof(get_response) + sizeof(data);
-                        resp_buf = malloc(content_size);
+                if (data != NULL) {
+                    size_t content_size = sizeof(get_response) + sizeof(data);
+                    resp_buf = malloc(content_size);
 
-                        sprintf(resp_buf, get_response, content_size, data);
-                        sendto(connfd, resp_buf,
-                            sizeof(resp_buf), 0, (struct sockaddr *)&cliaddr,
-                            sizeof(cliaddr));
-                        free(resp_buf);
-                    } else {
-                        printf("[X] Value null.\n");
-                        sendto(connfd, not_found_response,
-                            sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
-                            sizeof(cliaddr));
-                    }
-
-                } else if (strncmp(request.method, "POST", 4) == 0) {
-                    printf("[-] Method is POST.\n");
-                    unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
-                    if (ol_jar(db, request.key, to_insert, strlen((char*)to_insert)) > 0) {
-                        printf("[X] Could not insert\n");
-                        sendto(connfd, not_found_response,
-                            sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
-                            sizeof(cliaddr));
-                    } else {
-                        printf("[ ] Inserted new value for key %s.\n", request.key);
-                        printf("[-] Records: %i\n", db->rcrd_cnt);
-                        sendto(connfd, post_response,
-                            sizeof(post_response), 0, (struct sockaddr *)&cliaddr,
-                            sizeof(cliaddr));
-                    }
+                    sprintf(resp_buf, get_response, content_size, data);
+                    sendto(connfd, resp_buf,
+                        sizeof(resp_buf), 0, (struct sockaddr *)&cliaddr,
+                        sizeof(cliaddr));
+                    free(resp_buf);
+                    break;
                 } else {
-                    printf("[X] No matching method.\n");
+                    printf("[X] Value null.\n");
                     sendto(connfd, not_found_response,
                         sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
+                    break;
                 }
-                close(sock);
-                mesg[n] = 0;
-                clear_request(&request);
-                printf("[-] Thread exiting.\n");
-                exit(EXIT_SUCCESS);
+
+            } else if (strncmp(request.method, "POST", 4) == 0) {
+                printf("[-] Method is POST.\n");
+                unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
+                if (ol_jar(db, request.key, to_insert, strlen((char*)to_insert)) > 0) {
+                    printf("[X] Could not insert\n");
+                    sendto(connfd, not_found_response,
+                        sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
+                        sizeof(cliaddr));
+                    break;
+                } else {
+                    printf("[ ] Inserted new value for key %s.\n", request.key);
+                    printf("[-] Records: %i\n", db->rcrd_cnt);
+                    sendto(connfd, post_response,
+                        sizeof(post_response), 0, (struct sockaddr *)&cliaddr,
+                        sizeof(cliaddr));
+                    break;
+                }
+            } else {
+                printf("[X] No matching method.\n");
+                sendto(connfd, not_found_response,
+                    sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
+                    sizeof(cliaddr));
+                break;
             }
         }
     }
