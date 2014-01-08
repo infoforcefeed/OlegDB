@@ -5,8 +5,7 @@ const char get_response[] = "HTTP/1.1 200 OK\n"
                           "Content-Type: application/json\n"
                           "Content-Length: %zu\n"
                           "Connection: close\n"
-                          "\n"
-                          "{%s}\n";
+                          "\n%s";
 
 const char post_response[] = "HTTP/1.1 200 OK\n"
                           "Content-Type: text/plain\n"
@@ -126,12 +125,17 @@ void ol_server(ol_database *db, int port) {
             int n;
             http request;
             char *resp_buf;
+            clear_request(&request);
             n = recvfrom(connfd, mesg, SOCK_RECV_MAX, 0,
                 (struct sockaddr *)&cliaddr, &clilen);
 
             if (build_request(mesg, n, &request) > 0) {
                 printf("[X] Error: Could not build request.\n");
-                continue;
+                sendto(connfd, not_found_response,
+                    sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
+                    sizeof(cliaddr));
+                mesg[0] = '\0';
+                break;
             }
 
             printf("\n[-] ------\n");
@@ -145,10 +149,14 @@ void ol_server(ol_database *db, int port) {
                 printf("[-] Looked for key.\n");
 
                 if (data != NULL) {
-                    size_t content_size = sizeof(get_response) + sizeof(data);
+                    size_t content_size = strlen(get_response) + strlen((char*)data);
                     resp_buf = malloc(content_size);
 
-                    sprintf(resp_buf, get_response, content_size, data);
+                    snprintf(resp_buf, content_size, get_response, content_size, data);
+                    printf("[-] Strlen of response: %zu Allocated size: %zu\n",
+                        strlen(resp_buf), content_size);
+                    printf("[-] Strlen of get_response: %zu strlen of data: %zu\n",
+                        strlen(get_response), strlen((char*)data));
                     sendto(connfd, resp_buf,
                         sizeof(resp_buf), 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
@@ -164,7 +172,19 @@ void ol_server(ol_database *db, int port) {
 
             } else if (strncmp(request.method, "POST", 4) == 0) {
                 printf("[-] Method is POST.\n");
-                unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
+                unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
                 if (ol_jar(db, request.key, to_insert, strlen((char*)to_insert)) > 0) {
                     printf("[X] Could not insert\n");
                     sendto(connfd, not_found_response,
