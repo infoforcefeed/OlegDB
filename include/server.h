@@ -25,10 +25,13 @@
 #define MAX_CLIENTS 100
 #define LOCAL_PORT 8080
 #define SOCK_RECV_MAX 1000
+#define CLENGTH_LENGTH 16 // the length of "Content-Length: " in chars
 
 typedef struct http http;
 struct http {
     char key[KEY_SIZE];
+    unsigned char *data;
+    size_t data_len;
     char method[32];
     size_t method_len;
     char url[256];

@@ -51,6 +51,8 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     int i;
     int method_len = 0;
     int url_len = 0;
+    int data_len = 0;
+
     int total_read = 0;
 
     // Seek the request until a space char and that's our method
@@ -86,15 +88,41 @@ int build_request(char *req_buf, size_t req_len, http *request) {
         return 2;
     }
     request->url_len = url_len;
-    strncpy(request->url, req_buf + method_len + 1, url_len);
+    strncpy(request->url, req_buf + total_read, url_len);
+
+    //printf("[-] Rest of the header: %s\n", 
 
     char *split_key = strtok(request->url, "/");
-
     if (split_key == NULL) {
         printf("[X] Error: Could not parse Key.\n");
         return 3;
     }
     strncpy(request->key, split_key, strlen(split_key));
+
+    char *clength_loc = strstr(req_buf, "Content-Len");
+    if (clength_loc == NULL) {
+        request->data_len = 0;
+        request->data = NULL;
+    } else {
+        printf("[-] Man somebody sent us data with a length.\n");
+        // Read in data from the content length location until
+        int j;
+        clength_loc += CLENGTH_LENGTH;
+        for (j = 0; j < SOCK_RECV_MAX; j++ ) {
+            if (clength_loc[j] != ' '  &&
+                clength_loc[j] != '\r' &&
+                clength_loc[j] != '\n') {
+                data_len++;
+                total_read++;
+            } else {
+                break;
+            }
+        }
+        char *temp_buf = malloc(data_len);
+        strncpy(temp_buf, clength_loc, data_len);
+        request->data_len = (size_t)atoi(temp_buf);
+        free(temp_buf);
+    }
 
     return 0;
 }
@@ -182,7 +210,7 @@ void ol_server(ol_database *db, int port) {
 
             } else if (strncmp(request->method, "POST", 4) == 0) {
                 printf("[-] Method is POST.\n");
-                if (ol_jar(db, request->key, request->data, strlen((char*)to_insert)) > 0) {
+                if (ol_jar(db, request->key, request->data, request->data_len) > 0) {
                     printf("[X] Could not insert\n");
                     sendto(connfd, not_found_response,
                         sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
