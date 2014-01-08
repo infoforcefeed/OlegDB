@@ -82,69 +82,43 @@ int64_t _ol_gen_hash(char *key) {
     return hash;
 }
 
-int _ol_gen_index(int64_t hash) {
-    int index;
-    index = hash % (HASH_MALLOC/sizeof(ol_hash));
-    return index;
-}
+int _ol_get_index(ol_database *db, int64_t hash, char *key) {
+    int index = hash % (HASH_MALLOC/sizeof(ol_hash));
 
-int _ol_get_empty_slot_for_hash(ol_database *db, int64_t hash, char *key) {
-    int index;
-    index = _ol_gen_index(hash);
-    if(db->hashes[index]->key != NULL) {
-        int i;
-        int quadratic = 1;
-        for (i = 0; i < db->rcrd_cnt; i++) { // 8========D
-            int tmp_index = _ol_gen_index((int64_t)(index + quadratic));
-            if (db->hashes[tmp_index] == NULL) {
-                return tmp_index;
-            }
-            quadratic += pow((double)i, (double)2);
-        }
-    }
-    return index;
-}
-
-
-ol_hash *_ol_get_hash(ol_database *db, char *key) {
-    int64_t hash = _ol_gen_hash(key);
-    printf("[-] Hash: 0x%" PRIX64 "\n", hash);
-    int index = _ol_gen_index(hash);
-
-    printf("[-] Index: %i.\n", index);
     if(db->hashes[index]->key != NULL) {
         if (strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
             printf("[-] Found existing key.\n");
-            return db->hashes[index];
+            return index;
         } else {
-            printf("[-] Found collision.\n");
             int i;
             int quadratic = 1;
-            for (i = 0; i < db->rcrd_cnt; i++) { // 8======D
-                int tmp_index = (index + quadratic) % (HASH_MALLOC/sizeof(ol_hash));
+            // Loop through until we reach the max record count
+            for (i = 0; i < (HASH_MALLOC/sizeof(hash)); i++) { // 8========D
+                int tmp_index = (index + quadratic) % (int)(HASH_MALLOC/sizeof(hash));
                 if (db->hashes[tmp_index] == NULL) {
-                    // Found an empty db spot. No hash.
-                    return NULL;
+                    return tmp_index;
                 } else if (strncmp(db->hashes[tmp_index]->key, key, KEY_SIZE) == 0) {
-                    printf("[-] Found our hash.\n");
-                    return db->hashes[tmp_index];
+                    // We need to check if the key in this slot is the same as ours.
+                    // If it is we can nuke them because we're doing an UPDATE
+                    return tmp_index;
                 }
-
+                // Still looping, still not finding an empty slot or one
+                // with our key.
                 quadratic += pow((double)i, (double)2);
             }
-
-            // Error here, we are out of space or something fucked up
-            return NULL;
+            // Blow up everything because we didn't find an empty slot
+            return -1;
         }
     }
-    return NULL;
+    return index;
 }
 
 ol_val ol_unjar(ol_database *db, char *key){
-    ol_hash *hash = _ol_get_hash(db, key);
+    int64_t hash = _ol_gen_hash(key);
+    int index = _ol_get_index(db, hash, key);
 
-    if (hash != NULL) {
-        return hash->data_ptr;
+    if (index >= 0) {
+        return db->hashes[index]->data_ptr;
     }
 
     return NULL;
@@ -152,7 +126,10 @@ ol_val ol_unjar(ol_database *db, char *key){
 
 int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
     // Check to see if we have an existing entry with that key
-    ol_hash *old_hash = _ol_get_hash(db, key);
+    int64_t hash = _ol_gen_hash(key);
+    int index = _ol_get_index(db, hash, key);
+    ol_hash *old_hash = db->hashes[index];
+
     if (old_hash != NULL) {
         unsigned char *data = realloc(old_hash->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data) {
@@ -183,18 +160,23 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
     new_hash->data_ptr = data;
 
     // Insert it into our db struct
-    int64_t hash = _ol_gen_hash(key);
-    int index = _ol_get_empty_slot_for_hash(db, hash, key);
-    //printf("[-] Index: %i\n", index);
-
     db->hashes[index] = new_hash;
     db->rcrd_cnt += 1;
+
     return 0;
 }
 
 int ol_scoop(ol_database *db, char *key) {
     // you know... like scoop some data from the jar and eat it? All gone.
-    ol_hash *old_hash = _ol_get_hash(db, key);
+    int64_t hash = _ol_gen_hash(key);
+    int index = _ol_get_index(db, hash, key);
+
+    if (index < 0) {
+        return 1;
+    }
+
+    ol_hash *old_hash = db->hashes[index];
+
     if (old_hash != NULL) {
         ol_val free_me = old_hash->data_ptr;
 
@@ -210,7 +192,7 @@ int ol_scoop(ol_database *db, char *key) {
 
         return 0;
     }
-    return 1;
+    return 2;
 }
 
 int ol_uptime(ol_database *db) {
