@@ -11,6 +11,7 @@
 //   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
+#include <math.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -101,12 +102,12 @@ ol_hash *_ol_get_hash(ol_database *db, char *key) {
                     printf("[-] Found our hash.\n");
                     return db->hashes[index + quadratic];
                 } else {
-                    quadratic += (i^2);
+                    quadratic += pow((double)i, (double)2);
                 }
             }
 
             // Error here, we are out of space or something fucked up
-            return -1;
+            return NULL;
         }
     }
     return NULL;
