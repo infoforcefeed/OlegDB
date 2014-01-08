@@ -23,7 +23,7 @@
 #include "oleg.h"
 
 #define MAX_CLIENTS 100
-#define LOCAL_PORT 8080 
+#define LOCAL_PORT 8080
 #define SOCK_RECV_MAX 1000
 
 typedef struct http http;
@@ -36,4 +36,4 @@ struct http {
     char version[8];
 };
 
-void ol_server(ol_database_obj db, int port);
+void ol_server(ol_database *db, int port);
