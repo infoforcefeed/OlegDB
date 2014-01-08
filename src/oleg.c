@@ -60,6 +60,12 @@ int ol_close(ol_database *database){
     return 0;
 }
 
+int _ol_gen_index(int64_t hash) {
+    int index;
+    index = hash % (HASH_MALLOC/sizeof(ol_hash));
+    return index;
+}
+
 int64_t _ol_gen_hash(char *key) {
     const int64_t fnv_offset_bias = 0xcbf29ce484222325;
     const int64_t fnv_prime = 0x100000001b3;
@@ -85,7 +91,7 @@ int64_t _ol_gen_hash(char *key) {
 ol_hash *_ol_get_hash(ol_database *db, char *key) {
     int64_t hash = _ol_gen_hash(key);
     printf("[-] Hash: 0x%" PRIX64 "\n", hash);
-    int index = hash % (HASH_MALLOC/sizeof(ol_hash));
+    int index = _ol_gen_index(hash);
 
     printf("[-] Index: %i.\n", index);
     if(db->hashes[index]->key != NULL) {
@@ -160,7 +166,7 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
 
     // Insert it into our db struct
     int64_t hash = _ol_gen_hash(key);
-    int index = hash % (HASH_MALLOC/sizeof(ol_hash));
+    int index = _ol_gen_index(hash);
     //printf("[-] Index: %i\n", index);
 
     db->hashes[index] = new_hash;
