@@ -51,11 +51,13 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     int i;
     int method_len = 0;
     int url_len = 0;
+    int total_read = 0;
 
     // Seek the request until a space char and that's our method
     for (i = 0; i < SOCK_RECV_MAX; i++ ) {
         if (req_buf[i] != ' ' && req_buf[i] != '\n') {
             method_len++;
+            total_read++;
         } else {
             break;
         }
@@ -68,9 +70,13 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     request->method_len = method_len; // The length of the method for offsets
     strncpy(request->method, req_buf, method_len);
 
-    for (i = (method_len+1); i < SOCK_RECV_MAX; i++ ) {
+    // Skip the space
+    total_read++;
+
+    for (i = (total_read); i < SOCK_RECV_MAX; i++ ) {
         if (req_buf[i] != ' ' && req_buf[i] != '\r' && req_buf[i] != '\n') {
             url_len++;
+            total_read++;
         } else {
             break;
         }
@@ -176,8 +182,7 @@ void ol_server(ol_database *db, int port) {
 
             } else if (strncmp(request->method, "POST", 4) == 0) {
                 printf("[-] Method is POST.\n");
-                unsigned char to_insert[] = "compile a shit";
-                if (ol_jar(db, request->key, to_insert, strlen((char*)to_insert)) > 0) {
+                if (ol_jar(db, request->key, request->data, strlen((char*)to_insert)) > 0) {
                     printf("[X] Could not insert\n");
                     sendto(connfd, not_found_response,
                         sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,

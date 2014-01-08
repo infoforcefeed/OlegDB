@@ -105,6 +105,7 @@ ol_hash *_ol_get_hash(ol_database *db, char *key) {
             for (i = 0; i < db->rcrd_cnt; i++) {
                 int tmp_index = (index + quadratic) % (HASH_MALLOC/sizeof(ol_hash));
                 if (db->hashes[tmp_index] == NULL) {
+                    printf("[-] New index: %i.\n", tmp_index);
                     // Found an empty db spot. No hash.
                     return NULL;
                 } else if (strncmp(db->hashes[tmp_index]->key, key, KEY_SIZE) == 0) {
