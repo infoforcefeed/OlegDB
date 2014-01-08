@@ -149,16 +149,18 @@ void ol_server(ol_database *db, int port) {
                 printf("[-] Looked for key.\n");
 
                 if (data != NULL) {
+                    // Fuck I don't know about the 2 man whatever
                     size_t content_size = strlen(get_response) + strlen((char*)data);
                     resp_buf = malloc(content_size);
 
-                    snprintf(resp_buf, content_size, get_response, content_size, data);
+                    sprintf(resp_buf, get_response, strlen((char*)data), data);
+                    printf("[-] Response: \n%s", resp_buf);
                     printf("[-] Strlen of response: %zu Allocated size: %zu\n",
                         strlen(resp_buf), content_size);
                     printf("[-] Strlen of get_response: %zu strlen of data: %zu\n",
                         strlen(get_response), strlen((char*)data));
                     sendto(connfd, resp_buf,
-                        sizeof(resp_buf), 0, (struct sockaddr *)&cliaddr,
+                        strlen(resp_buf), 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
                     free(resp_buf);
                     break;
