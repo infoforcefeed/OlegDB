@@ -19,6 +19,7 @@
 
 /* I'm sorry Vishnu */
 ol_database *db;
+
 void clean_up(int signum) {
     ol_close(db);
     printf("[-] Exiting cleanly.\n");
@@ -45,9 +46,10 @@ int main(int argc, char *argv[]) {
     } else {
         printf("Starting olegdb\n");
         fflush(stdout);
-        // Make the database
+
         signal(SIGTERM, clean_up);
         signal(SIGINT, clean_up);
+
         db = ol_open(DB_PATH,
                 OL_MANUFACTURE_DIR | OL_CONSUME_DIR | OL_SLAUGHTER_DIR);
         ol_server(db, LOCAL_PORT);

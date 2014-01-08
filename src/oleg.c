@@ -93,7 +93,20 @@ ol_hash *_ol_get_hash(ol_database *db, char *key) {
             return db->hashes[index];
         } else {
             printf("[-] Found collision.\n");
-            return db->hashes[index];
+            int i;
+            int quadratic = 1;
+            for (i = 0; i < db->rcrd_cnt; i++) {
+                index += quadratic;
+                if (strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
+                    printf("[-] Found our hash.\n");
+                    return db->hashes[index + quadratic];
+                } else {
+                    quadratic += (i^2);
+                }
+            }
+
+            // Error here, we are out of space or something fucked up
+            return -1;
         }
     }
     return NULL;
