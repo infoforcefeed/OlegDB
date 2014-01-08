@@ -1,18 +1,16 @@
 Project Oleg
 ============
 
+Alternate title: "How far can we push a mayonnaise metaphor?"
 
 ````
-$ pgrep olg | xargs kill
+$ pgrep olegdb | xargs kill
 olegdb: No.
 ````
 
-This is a shitty database written in C. Probably.
-
-Whats the point of this project?
-================================
-
-Be terrible.
+OlegDB is a single-threaded, non-concurrent, transactionless NoSQL database
+written by bitter SQL-lovers in a futile attempt to hop on the schemaless trend
+before everyone realizes it was a bad move.
 
 Dependencies
 ============
@@ -24,10 +22,16 @@ Installation
 
 ```bash
 make
+./olegdb
+```
+
+To run tests:
+
+```bash
 ./olegdb test
 ```
 
-curltosudo install script coming soon.
+curl2sudo® install script coming soon.
 
 Roadmap
 =======

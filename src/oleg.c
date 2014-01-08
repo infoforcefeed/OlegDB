@@ -52,8 +52,8 @@ int ol_close(ol_database *database){
     free(database->hashes);
     free(database);
     if (freed != rcrd_cnt) {
-        printf("Error: Couldn't free all records.\n");
-        printf("Records freed: %i\n", freed);
+        printf("[X] Error: Couldn't free all records.\n");
+        printf("[X] Records freed: %i\n", freed);
         return 1;
     }
     return 0;
@@ -87,10 +87,14 @@ ol_hash *_ol_get_hash(ol_database *db, char *key) {
     int index = hash % (HASH_MALLOC/sizeof(ol_hash));
 
     printf("[-] Index: %i.\n", index);
-    if(db->hashes[index]->key != NULL &&
-       strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
-        printf("[-] Found existing key.\n");
-        return db->hashes[index];
+    if(db->hashes[index]->key != NULL) {
+        if (strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
+            printf("[-] Found existing key.\n");
+            return db->hashes[index];
+        } else {
+            printf("[-] Found collision.\n");
+            return db->hashes[index];
+        }
     }
     return NULL;
 }
@@ -116,7 +120,6 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
 
         old_hash->data_size = vsize;
         old_hash->data_ptr = data;
-        printf("[-] Found old hash key.\n");
         return 0;
     }
 
@@ -141,6 +144,7 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
     // Insert it into our db struct
     int64_t hash = _ol_gen_hash(key);
     int index = hash % (HASH_MALLOC/sizeof(ol_hash));
+    //printf("[-] Index: %i\n", index);
 
     db->hashes[index] = new_hash;
     db->rcrd_cnt += 1;

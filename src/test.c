@@ -36,8 +36,14 @@ int test_jar() {
 
         int insert_result = ol_jar(db, key, to_insert, strlen((char*)to_insert));
 
-        if (insert_result > 0 || db->rcrd_cnt != i+1) {
+        if (insert_result > 0) {
             printf("Error: Could not insert. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 2;
+        }
+
+        if (db->rcrd_cnt != i+1) {
+            printf("Error: Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
             ol_close(db);
             return 2;
         }
