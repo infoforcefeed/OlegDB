@@ -29,7 +29,7 @@ int test_jar() {
     int max_records = 256;
     unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
     for (i = 0; i < max_records; i++) {
-        char key[16] = "";
+        char key[16] = "testkey";
         char append[5] = "";
 
         sprintf(append, "%i", i);
