@@ -28,7 +28,7 @@ int test_jar() {
     int i;
     unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
     for (i = 0; i < 256; i++) {
-        char key[16] = "hashy";
+        char key[16] = "";
         char append[5] = "";
 
         sprintf(append, "%i", i);
@@ -58,6 +58,7 @@ int test_jar() {
 }
 
 int test_unjar() {
+    // TODO: This test should actually make sure all of the data is consistent
     ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 

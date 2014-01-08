@@ -43,7 +43,7 @@ int ol_close(ol_database *database){
     for (i = 0; i < iterations; i++) {
         if (database->hashes[i] != NULL) {
             ol_val free_me = database->hashes[i]->data_ptr;
-            //printf("Freeing data for %s.\n", database->hashes[i]->key);
+            printf("%s is free now.\n", database->hashes[i]->key);
             free(free_me);
             free(database->hashes[i]);
             freed++;
@@ -89,26 +89,30 @@ int _ol_get_index(ol_database *db, int64_t hash, char *key) {
         if (strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
             printf("[-] Found existing key.\n");
             return index;
-        } else {
-            int i;
-            int quadratic = 1;
-            // Loop through until we reach the max record count
-            for (i = 0; i < (HASH_MALLOC/sizeof(hash)); i++) { // 8========D
-                int tmp_index = (index + quadratic) % (int)(HASH_MALLOC/sizeof(hash));
-                if (db->hashes[tmp_index] == NULL) {
-                    return tmp_index;
-                } else if (strncmp(db->hashes[tmp_index]->key, key, KEY_SIZE) == 0) {
-                    // We need to check if the key in this slot is the same as ours.
-                    // If it is we can nuke them because we're doing an UPDATE
-                    return tmp_index;
-                }
-                // Still looping, still not finding an empty slot or one
-                // with our key.
-                quadratic += pow((double)i, (double)2);
-            }
-            // Blow up everything because we didn't find an empty slot
-            return -1;
         }
+
+        //printf("[-] Found collision.\n");
+        int i;
+        int quadratic = 1;
+        // Loop through until we reach the max record count
+        for (i = 0; i < (HASH_MALLOC/sizeof(hash)); i++) { // 8========D
+            //printf("[-] Quad: %i\n", quadratic);
+            int tmp_index = (index + quadratic) % (int)(HASH_MALLOC/sizeof(hash));
+            if (db->hashes[tmp_index] == NULL) {
+                //printf("[-] Found empty key.\n");
+                return tmp_index;
+            } else if (strncmp(db->hashes[tmp_index]->key, key, KEY_SIZE) == 0) {
+                // We need to check if the key in this slot is the same as ours.
+                // If it is we can nuke them because we're doing an UPDATE
+                printf("[-] Found existing key.\n");
+                return tmp_index;
+            }
+            // Still looping, still not finding an empty slot or one
+            // with our key.
+            quadratic += 1;//pow((double)2, (double)i);
+        }
+        // Blow up everything because we didn't find an empty slot
+        return -1;
     }
     return index;
 }
@@ -131,6 +135,7 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
     ol_hash *old_hash = db->hashes[index];
 
     if (old_hash != NULL) {
+        printf("[-] realloc\n");
         unsigned char *data = realloc(old_hash->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data) {
             return 4;
@@ -186,8 +191,6 @@ int ol_scoop(ol_database *db, char *key) {
         old_hash = NULL;
         db->rcrd_cnt -= 1;
 
-        int64_t hash = _ol_gen_hash(key);
-        int index = hash % (HASH_MALLOC/sizeof(ol_hash));
         db->hashes[index] = NULL;
 
         return 0;
