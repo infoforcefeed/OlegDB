@@ -18,6 +18,7 @@
 #include "server.h"
 
 /* I'm sorry Vishnu */
+//OMG WHY
 ol_database *db;
 
 void clean_up(int signum) {

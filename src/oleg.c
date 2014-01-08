@@ -40,7 +40,9 @@ int ol_close(ol_database *database){
     int i;
     int rcrd_cnt = database->rcrd_cnt;
     int freed = 0;
-    for (i = 0; i < iterations; i++) {
+    printf("[-] Freeing %d records.\n", rcrd_cnt);
+    printf("[-] Iterations: %d.\n", rcrd_cnt);
+    for (i = 0; i <= iterations; i++) {
         if (database->hashes[i] != NULL) {
             ol_val free_me = database->hashes[i]->data_ptr;
             printf("%s is free now.\n", database->hashes[i]->key);
@@ -83,6 +85,7 @@ int64_t _ol_gen_hash(char *key) {
 }
 
 int _ol_get_index(ol_database *db, int64_t hash, char *key) {
+    /* I'm sorry, mom */
     int index = hash % (HASH_MALLOC/sizeof(ol_hash));
 
     if(db->hashes[index]->key != NULL) {
@@ -189,9 +192,11 @@ int ol_scoop(ol_database *db, char *key) {
         free(old_hash);
 
         old_hash = NULL;
-        db->rcrd_cnt -= 1;
 
         db->hashes[index] = NULL;
+
+        // Decrement our record count
+        db->rcrd_cnt -= 1;
 
         return 0;
     }

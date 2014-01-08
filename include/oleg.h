@@ -46,7 +46,6 @@ typedef struct ol_database {
     time_t created;     // For uptime.
     // huh...
     ol_hash **hashes;   // All hashes in the DB
-    ol_val **values;    // All values in the DB
 } ol_database;
 
 typedef struct ol_meta ol_meta;
