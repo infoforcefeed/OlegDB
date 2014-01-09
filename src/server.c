@@ -56,7 +56,7 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     int total_read = 0;
 
     // Seek the request until a space char and that's our method
-    for (i = 0; i < SOCK_RECV_MAX; i++ ) {
+    for (i = 0; i < SOCK_RECV_MAX; i++ ) { // 8=======D
         if (req_buf[i] != ' ' && req_buf[i] != '\n') {
             method_len++;
             total_read++;
@@ -163,7 +163,7 @@ void ol_server(ol_database *db, int port) {
 
         http *request = calloc(1, sizeof(http));
 
-        while (1) {
+        while (1) { // 8=========D
             char *resp_buf;
 
             int n;

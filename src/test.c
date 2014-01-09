@@ -26,9 +26,10 @@ int test_jar() {
     printf("Opened DB: %p.\n", db);
 
     int i;
+    int max_records = 256;
     unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
-    for (i = 0; i < 256; i++) {
-        char key[16] = "hashy";
+    for (i = 0; i < max_records; i++) { // 8======D
+        char key[16] = "testkey";
         char append[5] = "";
 
         sprintf(append, "%i", i);
@@ -49,6 +50,7 @@ int test_jar() {
         }
     }
     printf("Records inserted: %i.\n", db->rcrd_cnt);
+    printf("Saw %d collisions.\n", db->key_collisions);
 
     if (ol_close(db) != 0) {
         printf("Couldn't free all memory.\n");
@@ -58,6 +60,7 @@ int test_jar() {
 }
 
 int test_unjar() {
+    // TODO: This test should actually make sure all of the data is consistent
     ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
@@ -143,7 +146,7 @@ int test_update() {
     ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
-    char key[] = "muh_hash_thoalksdjflkdjf";
+    char key[] = "muh_hash_thoalk";
     unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
     int inserted = ol_jar(db, key, val, strlen((char*)val));
 
