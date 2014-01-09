@@ -33,10 +33,11 @@ typedef enum {
 
 /* Data that the DB stores */
 typedef unsigned char *ol_val;
-typedef struct hash {
-    char key[KEY_SIZE]; // The key used to reference the data
-    ol_val data_ptr;
-    size_t data_size;
+typedef struct bucket {
+    char      key[KEY_SIZE]; // The key used to reference the data
+    ol_val    data_ptr;
+    size_t    data_size;
+    __int64_t hash;
 } ol_hash;
 
 typedef struct ol_database {
@@ -46,7 +47,7 @@ typedef struct ol_database {
     int     key_collisions;          // How many times have our keys collided.
     time_t  created;                 // For uptime.
     int     rehashes;                // How many times have we rehashed
-    size_t  cur_hash_table_size;     // Gotta keep track of that table size
+    size_t  cur_ht_size;             // Gotta keep track of that table size
     ol_hash **tmp_hashes;            // For rehashing
     ol_hash **hashes;                // All hashes in the DB
 } ol_database;
