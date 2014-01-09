@@ -24,6 +24,9 @@ ol_database *ol_open(char *path, ol_filemode filemode){
 
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = calloc(1, to_alloc);
+    new_db->cur_hash_table_size = to_alloc;
+    new_db->tmp_hashes = NULL; // Make sure it's NULL on start
+    new_db->rehashes = 0;
 
     time_t created;
     time(&created);
@@ -86,23 +89,24 @@ int64_t _ol_gen_hash(char *key) {
     return hash;
 }
 
-int _ol_calculate_index(int64_t hash) {
+int _ol_calculate_index(ol_database *db, int64_t hash) {
     int index;
-    index = hash % (HASH_MALLOC/sizeof(ol_hash));
+    index = hash % (db->cur_hash_table_size/sizeof(ol_hash));
     return index;
 }
 
 int _ol_get_index_insert(ol_database *db, int64_t hash, char *key) {
-    int index = _ol_calculate_index(hash);
+    int index = _ol_calculate_index(db, hash);
 
     if(db->hashes[index]->key != NULL) {
         db->key_collisions++;
         int i;
         int quadratic = 1;
-        for (i = 0; i < (HASH_MALLOC/sizeof(hash)); i++){ // 8===============D
-            int tmp_index = _ol_calculate_index((int64_t)(index + quadratic));
-            if (db->hashes[tmp_index] == NULL) {
-                return tmp_index;
+        int hash_table_size = (db->cur_hash_table_size/sizeof(hash));
+        for (i = 0; i < hash_table_size; i++){ // 8===============D
+            int tmp_idx = _ol_calculate_index(db, (int64_t)(index + quadratic));
+            if (db->hashes[tmp_idx] == NULL) {
+                return tmp_idx;
             }
             quadratic++;
         }
@@ -112,7 +116,7 @@ int _ol_get_index_insert(ol_database *db, int64_t hash, char *key) {
 }
 
 int _ol_get_index_search(ol_database *db, int64_t hash, char *key) {
-    int index = _ol_calculate_index(hash);
+    int index = _ol_calculate_index(db, hash);
 
     if(db->hashes[index]->key != NULL) {
         if (strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
@@ -121,8 +125,8 @@ int _ol_get_index_search(ol_database *db, int64_t hash, char *key) {
             int i;
             int quadratic = 1;
             for (i = 0; i < (HASH_MALLOC/sizeof(hash)); i++) { // 8==========D
-                int tmp_index = _ol_calculate_index((int64_t)(index + quadratic));
-                if (db->hashes[tmp_index]->key != NULL) {
+                int tmp_idx = _ol_calculate_index(db, (int64_t)(index + quadratic));
+                if (db->hashes[tmp_idx]->key != NULL) {
                     if (strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
                         return index;
                     }
@@ -134,7 +138,14 @@ int _ol_get_index_search(ol_database *db, int64_t hash, char *key) {
     return -1;
 }
 
-ol_val ol_unjar(ol_database *db, char *key){
+int _ol_grow_and_rehash_db(ol_database *db) {
+    size_t to_alloc = db->cur_hash_table_size * 2;
+    printf("[-] Growing DB to %zu bytes\n", to_alloc);
+    db->tmp_hashes = calloc(1, to_alloc);
+
+}
+
+ol_val ol_unjar(ol_database *db, char *key) {
     int64_t hash = _ol_gen_hash(key);
     int index = _ol_get_index_search(db, hash, key);
 
@@ -163,6 +174,7 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
         old_hash->data_ptr = data;
         return 0;
     }
+    index = 0;
 
     // Looks like we don't have an old hash
     ol_hash *new_hash = malloc(sizeof(ol_hash));
@@ -183,6 +195,17 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
     new_hash->data_ptr = data;
 
     index = _ol_get_index_insert(db, hash, key);
+
+    // Do we need to rehash?
+    if (db->rcrd_cnt >= (db->cur_hash_table_size/sizeof(ol_hash))) {
+        int ret;
+        ret = _ol_grow_and_rehash_db(db);
+        if (ret > 0) {
+            printf("Error: Problem rehashing DB. Error code: %i\n", ret);
+            exit(1);
+        }
+    }
+
     // Insert it into our db struct
     db->hashes[index] = new_hash;
     db->rcrd_cnt += 1;
