@@ -43,12 +43,12 @@ typedef struct ol_database {
     char name[8];       // Name of the database
     char path[PATH_LENGTH];     // Path to the database directory
     int  rcrd_cnt;      // Number of records in the database. Eventually consistent.
+    int  key_collisions;
     time_t created;     // For uptime.
     // huh...
     ol_hash **hashes;   // All hashes in the DB
 } ol_database;
 
-typedef struct ol_meta ol_meta;
 typedef struct ol_meta {
     time_t uptime;
 } ol_meta;
