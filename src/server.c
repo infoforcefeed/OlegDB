@@ -104,10 +104,9 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     char *clength_loc = NULL;
     clength_loc = strstr(req_buf, "Content-Len");
 
-    if (clength_loc == NULL) {
-        request->data_len = 0;
-        request->data = NULL;
-    } else {
+    request->data_len = 0;
+    request->data = NULL;
+    if (clength_loc != NULL) {
         printf("[-] Man, somebody sent us data with a length.\n");
         int j;
         // Skip from the beginning of 'Content-Length: ' to the end:
