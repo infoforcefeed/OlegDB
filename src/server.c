@@ -16,26 +16,26 @@
 
 #include "server.h"
 
-const char get_response[] = "HTTP/1.1 200 OK\n"
-                          "Content-Type: application/json\n"
-                          "Content-Length: %zu\n"
-                          "Connection: close\n"
-                          "\n%s";
+const char get_response[] = "HTTP/1.1 200 OK\r\n"
+                          "Content-Type: application/json\r\n"
+                          "Content-Length: %zu\r\n"
+                          "Connection: close\r\n"
+                          "\r\n%s";
 
-const char post_response[] = "HTTP/1.1 200 OK\n"
-                          "Content-Type: text/plain\n"
-                          "Connection: close\n"
-                          "Content-Length: 7\n"
-                          "\n"
-                          "MUDADA\n";
+const char post_response[] = "HTTP/1.1 200 OK\r\n"
+                          "Content-Type: text/plain\r\n"
+                          "Connection: close\r\n"
+                          "Content-Length: 7\r\n"
+                          "\r\n"
+                          "MUDADA\r\n";
 
-const char not_found_response[] = "HTTP/1.1 404 Not Found\n"
-                          "Status: 404 Not Found\n"
-                          "Content-Length: 26\n"
-                          "Connection: close\n"
-                          "Content-Type: text/plain\n"
-                          "\n"
-                          "These aren't your ghosts.\n";
+const char not_found_response[] = "HTTP/1.1 404 Not Found\r\n"
+                          "Status: 404 Not Found\r\n"
+                          "Content-Length: 26\r\n"
+                          "Connection: close\r\n"
+                          "Content-Type: text/plain\r\n"
+                          "\r\n"
+                          "These aren't your ghosts.\r\n";
 
 static int ol_make_socket(void) {
     int listenfd;
@@ -90,8 +90,6 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     request->url_len = url_len;
     strncpy(request->url, req_buf + total_read, url_len);
 
-    //printf("[-] Rest of the header: %s\n", 
-
     char *split_key = strtok(request->url, "/");
     if (split_key == NULL) {
         printf("[X] Error: Could not parse Key.\n");
@@ -99,18 +97,18 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     }
     strncpy(request->key, split_key, strlen(split_key));
 
+    // We only read a substring here because it's fast, or something.
     char *clength_loc = strstr(req_buf, "Content-Len");
     if (clength_loc == NULL) {
         request->data_len = 0;
         request->data = NULL;
     } else {
-        printf("[-] Man somebody sent us data with a length.\n");
-        // Read in data from the content length location until
+        printf("[-] Man, somebody sent us data with a length.\n");
         int j;
+        // Skip from the beginning of 'Content-Length: ' to the end:
         clength_loc += CLENGTH_LENGTH;
         for (j = 0; j < SOCK_RECV_MAX; j++ ) {
-            if (clength_loc[j] != ' '  &&
-                clength_loc[j] != '\r' &&
+            if (clength_loc[j] != '\r' &&
                 clength_loc[j] != '\n') {
                 data_len++;
                 total_read++;
@@ -121,7 +119,21 @@ int build_request(char *req_buf, size_t req_len, http *request) {
         char *temp_buf = malloc(data_len);
         strncpy(temp_buf, clength_loc, data_len);
         request->data_len = (size_t)atoi(temp_buf);
+        printf("[-] Content-Length: %zu\n", request->data_len);
         free(temp_buf);
+
+        // Okay now we actually need to find the data. The end of the header
+        // should be specified by either \r\n\r\n or \n\n.
+        char *end_of_header = strstr(req_buf, "\r\n\r\n");
+        // TODO: Check for \n\n to be compliant with shitty clients. Punks.
+        if (end_of_header == NULL) {
+            printf("[-] Could not find end of header.\n");
+            return 4;
+        }
+        // Malloc a buffer with enough size to hold the data posted
+        request->data = malloc(request->data_len);
+        strncpy((char*)request->data, end_of_header + 4, request->data_len);
+        printf("[-] Data: %s\n", request->data);
     }
 
     return 0;
@@ -158,6 +170,7 @@ void ol_server(ol_database *db, int port) {
         clilen = sizeof(cliaddr);
         connfd = accept(sock, (struct sockaddr *)&cliaddr, &clilen);
 
+        printf("\n[-] ------\n");
         printf("[-] Records: %i\n", db->rcrd_cnt);
         printf("[-] DB: %p\n", db);
 
@@ -179,7 +192,6 @@ void ol_server(ol_database *db, int port) {
                 break;
             }
 
-            printf("\n[-] ------\n");
             printf("[-] Method: %s\n", request->method);
             printf("[-] URL: %s\n", request->url);
             printf("[-] Key: %s\n", request->key);
@@ -210,6 +222,12 @@ void ol_server(ol_database *db, int port) {
 
             } else if (strncmp(request->method, "POST", 4) == 0) {
                 printf("[-] Method is POST.\n");
+                printf("[-] xXx - TODO - xXx\n");
+                sendto(connfd, not_found_response,
+                    sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
+                    sizeof(cliaddr));
+                break;
+                /*
                 if (ol_jar(db, request->key, request->data, request->data_len) > 0) {
                     printf("[X] Could not insert\n");
                     sendto(connfd, not_found_response,
@@ -224,6 +242,7 @@ void ol_server(ol_database *db, int port) {
                         sizeof(cliaddr));
                     break;
                 }
+                */
             } else {
                 printf("[X] No matching method.\n");
                 sendto(connfd, not_found_response,

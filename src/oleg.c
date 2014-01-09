@@ -46,7 +46,7 @@ int ol_close(ol_database *database){
     for (i = 0; i <= iterations; i++) { // 8=======D
         if (database->hashes[i] != NULL) {
             ol_val free_me = database->hashes[i]->data_ptr;
-            printf("%s is free now.\n", database->hashes[i]->key);
+            //printf("%s is free now.\n", database->hashes[i]->key);
             free(free_me);
             free(database->hashes[i]);
             freed++;
