@@ -70,7 +70,10 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     request->method_len = method_len; // The length of the method for offsets
     strncpy(request->method, req_buf, method_len);
 
-    for (i = (method_len + 1); i < SOCK_RECV_MAX; i++ ) {
+    // Read from where the method ends. Add one to skip the space.
+    method_len++;
+    for (i = method_len; i < SOCK_RECV_MAX; i++ ) {
+        printf("[-] Char: %c\n", req_buf[i]);
         if (req_buf[i] != ' ' && req_buf[i] != '\r' && req_buf[i] != '\n') {
             url_len++;
         } else {
@@ -82,7 +85,7 @@ int build_request(char *req_buf, size_t req_len, http *request) {
         return 2;
     }
     request->url_len = url_len;
-    strncpy(request->url, req_buf + url_len, url_len);
+    strncpy(request->url, req_buf + method_len, url_len);
 
     char *split_key = strtok(request->url, "/");
     if (split_key == NULL) {
@@ -190,7 +193,6 @@ void ol_server(ol_database *db, int port) {
             printf("[-] Key: %s\n", request->key);
 
             if (strncmp(request->method, "GET", 3) == 0) {
-                printf("[-] Method is GET.\n");
                 ol_val data = ol_unjar(db, request->key);
                 printf("[-] Looked for key.\n");
 
@@ -214,7 +216,6 @@ void ol_server(ol_database *db, int port) {
                 }
 
             } else if (strncmp(request->method, "POST", 4) == 0) {
-                printf("[-] Method is POST.\n");
                 if (ol_jar(db, request->key, request->data, request->data_len) > 0) {
                     printf("[X] Could not insert\n");
                     sendto(connfd, not_found_response,
