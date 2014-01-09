@@ -27,7 +27,7 @@ const char post_response[] = "HTTP/1.1 200 OK\r\n"
                           "Connection: close\r\n"
                           "Content-Length: 7\r\n"
                           "\r\n"
-                          "MUDADA\r\n";
+                          "MUDADA\n";
 
 const char not_found_response[] = "HTTP/1.1 404 Not Found\r\n"
                           "Status: 404 Not Found\r\n"
@@ -35,7 +35,7 @@ const char not_found_response[] = "HTTP/1.1 404 Not Found\r\n"
                           "Connection: close\r\n"
                           "Content-Type: text/plain\r\n"
                           "\r\n"
-                          "These aren't your ghosts.\r\n";
+                          "These aren't your ghosts.\n";
 
 static int ol_make_socket(void) {
     int listenfd;
@@ -73,7 +73,6 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     // Read from where the method ends. Add one to skip the space.
     method_len++;
     for (i = method_len; i < SOCK_RECV_MAX; i++ ) {
-        printf("[-] Char: %c\n", req_buf[i]);
         if (req_buf[i] != ' ' && req_buf[i] != '\r' && req_buf[i] != '\n') {
             url_len++;
         } else {
