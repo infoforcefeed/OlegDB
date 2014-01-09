@@ -33,22 +33,25 @@ typedef enum {
 
 /* Data that the DB stores */
 typedef unsigned char *ol_val;
-typedef struct hash {
-    char key[KEY_SIZE]; // The key used to reference the data
-    ol_val data_ptr;
-    size_t data_size;
+typedef struct bucket {
+    char      key[KEY_SIZE]; // The key used to reference the data
+    ol_val    data_ptr;
+    size_t    data_size;
+    __int64_t hash;
 } ol_hash;
 
 typedef struct ol_database {
-    char name[8];       // Name of the database
-    char path[PATH_LENGTH];     // Path to the database directory
-    int  rcrd_cnt;      // Number of records in the database. Eventually consistent.
-    time_t created;     // For uptime.
-    // huh...
-    ol_hash **hashes;   // All hashes in the DB
+    char    name[8];                 // Name of the database
+    char    path[PATH_LENGTH];       // Path to the database directory
+    int     rcrd_cnt;                // Number of records in the database. Eventually consistent.
+    int     key_collisions;          // How many times have our keys collided.
+    time_t  created;                 // For uptime.
+    int     rehashes;                // How many times have we rehashed
+    size_t  cur_ht_size;             // Gotta keep track of that table size
+    ol_hash **tmp_hashes;            // For rehashing
+    ol_hash **hashes;                // All hashes in the DB
 } ol_database;
 
-typedef struct ol_meta ol_meta;
 typedef struct ol_meta {
     time_t uptime;
 } ol_meta;

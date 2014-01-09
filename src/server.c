@@ -16,26 +16,33 @@
 
 #include "server.h"
 
-const char get_response[] = "HTTP/1.1 200 OK\n"
-                          "Content-Type: application/json\n"
-                          "Content-Length: %zu\n"
-                          "Connection: close\n"
-                          "\n%s";
+const char get_response[] = "HTTP/1.1 200 OK\r\n"
+                          "Content-Type: application/json\r\n"
+                          "Content-Length: %zu\r\n"
+                          "Connection: close\r\n"
+                          "\r\n%s";
 
-const char post_response[] = "HTTP/1.1 200 OK\n"
-                          "Content-Type: text/plain\n"
-                          "Connection: close\n"
-                          "Content-Length: 7\n"
-                          "\n"
+const char post_response[] = "HTTP/1.1 200 OK\r\n"
+                          "Content-Type: text/plain\r\n"
+                          "Connection: close\r\n"
+                          "Content-Length: 7\r\n"
+                          "\r\n"
                           "MUDADA\n";
 
-const char not_found_response[] = "HTTP/1.1 404 Not Found\n"
-                          "Status: 404 Not Found\n"
-                          "Content-Length: 26\n"
-                          "Connection: close\n"
-                          "Content-Type: text/plain\n"
-                          "\n"
+const char not_found_response[] = "HTTP/1.1 404 Not Found\r\n"
+                          "Status: 404 Not Found\r\n"
+                          "Content-Length: 26\r\n"
+                          "Connection: close\r\n"
+                          "Content-Type: text/plain\r\n"
+                          "\r\n"
                           "These aren't your ghosts.\n";
+
+const char deleted_response[] = "HTTP/1.1 200 OK\r\n"
+                          "Content-Type: text/plain\r\n"
+                          "Content-Length: 23\r\n"
+                          "Connection: close\r\n"
+                          "\r\n"
+                          "That key is GONE, man.\n";
 
 static int ol_make_socket(void) {
     int listenfd;
@@ -51,11 +58,17 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     int i;
     int method_len = 0;
     int url_len = 0;
+    int data_len = 0;
+
 
     // Seek the request until a space char and that's our method
-    for (i = 0; i < SOCK_RECV_MAX; i++ ) {
-        if (req_buf[i] != ' ' && req_buf[i] != '\n') {
-            method_len++;
+    for (i = 0; i < SOCK_RECV_MAX; i++ ) { // 8=======D
+        if (req_buf[i] != ' ' && req_buf[i] != '\r' && req_buf[i] != '\n') {
+            // We're only going to copy the maximum, but keep reading.
+            if (method_len < METHOD_MAX) {
+                printf("[-] Method Char: %c\n", req_buf[i]);
+                method_len++;
+            }
         } else {
             break;
         }
@@ -68,9 +81,15 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     request->method_len = method_len; // The length of the method for offsets
     strncpy(request->method, req_buf, method_len);
 
-    for (i = (method_len+1); i < SOCK_RECV_MAX; i++ ) {
+    // Add one to i here to skip the space.
+    i += 1;
+    int method_actual_end = i;
+    for (; i < SOCK_RECV_MAX; i++ ) {
         if (req_buf[i] != ' ' && req_buf[i] != '\r' && req_buf[i] != '\n') {
-            url_len++;
+            if (url_len < URL_MAX) {
+                printf("[-] URL Char: %c\n", req_buf[i]);
+                url_len++;
+            }
         } else {
             break;
         }
@@ -80,15 +99,54 @@ int build_request(char *req_buf, size_t req_len, http *request) {
         return 2;
     }
     request->url_len = url_len;
-    strncpy(request->url, req_buf + method_len + 1, url_len);
+    strncpy(request->url, req_buf + method_actual_end, url_len);
 
     char *split_key = strtok(request->url, "/");
-
     if (split_key == NULL) {
         printf("[X] Error: Could not parse Key.\n");
         return 3;
     }
-    strncpy(request->key, split_key, strlen(split_key));
+    size_t lesser_of_two_evils = KEY_SIZE < strlen(split_key) ? KEY_SIZE : strlen(split_key);
+    strncpy(request->key, split_key, lesser_of_two_evils);
+
+    // We only read a substring here because it's fast, or something.
+    char *clength_loc = NULL;
+    clength_loc = strstr(req_buf, "Content-Len");
+
+    request->data_len = 0;
+    request->data = NULL;
+    if (clength_loc != NULL) {
+        printf("[-] Man, somebody sent us data with a length.\n");
+        int j;
+        // Skip from the beginning of 'Content-Length: ' to the end:
+        clength_loc += CLENGTH_LENGTH;
+        for (j = 0; j < SOCK_RECV_MAX; j++ ) {
+            if (clength_loc[j] != '\r' &&
+                clength_loc[j] != '\n') {
+                data_len++;
+            } else {
+                break;
+            }
+        }
+        char *temp_buf = malloc(data_len);
+        strncpy(temp_buf, clength_loc, data_len);
+        request->data_len = (size_t)atoi(temp_buf);
+        printf("[-] Content-Length: %zu\n", request->data_len);
+        free(temp_buf);
+
+        // Okay now we actually need to find the data. The end of the header
+        // should be specified by either \r\n\r\n or \n\n.
+        char *end_of_header = strstr(req_buf, "\r\n\r\n");
+        // TODO: Check for \n\n to be compliant with shitty clients. Punks.
+        if (end_of_header == NULL) {
+            printf("[-] Could not find end of header.\n");
+            return 4;
+        }
+        // Malloc a buffer with enough size to hold the data posted
+        request->data = malloc(request->data_len);
+        strncpy((char*)request->data, end_of_header + 4, request->data_len);
+        printf("[-] Data: %s\n", request->data);
+    }
 
     return 0;
 }
@@ -124,12 +182,13 @@ void ol_server(ol_database *db, int port) {
         clilen = sizeof(cliaddr);
         connfd = accept(sock, (struct sockaddr *)&cliaddr, &clilen);
 
+        printf("\n[-] ------\n");
         printf("[-] Records: %i\n", db->rcrd_cnt);
         printf("[-] DB: %p\n", db);
 
         http *request = calloc(1, sizeof(http));
 
-        while (1) {
+        while (1) { // 8=========D
             char *resp_buf;
 
             int n;
@@ -145,13 +204,11 @@ void ol_server(ol_database *db, int port) {
                 break;
             }
 
-            printf("\n[-] ------\n");
             printf("[-] Method: %s\n", request->method);
             printf("[-] URL: %s\n", request->url);
             printf("[-] Key: %s\n", request->key);
 
             if (strncmp(request->method, "GET", 3) == 0) {
-                printf("[-] Method is GET.\n");
                 ol_val data = ol_unjar(db, request->key);
                 printf("[-] Looked for key.\n");
 
@@ -173,11 +230,8 @@ void ol_server(ol_database *db, int port) {
                         sizeof(cliaddr));
                     break;
                 }
-
             } else if (strncmp(request->method, "POST", 4) == 0) {
-                printf("[-] Method is POST.\n");
-                unsigned char to_insert[] = "compile a shit";
-                if (ol_jar(db, request->key, to_insert, strlen((char*)to_insert)) > 0) {
+                if (ol_jar(db, request->key, request->data, request->data_len) > 0) {
                     printf("[X] Could not insert\n");
                     sendto(connfd, not_found_response,
                         sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
@@ -188,6 +242,21 @@ void ol_server(ol_database *db, int port) {
                     printf("[-] Records: %i\n", db->rcrd_cnt);
                     sendto(connfd, post_response,
                         sizeof(post_response), 0, (struct sockaddr *)&cliaddr,
+                        sizeof(cliaddr));
+                    break;
+                }
+            } else if (strncmp(request->method, "DELETE", 6) == 0) {
+                if (ol_scoop(db, request->key) > 0) {
+                    printf("[X] Could not delete key.\n");
+                    sendto(connfd, not_found_response,
+                        sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
+                        sizeof(cliaddr));
+                    break;
+                } else {
+                    printf("[-] Found and deleted key.\n");
+                    printf("[-] Records: %i\n", db->rcrd_cnt);
+                    sendto(connfd, deleted_response,
+                        sizeof(deleted_response), 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
                     break;
                 }

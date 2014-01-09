@@ -26,9 +26,9 @@ int test_jar() {
     printf("Opened DB: %p.\n", db);
 
     int i;
-    int max_records = 256;
+    int max_records = 10000;
     unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
-    for (i = 0; i < max_records; i++) {
+    for (i = 0; i < max_records; i++) { // 8======D
         char key[16] = "testkey";
         char append[5] = "";
 
@@ -50,6 +50,7 @@ int test_jar() {
         }
     }
     printf("Records inserted: %i.\n", db->rcrd_cnt);
+    printf("Saw %d collisions.\n", db->key_collisions);
 
     if (ol_close(db) != 0) {
         printf("Couldn't free all memory.\n");
@@ -145,7 +146,7 @@ int test_update() {
     ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
-    char key[] = "muh_hash_thoalksdjflkdjf";
+    char key[] = "muh_hash_thoalk";
     unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
     int inserted = ol_jar(db, key, val, strlen((char*)val));
 
