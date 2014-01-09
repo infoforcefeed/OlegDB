@@ -153,7 +153,7 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
     // TODO check for errors (-1) from the search function
     ol_hash *old_hash = db->hashes[index];
 
-    if (old_hash != NULL) {
+    if (old_hash != NULL && index >= 0) {
         printf("[-] realloc\n");
         unsigned char *data = realloc(old_hash->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data) {
