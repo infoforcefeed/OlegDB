@@ -215,7 +215,6 @@ void ol_server(ol_database *db, int port) {
                         sizeof(cliaddr));
                     break;
                 }
-
             } else if (strncmp(request->method, "POST", 4) == 0) {
                 if (ol_jar(db, request->key, request->data, request->data_len) > 0) {
                     printf("[X] Could not insert\n");
