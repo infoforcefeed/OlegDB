@@ -127,7 +127,6 @@ int _ol_get_index_search(ol_database *db, int64_t hash, char *key) {
                         return index;
                     }
                 }
-                printf("[-] Quad: %i\n", quadratic)j
                 quadratic += pow((double)i, (double)2);
             }
         }
