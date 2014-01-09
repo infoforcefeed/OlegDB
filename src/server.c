@@ -37,7 +37,7 @@ const char not_found_response[] = "HTTP/1.1 404 Not Found\r\n"
                           "\r\n"
                           "These aren't your ghosts.\n";
 
-const char deleted_response[] = "HTTP/1.1 204 No Content\r\n"
+const char deleted_response[] = "HTTP/1.1 200 OK\r\n"
                           "Content-Type: text/plain\r\n"
                           "Content-Length: 23\r\n"
                           "Connection: close\r\n"
