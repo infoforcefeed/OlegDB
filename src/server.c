@@ -94,7 +94,9 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     strncpy(request->key, split_key, strlen(split_key));
 
     // We only read a substring here because it's fast, or something.
-    char *clength_loc = strstr(req_buf, "Content-Len");
+    char *clength_loc = NULL;
+    clength_loc = strstr(req_buf, "Content-Len");
+
     if (clength_loc == NULL) {
         request->data_len = 0;
         request->data = NULL;
