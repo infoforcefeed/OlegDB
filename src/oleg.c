@@ -142,7 +142,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     size_t to_alloc = db->cur_hash_table_size * 2;
     printf("[-] Growing DB to %zu bytes\n", to_alloc);
     db->tmp_hashes = calloc(1, to_alloc);
-
+    return -1;
 }
 
 ol_val ol_unjar(ol_database *db, char *key) {
