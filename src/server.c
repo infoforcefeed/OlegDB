@@ -63,8 +63,12 @@ int build_request(char *req_buf, size_t req_len, http *request) {
 
     // Seek the request until a space char and that's our method
     for (i = 0; i < SOCK_RECV_MAX; i++ ) { // 8=======D
-        if (req_buf[i] != ' ' && req_buf[i] != '\n') {
-            method_len++;
+        if (req_buf[i] != ' ' && req_buf[i] != '\r' && req_buf[i] != '\n') {
+            // We're only going to copy the maximum, but keep reading.
+            if (method_len < METHOD_MAX) {
+                printf("[-] Method Char: %c\n", req_buf[i]);
+                method_len++;
+            }
         } else {
             break;
         }
@@ -77,11 +81,15 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     request->method_len = method_len; // The length of the method for offsets
     strncpy(request->method, req_buf, method_len);
 
-    // Read from where the method ends. Add one to skip the space.
-    method_len++;
-    for (i = method_len; i < SOCK_RECV_MAX; i++ ) {
+    // Add one to i here to skip the space.
+    i += 1;
+    int method_actual_end = i;
+    for (; i < SOCK_RECV_MAX; i++ ) {
         if (req_buf[i] != ' ' && req_buf[i] != '\r' && req_buf[i] != '\n') {
-            url_len++;
+            if (url_len < URL_MAX) {
+                printf("[-] URL Char: %c\n", req_buf[i]);
+                url_len++;
+            }
         } else {
             break;
         }
@@ -91,14 +99,15 @@ int build_request(char *req_buf, size_t req_len, http *request) {
         return 2;
     }
     request->url_len = url_len;
-    strncpy(request->url, req_buf + method_len, url_len);
+    strncpy(request->url, req_buf + method_actual_end, url_len);
 
     char *split_key = strtok(request->url, "/");
     if (split_key == NULL) {
         printf("[X] Error: Could not parse Key.\n");
         return 3;
     }
-    strncpy(request->key, split_key, strlen(split_key));
+    size_t lesser_of_two_evils = KEY_SIZE < strlen(split_key) ? KEY_SIZE : strlen(split_key);
+    strncpy(request->key, split_key, lesser_of_two_evils);
 
     // We only read a substring here because it's fast, or something.
     char *clength_loc = NULL;
