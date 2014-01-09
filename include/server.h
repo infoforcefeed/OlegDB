@@ -30,13 +30,13 @@
 typedef struct http http;
 struct http {
     char key[KEY_SIZE];
-    unsigned char *data;
-    size_t data_len;
     char method[32];
     size_t method_len;
     char url[256];
     size_t url_len;
     char version[8];
+    unsigned char *data;
+    size_t data_len;
 };
 
 void ol_server(ol_database *db, int port);
