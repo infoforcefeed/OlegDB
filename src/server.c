@@ -37,6 +37,13 @@ const char not_found_response[] = "HTTP/1.1 404 Not Found\r\n"
                           "\r\n"
                           "These aren't your ghosts.\n";
 
+const char deleted_response[] = "HTTP/1.1 204 No Content\r\n"
+                          "Content-Type: text/plain\r\n"
+                          "Content-Length: 23\r\n"
+                          "Connection: close\r\n"
+                          "\r\n"
+                          "That key is GONE, man.\n";
+
 static int ol_make_socket(void) {
     int listenfd;
     if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -227,6 +234,21 @@ void ol_server(ol_database *db, int port) {
                     printf("[-] Records: %i\n", db->rcrd_cnt);
                     sendto(connfd, post_response,
                         sizeof(post_response), 0, (struct sockaddr *)&cliaddr,
+                        sizeof(cliaddr));
+                    break;
+                }
+            } else if (strncmp(request->method, "DELETE", 6) == 0) {
+                if (ol_scoop(db, request->key) > 0) {
+                    printf("[X] Could not delete key.\n");
+                    sendto(connfd, not_found_response,
+                        sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
+                        sizeof(cliaddr));
+                    break;
+                } else {
+                    printf("[-] Found and deleted key.\n");
+                    printf("[-] Records: %i\n", db->rcrd_cnt);
+                    sendto(connfd, deleted_response,
+                        sizeof(deleted_response), 0, (struct sockaddr *)&cliaddr,
                         sizeof(cliaddr));
                     break;
                 }
