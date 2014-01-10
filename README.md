@@ -40,8 +40,9 @@ Roadmap
 ---
 
 * Volatile in memory
+* Speaks HTTP with a heavy accent
 * ACID Compliance
-* 16 byte hard field limit
+* 16 byte hard keysize limit
 * Single-digit concurrency
 * Discardable soft mutexes
 * Non-guaranteed record expiry
