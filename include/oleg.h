@@ -68,3 +68,4 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize);
 int ol_scoop(ol_database *db, char *key);
 /* Helper for meta info */
 int ol_uptime(ol_database *db);
+int _ol_ht_bucket_max(size_t);

@@ -21,12 +21,25 @@ int test_open_close() {
     return 0;
 }
 
+int test_bucket_max() {
+    int expected_bucket_max = 1024;
+    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    int generated_bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
+    if (expected_bucket_max != generated_bucket_max) {
+        printf("Error: Unexpected bucket max. Got: %d", generated_bucket_max);
+        ol_close(db);
+        return 1;
+    }
+    ol_close(db);
+    return 0;
+}
+
 int test_jar() {
     ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
     int i;
-    int max_records = 10000;
+    int max_records = 100000;
     unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
     for (i = 0; i < max_records; i++) { // 8======D
         char key[16] = "testkey";
@@ -195,6 +208,7 @@ void run_tests(int results[2]) {
 
     ol_test_start();
     ol_run_test(test_open_close);
+    ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
     ol_run_test(test_unjar);
     ol_run_test(test_scoop);

@@ -90,8 +90,8 @@ int64_t _ol_gen_hash(char *key) {
 }
 
 int _ol_ht_bucket_max(size_t ht_size) {
-    printf("ht_size: %zu | address size: %zu\n", ht_size, sizeof(int64_t));
-    return (int)(ht_size/sizeof(int64_t));
+    printf("ht_size: %zu | address size: %zu\n", ht_size, sizeof(db->hashes[0]));
+    return (ht_size/sizeof(int64_t));
 }
 
 int _ol_calc_idx(size_t ht_size, int64_t hash) {
