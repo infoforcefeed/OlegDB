@@ -16,37 +16,6 @@
 
 #include "server.h"
 
-const char get_response[] = "HTTP/1.1 200 OK\r\n"
-                          "Server: OlegDB\r\n"
-                          "Content-Type: application/json\r\n"
-                          "Content-Length: %zu\r\n"
-                          "Connection: close\r\n"
-                          "\r\n%s";
-
-const char post_response[] = "HTTP/1.1 200 OK\r\n"
-                          "Server: OlegDB\r\n"
-                          "Content-Type: text/plain\r\n"
-                          "Connection: close\r\n"
-                          "Content-Length: 7\r\n"
-                          "\r\n"
-                          "MUDADA\n";
-
-const char not_found_response[] = "HTTP/1.1 404 Not Found\r\n"
-                          "Status: 404 Not Found\r\n"
-                          "Server: OlegDB\r\n"
-                          "Content-Length: 26\r\n"
-                          "Connection: close\r\n"
-                          "Content-Type: text/plain\r\n"
-                          "\r\n"
-                          "These aren't your ghosts.\n";
-
-const char deleted_response[] = "HTTP/1.1 200 OK\r\n"
-                          "Server: OlegDB\r\n"
-                          "Content-Type: text/plain\r\n"
-                          "Content-Length: 23\r\n"
-                          "Connection: close\r\n"
-                          "\r\n"
-                          "That key is GONE, man.\n";
 
 static int ol_make_socket(void) {
     int listenfd;
