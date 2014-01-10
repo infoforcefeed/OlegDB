@@ -61,10 +61,10 @@ ol_database *ol_open(char *path, ol_filemode filemode);
 /* Closes a database, makes sure everything is written and frees memory */
 int ol_close(ol_database *database);
 /* Unjar a value from the mayo */
-ol_val ol_unjar(ol_database *db, char *key);
+ol_val ol_unjar(ol_database *db, const char *key);
 /* it's easy to piss in a big bucket; it's NOT easy to piss in 19 jars */
-int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize);
+int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize);
 /* Get that crap out of my mayo jar */
-int ol_scoop(ol_database *db, char *key);
+int ol_scoop(ol_database *db, const char *key);
 /* Helper for meta info */
 int ol_uptime(ol_database *db);

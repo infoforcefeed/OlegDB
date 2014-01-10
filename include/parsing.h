@@ -14,4 +14,4 @@
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 // Read from buf until we hit a ' ', '\r', or '\n' or until we hit maximum_read
-int seek_until_eol(char *buf, int start_pos, int maximum_read);
+int seek_until_whitespace(char *buf, int start_pos, int maximum_read);

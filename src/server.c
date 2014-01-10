@@ -32,7 +32,7 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     int url_len = 0;
     int data_len = 0;
 
-    method_len = seek_until_eol(req_buf, 0, METHOD_MAX);
+    method_len = seek_until_whitespace(req_buf, 0, METHOD_MAX);
     if (method_len <= 0) {
         printf("[X] Error: Could not parse method.\n");
         return 1;
@@ -42,7 +42,7 @@ int build_request(char *req_buf, size_t req_len, http *request) {
 
     // Add one to i here to skip the space.
     int method_actual_end = method_len + 1;
-    url_len = seek_until_eol(req_buf, method_actual_end, URL_MAX);
+    url_len = seek_until_whitespace(req_buf, method_actual_end, URL_MAX);
     if (url_len <= 0) {
         printf("[X] Error: Could not parse URL.\n");
         return 2;
@@ -50,11 +50,13 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     request->url_len = url_len;
     strncpy(request->url, req_buf + method_actual_end, url_len);
 
+    // Attempt to find the path in the URI
     char *split_key = strtok(request->url, "/");
     if (split_key == NULL) {
         printf("[X] Error: Could not parse Key.\n");
         return 3;
     }
+    // Truncate the key passed in to KEY_SIZE, but don't copy any garbage if it's shorter
     size_t lesser_of_two_evils = KEY_SIZE < strlen(split_key) ? KEY_SIZE : strlen(split_key);
     strncpy(request->key, split_key, lesser_of_two_evils);
 
@@ -100,6 +102,31 @@ int build_request(char *req_buf, size_t req_len, http *request) {
     return 0;
 }
 
+/* Contrary to it's name, this handles POST requests */
+void handle_get(ol_database *db, const http *request,
+                const int connfd, const struct sockaddr_in cliaddr) {
+    char *resp_buf;
+    ol_val data = ol_unjar(db, request->key);
+    printf("[-] Looked for key.\n");
+
+    if (data != NULL) {
+        // Fuck I don't know about the 2 man whatever
+        size_t content_size = strlen(get_response) + strlen((char*)data);
+        resp_buf = malloc(content_size);
+
+        sprintf(resp_buf, get_response, strlen((char*)data), data);
+        sendto(connfd, resp_buf,
+            strlen(resp_buf), 0, (struct sockaddr *)&cliaddr,
+            sizeof(cliaddr));
+        free(resp_buf);
+    } else {
+        printf("[X] Value null.\n");
+        sendto(connfd, not_found_response,
+            sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
+            sizeof(cliaddr));
+    }
+}
+
 void ol_server(ol_database *db, int port) {
     int sock, connfd;
     struct sockaddr_in servaddr, cliaddr;
@@ -138,8 +165,6 @@ void ol_server(ol_database *db, int port) {
         http *request = calloc(1, sizeof(http));
 
         while (1) { // 8=========D
-            char *resp_buf;
-
             int n;
             n = recvfrom(connfd, mesg, SOCK_RECV_MAX, 0,
                 (struct sockaddr *)&cliaddr, &clilen);
@@ -158,27 +183,8 @@ void ol_server(ol_database *db, int port) {
             printf("[-] Key: %s\n", request->key);
 
             if (strncmp(request->method, "GET", 3) == 0) {
-                ol_val data = ol_unjar(db, request->key);
-                printf("[-] Looked for key.\n");
-
-                if (data != NULL) {
-                    // Fuck I don't know about the 2 man whatever
-                    size_t content_size = strlen(get_response) + strlen((char*)data);
-                    resp_buf = malloc(content_size);
-
-                    sprintf(resp_buf, get_response, strlen((char*)data), data);
-                    sendto(connfd, resp_buf,
-                        strlen(resp_buf), 0, (struct sockaddr *)&cliaddr,
-                        sizeof(cliaddr));
-                    free(resp_buf);
-                    break;
-                } else {
-                    printf("[X] Value null.\n");
-                    sendto(connfd, not_found_response,
-                        sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
-                        sizeof(cliaddr));
-                    break;
-                }
+                handle_get(db, request, connfd, cliaddr);
+                break;
             } else if (strncmp(request->method, "POST", 4) == 0) {
                 if (ol_jar(db, request->key, request->data, request->data_len) > 0) {
                     printf("[X] Could not insert\n");

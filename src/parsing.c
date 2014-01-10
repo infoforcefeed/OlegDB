@@ -16,7 +16,7 @@
 #include "parsing.h"
 #include "server.h"
 
-int seek_until_eol(char *buf, int start_pos, int maximum_read) {
+int seek_until_whitespace(char *buf, int start_pos, int maximum_read) {
     int i;
     int read = 0;
     for (i = start_pos; i < SOCK_RECV_MAX; i++ ) { // 8=======D
