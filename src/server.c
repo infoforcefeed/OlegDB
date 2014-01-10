@@ -119,12 +119,27 @@ void handle_get(ol_database *db, const http *request,
             strlen(resp_buf), 0, (struct sockaddr *)&cliaddr,
             sizeof(cliaddr));
         free(resp_buf);
-    } else {
-        printf("[X] Value null.\n");
+    }
+    printf("[X] Value null.\n");
+    sendto(connfd, not_found_response,
+        sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
+        sizeof(cliaddr));
+}
+
+void handle_post(ol_database *db, const http *request,
+                const int connfd, const struct sockaddr_in cliaddr) {
+    if (ol_jar(db, request->key, request->data, request->data_len) > 0) {
+        printf("[X] Could not insert\n");
         sendto(connfd, not_found_response,
             sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
             sizeof(cliaddr));
+        return;
     }
+    printf("[ ] Inserted new value for key %s.\n", request->key);
+    printf("[-] Records: %i\n", db->rcrd_cnt);
+    sendto(connfd, post_response,
+        sizeof(post_response), 0, (struct sockaddr *)&cliaddr,
+        sizeof(cliaddr));
 }
 
 void ol_server(ol_database *db, int port) {
@@ -186,20 +201,8 @@ void ol_server(ol_database *db, int port) {
                 handle_get(db, request, connfd, cliaddr);
                 break;
             } else if (strncmp(request->method, "POST", 4) == 0) {
-                if (ol_jar(db, request->key, request->data, request->data_len) > 0) {
-                    printf("[X] Could not insert\n");
-                    sendto(connfd, not_found_response,
-                        sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
-                        sizeof(cliaddr));
-                    break;
-                } else {
-                    printf("[ ] Inserted new value for key %s.\n", request->key);
-                    printf("[-] Records: %i\n", db->rcrd_cnt);
-                    sendto(connfd, post_response,
-                        sizeof(post_response), 0, (struct sockaddr *)&cliaddr,
-                        sizeof(cliaddr));
-                    break;
-                }
+                handle_post(db, request, connfd, cliaddr);
+                break;
             } else if (strncmp(request->method, "DELETE", 6) == 0) {
                 if (ol_scoop(db, request->key) > 0) {
                     printf("[X] Could not delete key.\n");
