@@ -126,6 +126,7 @@ void handle_get(ol_database *db, const http *request,
         sizeof(cliaddr));
 }
 
+/* Also handles POST */
 void handle_post(ol_database *db, const http *request,
                 const int connfd, const struct sockaddr_in cliaddr) {
     if (ol_jar(db, request->key, request->data, request->data_len) > 0) {
@@ -140,6 +141,25 @@ void handle_post(ol_database *db, const http *request,
     sendto(connfd, post_response,
         sizeof(post_response), 0, (struct sockaddr *)&cliaddr,
         sizeof(cliaddr));
+}
+
+void handle_delete(ol_database *db, const http *request,
+                const int connfd, const struct sockaddr_in cliaddr) {
+    if (ol_scoop(db, request->key) > 0) {
+        printf("[X] Could not delete key.\n");
+        sendto(connfd, not_found_response,
+            sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
+            sizeof(cliaddr));
+    }
+    printf("[-] Found and deleted key.\n");
+    printf("[-] Records: %i\n", db->rcrd_cnt);
+    sendto(connfd, deleted_response,
+        sizeof(deleted_response), 0, (struct sockaddr *)&cliaddr,
+        sizeof(cliaddr));
+}
+
+void handle_not_found(const http *request,
+                const int connfd, const struct sockaddr_in cliaddr) {
 }
 
 void ol_server(ol_database *db, int port) {
@@ -204,20 +224,8 @@ void ol_server(ol_database *db, int port) {
                 handle_post(db, request, connfd, cliaddr);
                 break;
             } else if (strncmp(request->method, "DELETE", 6) == 0) {
-                if (ol_scoop(db, request->key) > 0) {
-                    printf("[X] Could not delete key.\n");
-                    sendto(connfd, not_found_response,
-                        sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
-                        sizeof(cliaddr));
-                    break;
-                } else {
-                    printf("[-] Found and deleted key.\n");
-                    printf("[-] Records: %i\n", db->rcrd_cnt);
-                    sendto(connfd, deleted_response,
-                        sizeof(deleted_response), 0, (struct sockaddr *)&cliaddr,
-                        sizeof(cliaddr));
-                    break;
-                }
+                handle_delete(db, request, connfd, cliaddr);
+                break;
             } else {
                 printf("[X] No matching method.\n");
                 sendto(connfd, not_found_response,
