@@ -204,9 +204,7 @@ void ol_server(ol_database *db, int port) {
 
             if (build_request(mesg, n, request) > 0) {
                 printf("[X] Error: Could not build request.\n");
-                sendto(connfd, not_found_response,
-                    sizeof(not_found_response), 0, (struct sockaddr *)&cliaddr,
-                    sizeof(cliaddr));
+                handle_not_found(connfd, cliaddr);
                 mesg[0] = '\0';
                 break;
             }
