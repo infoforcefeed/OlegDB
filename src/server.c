@@ -14,8 +14,8 @@
 
 // I can't put this in server.h for some reason
 
+#include "parsing.h"
 #include "server.h"
-
 
 static int ol_make_socket(void) {
     int listenfd;
@@ -28,45 +28,21 @@ static int ol_make_socket(void) {
 
 int build_request(char *req_buf, size_t req_len, http *request) {
     // TODO: Make sure theres actually a valid URI in the request
-    int i;
     int method_len = 0;
     int url_len = 0;
     int data_len = 0;
 
-
-    // Seek the request until a space char and that's our method
-    for (i = 0; i < SOCK_RECV_MAX; i++ ) { // 8=======D
-        if (req_buf[i] != ' ' && req_buf[i] != '\r' && req_buf[i] != '\n') {
-            // We're only going to copy the maximum, but keep reading.
-            if (method_len < METHOD_MAX) {
-                printf("[-] Method Char: %c\n", req_buf[i]);
-                method_len++;
-            }
-        } else {
-            break;
-        }
-    }
+    method_len = seek_until_eol(req_buf, 0, METHOD_MAX);
     if (method_len <= 0) {
         printf("[X] Error: Could not parse method.\n");
         return 1;
     }
-
     request->method_len = method_len; // The length of the method for offsets
     strncpy(request->method, req_buf, method_len);
 
     // Add one to i here to skip the space.
-    i += 1;
-    int method_actual_end = i;
-    for (; i < SOCK_RECV_MAX; i++ ) {
-        if (req_buf[i] != ' ' && req_buf[i] != '\r' && req_buf[i] != '\n') {
-            if (url_len < URL_MAX) {
-                printf("[-] URL Char: %c\n", req_buf[i]);
-                url_len++;
-            }
-        } else {
-            break;
-        }
-    }
+    int method_actual_end = method_len + 1;
+    url_len = seek_until_eol(req_buf, method_actual_end, URL_MAX);
     if (url_len <= 0) {
         printf("[X] Error: Could not parse URL.\n");
         return 2;
