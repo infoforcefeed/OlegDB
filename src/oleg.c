@@ -159,10 +159,10 @@ int _ol_grow_and_rehash_db(ol_database *db) {
                                          bucket->hash, bucket->key);
         tmp_hashes[new_index] = bucket;
     }
+    free(db->hashes);
     db->hashes = tmp_hashes;
     db->cur_ht_size = to_alloc;
     printf("[-] Current hash table size is now: %zu\n", to_alloc);
-    free(tmp_hashes);
     return 0;
 }
 
