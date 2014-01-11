@@ -48,7 +48,6 @@ typedef struct ol_database {
     time_t  created;                 // For uptime.
     int     rehashes;                // How many times have we rehashed
     size_t  cur_ht_size;             // Gotta keep track of that table size
-    ol_hash **tmp_hashes;            // For rehashing
     ol_hash **hashes;                // All hashes in the DB
 } ol_database;
 

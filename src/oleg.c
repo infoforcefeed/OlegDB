@@ -25,7 +25,6 @@ ol_database *ol_open(char *path, ol_filemode filemode){
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = calloc(1, to_alloc);
     new_db->cur_ht_size = to_alloc;
-    new_db->tmp_hashes = NULL; // Make sure it's NULL on start
     new_db->rehashes = 0;
 
     time_t created;
@@ -148,19 +147,20 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     int i;
     int new_index;
     ol_hash *bucket;
+    ol_hash **tmp_hashes = NULL;
 
     size_t to_alloc = db->cur_ht_size * 2;
     printf("[-] Growing DB to %zu bytes\n", to_alloc);
-    db->tmp_hashes = calloc(1, to_alloc);
+    tmp_hashes = calloc(1, to_alloc);
     for (i = 0; i < (db->cur_ht_size/sizeof(int64_t)); i++) {
         bucket = db->hashes[i];
-        new_index = _ol_get_index_insert(db->tmp_hashes, to_alloc,
+        new_index = _ol_get_index_insert(tmp_hashes, to_alloc,
                                          bucket->hash, bucket->key);
-        db->tmp_hashes[new_index] = bucket;
+        tmp_hashes[new_index] = bucket;
     }
-    db->hashes = db->tmp_hashes;
-    db->tmp_hashes = NULL;
+    db->hashes = tmp_hashes;
     db->cur_ht_size = to_alloc;
+    free(tmp_hashes);
     return 0;
 }
 
