@@ -155,9 +155,11 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     tmp_hashes = calloc(1, to_alloc);
     for (i = 0; i < _ol_ht_bucket_max(db->cur_ht_size); i++) {
         bucket = db->hashes[i];
-        new_index = _ol_get_index_insert(tmp_hashes, to_alloc,
-                                         bucket->hash, bucket->key);
-        tmp_hashes[new_index] = bucket;
+        if (bucket != NULL) {
+            new_index = _ol_get_index_insert(tmp_hashes, to_alloc,
+                                             bucket->hash, bucket->key);
+            tmp_hashes[new_index] = bucket;
+        }
     }
     free(db->hashes);
     db->hashes = tmp_hashes;

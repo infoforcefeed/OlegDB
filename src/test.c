@@ -49,7 +49,7 @@ int test_jar() {
         sprintf(append, "%i", i);
         strcat(key, append);
 
-        printf("[-] Record count: %i\n", db->rcrd_cnt);
+        //printf("[-] Record count: %i\n", db->rcrd_cnt);
 
         size_t len = strlen((char *)to_insert);
         int insert_result = ol_jar(db, key, to_insert, len);
