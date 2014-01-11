@@ -11,9 +11,10 @@ endif
 all:
 	gcc $(CFLAGS) -I./include -o oleg.o -c ./src/oleg.c
 	gcc $(CFLAGS) -I./include -o test.o -c ./src/test.c
+	gcc $(CFLAGS) -I./include -o parsing.o -c ./src/parsing.c
 	gcc $(CFLAGS) -I./include -o server.o -c ./src/server.c
 	gcc $(CFLAGS) -I./include -o main.o -c ./src/main.c
-	gcc $(CFLAGS) main.o test.o server.o oleg.o $(MATH_LINKER) -o olegdb
+	gcc $(CFLAGS) main.o test.o parsing.o server.o oleg.o $(MATH_LINKER) -o olegdb
 
 clean:
 	rm *.o

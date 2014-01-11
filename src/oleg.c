@@ -66,7 +66,7 @@ int ol_close(ol_database *db){
     return 0;
 }
 
-int64_t _ol_gen_hash(char *key) {
+int64_t _ol_gen_hash(const char *key) {
     // https://en.wikipedia.org/wiki/Fowler_Noll_Vo_hash
     const int64_t fnv_offset_bias = 0xcbf29ce484222325;
     const int64_t fnv_prime = 0x100000001b3;
@@ -100,7 +100,7 @@ int _ol_calc_idx(size_t ht_size, int64_t hash) {
     return index;
 }
 
-int _ol_get_index_insert(ol_hash **ht, size_t ht_size, int64_t hash, char *key) {
+int _ol_get_index_insert(ol_hash **ht, size_t ht_size, int64_t hash, const char *key) {
     int index = _ol_calc_idx(ht_size, hash);
 
     if(ht[index]->key != NULL) {
@@ -120,7 +120,7 @@ int _ol_get_index_insert(ol_hash **ht, size_t ht_size, int64_t hash, char *key) 
     return index;
 }
 
-int _ol_get_index_search(ol_database *db, int64_t hash, char *key) {
+int _ol_get_index_search(ol_database *db, int64_t hash, const char *key) {
     int index = _ol_calc_idx(db->cur_ht_size, hash);
 
     if(db->hashes[index]->key != NULL) {
@@ -164,7 +164,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     return 0;
 }
 
-ol_val ol_unjar(ol_database *db, char *key) {
+ol_val ol_unjar(ol_database *db, const char *key) {
     int64_t hash = _ol_gen_hash(key);
     int index = _ol_get_index_search(db, hash, key);
 
@@ -175,7 +175,7 @@ ol_val ol_unjar(ol_database *db, char *key) {
     return NULL;
 }
 
-int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
+int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize) {
     // Check to see if we have an existing entry with that key
     int64_t hash = _ol_gen_hash(key);
     int index = _ol_get_index_search(db, hash, key);
@@ -233,7 +233,7 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
     return 0;
 }
 
-int ol_scoop(ol_database *db, char *key) {
+int ol_scoop(ol_database *db, const char *key) {
     // you know... like scoop some data from the jar and eat it? All gone.
     int64_t hash = _ol_gen_hash(key);
     int index = _ol_get_index_search(db, hash, key);
