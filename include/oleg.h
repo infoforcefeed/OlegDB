@@ -46,7 +46,6 @@ typedef struct ol_database {
     int     rcrd_cnt;                // Number of records in the database. Eventually consistent.
     int     key_collisions;          // How many times have our keys collided.
     time_t  created;                 // For uptime.
-    int     rehashes;                // How many times have we rehashed
     size_t  cur_ht_size;             // Gotta keep track of that table size
     ol_hash **hashes;                // All hashes in the DB
 } ol_database;

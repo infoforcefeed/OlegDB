@@ -25,7 +25,6 @@ ol_database *ol_open(char *path, ol_filemode filemode){
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = calloc(1, to_alloc);
     new_db->cur_ht_size = to_alloc;
-    new_db->rehashes = 0;
 
     time_t created;
     time(&created);
