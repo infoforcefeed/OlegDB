@@ -174,10 +174,10 @@ int _ol_grow_and_rehash_db(ol_database *db) {
 ol_val ol_unjar(ol_database *db, const char *key) {
     unsigned char hash[32];
     MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
-    int index = _ol_get_index_search(db, hash, key);
+    ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
-    if (index >= 0) {
-        return db->hashes[index]->data_ptr;
+    if (bucket != NULL) {
+        return bucket->data_ptr;
     }
 
     return NULL;
@@ -187,19 +187,17 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
     // Check to see if we have an existing entry with that key
     unsigned char hash[32];
     MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
-    int index = _ol_get_index_search(db, hash, key);
-    // TODO check for errors (-1) from the search function
-    ol_hash *old_hash = db->hashes[index];
+    ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
-    if (old_hash != NULL && index >= 0) {
+    if (bucket != NULL && strncmp(bucket->key, key, KEY_SIZE) == 0) {
         printf("[-] realloc\n");
         unsigned char *data = realloc(old_hash->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data) {
             return 4;
         }
 
-        old_hash->data_size = vsize;
-        old_hash->data_ptr = data;
+        bucket->data_size = vsize;
+        bucket->data_ptr = data;
         return 0;
     }
     index = 0;
