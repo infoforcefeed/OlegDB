@@ -39,6 +39,7 @@ typedef struct bucket {
     ol_val    data_ptr;
     size_t    data_size;
     __int64_t hash;
+    struct ol_bucket *next; // The next ol_bucket in this chain, if any
 } ol_bucket;
 
 typedef struct ol_database {
