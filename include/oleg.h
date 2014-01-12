@@ -20,7 +20,7 @@
 /* Hardcoded key size */
 #define KEY_SIZE 16
 /* The size (in bytes) of a hash block */
-#define HASH_MALLOC 8192
+#define HASH_MALLOC 65536
 #define PATH_LENGTH 256
 
 /* Modes of opening and operating on a DB */
