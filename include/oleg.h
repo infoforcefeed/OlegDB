@@ -22,6 +22,7 @@
 /* The size (in bytes) of a hash block */
 #define HASH_MALLOC 65536
 #define PATH_LENGTH 256
+#define DEVILS_SEED 666
 
 /* Modes of opening and operating on a DB */
 typedef enum {

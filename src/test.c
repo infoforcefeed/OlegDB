@@ -40,7 +40,7 @@ int test_jar() {
     printf("Opened DB: %p.\n", db);
 
     int i;
-    int max_records = 100000;
+    int max_records = 10000;
     unsigned char to_insert[] = "123456789";
     for (i = 0; i < max_records; i++) { // 8======D
         char key[16] = "crazy hash";

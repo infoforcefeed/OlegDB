@@ -18,6 +18,7 @@
 #include <string.h>
 #include <time.h>
 #include "oleg.h"
+#include "murmur3.h"
 
 ol_database *ol_open(char *path, ol_filemode filemode){
     ol_database *new_db = malloc(sizeof(struct ol_database));
@@ -64,6 +65,7 @@ int ol_close(ol_database *db){
     return 0;
 }
 
+/*
 int64_t _ol_gen_hash(const char *key) {
     // https://en.wikipedia.org/wiki/Fowler_Noll_Vo_hash
     const int64_t fnv_offset_bias = 0xcbf29ce484222325;
@@ -76,8 +78,6 @@ int64_t _ol_gen_hash(const char *key) {
 
     //printf("Key: %s\n", key);
     //printf("Iterations: %i\n", iterations);
-    /* Rather insidiously hash the entire key, but truncate to 16 *
-     * chars later.                                               */
     for(i = 0; i < iterations; i++) { // 8========D
         hash ^= key[i]; // XOR key octet
         hash *= fnv_prime; // Multiply by prime
@@ -86,6 +86,7 @@ int64_t _ol_gen_hash(const char *key) {
 
     return hash;
 }
+*/
 
 inline int _ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_hash *));
@@ -96,9 +97,10 @@ int _ol_calc_idx(size_t ht_size, int64_t hash) {
     index = hash % _ol_ht_bucket_max(ht_size);
     //printf("max bucket size: %i\n", _ol_ht_bucket_max(ht_size));
     //printf("[X] Index: %u\n", index);
-    return abs(index);
+    return index;
 }
 
+/*
 int _ol_get_index_insert(ol_hash **ht, size_t ht_size, int64_t hash, const char *key) {
     int index = _ol_calc_idx(ht_size, hash);
 
@@ -143,6 +145,7 @@ int _ol_get_index_search(ol_database *db, int64_t hash, const char *key) {
     }
     return -1;
 }
+*/
 
 int _ol_grow_and_rehash_db(ol_database *db) {
     int i;
@@ -169,7 +172,8 @@ int _ol_grow_and_rehash_db(ol_database *db) {
 }
 
 ol_val ol_unjar(ol_database *db, const char *key) {
-    int64_t hash = _ol_gen_hash(key);
+    unsigned char hash[32];
+    MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
     int index = _ol_get_index_search(db, hash, key);
 
     if (index >= 0) {
@@ -181,7 +185,8 @@ ol_val ol_unjar(ol_database *db, const char *key) {
 
 int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize) {
     // Check to see if we have an existing entry with that key
-    int64_t hash = _ol_gen_hash(key);
+    unsigned char hash[32];
+    MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
     int index = _ol_get_index_search(db, hash, key);
     // TODO check for errors (-1) from the search function
     ol_hash *old_hash = db->hashes[index];
@@ -240,7 +245,8 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
 
 int ol_scoop(ol_database *db, const char *key) {
     // you know... like scoop some data from the jar and eat it? All gone.
-    int64_t hash = _ol_gen_hash(key);
+    unsigned char hash[32];
+    MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
     int index = _ol_get_index_search(db, hash, key);
 
     if (index < 0) {
