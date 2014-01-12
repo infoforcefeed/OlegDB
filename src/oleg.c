@@ -89,7 +89,7 @@ int64_t _ol_gen_hash(const char *key) {
 */
 
 inline int _ol_ht_bucket_max(size_t ht_size) {
-    return (ht_size/sizeof(ol_hash *));
+    return (ht_size/sizeof(ol_bucket *));
 }
 
 int _ol_calc_idx(size_t ht_size, int64_t hash) {
@@ -101,7 +101,7 @@ int _ol_calc_idx(size_t ht_size, int64_t hash) {
 }
 
 /*
-int _ol_get_index_insert(ol_hash **ht, size_t ht_size, int64_t hash, const char *key) {
+int _ol_get_index_insert(ol_bucket **ht, size_t ht_size, int64_t hash, const char *key) {
     int index = _ol_calc_idx(ht_size, hash);
 
     if(ht[index]->key != NULL) {
@@ -150,8 +150,8 @@ int _ol_get_index_search(ol_database *db, int64_t hash, const char *key) {
 int _ol_grow_and_rehash_db(ol_database *db) {
     int i;
     int new_index;
-    ol_hash *bucket;
-    ol_hash **tmp_hashes = NULL;
+    ol_bucket *bucket;
+    ol_bucket **tmp_hashes = NULL;
 
     size_t to_alloc = db->cur_ht_size * 2;
     printf("[-] Growing DB to %zu bytes\n", to_alloc);
@@ -203,7 +203,7 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
     index = 0;
 
     // Looks like we don't have an old hash
-    ol_hash *new_hash = malloc(sizeof(ol_hash));
+    ol_bucket *new_hash = malloc(sizeof(ol_bucket));
     if (new_hash == NULL) {
         return 1;
     }
@@ -251,7 +251,7 @@ int ol_scoop(ol_database *db, const char *key) {
         return 1;
     }
 
-    ol_hash *old_hash = db->hashes[index];
+    ol_bucket *old_hash = db->hashes[index];
 
     if (old_hash != NULL) {
         ol_val free_me = old_hash->data_ptr;

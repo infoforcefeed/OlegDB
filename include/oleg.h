@@ -39,7 +39,7 @@ typedef struct bucket {
     ol_val    data_ptr;
     size_t    data_size;
     __int64_t hash;
-} ol_hash;
+} ol_bucket;
 
 typedef struct ol_database {
     char    name[8];                 // Name of the database
@@ -48,7 +48,7 @@ typedef struct ol_database {
     int     key_collisions;          // How many times have our keys collided.
     time_t  created;                 // For uptime.
     size_t  cur_ht_size;             // Gotta keep track of that table size
-    ol_hash **hashes;                // All hashes in the DB
+    ol_bucket **hashes;                // All hashes in the DB
 } ol_database;
 
 typedef struct ol_meta {
