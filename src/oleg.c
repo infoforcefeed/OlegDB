@@ -65,38 +65,13 @@ int ol_close(ol_database *db){
     return 0;
 }
 
-/*
-int64_t _ol_gen_hash(const char *key) {
-    // https://en.wikipedia.org/wiki/Fowler_Noll_Vo_hash
-    const int64_t fnv_offset_bias = 0xcbf29ce484222325;
-    const int64_t fnv_prime = 0x100000001b3;
-
-    const int iterations = strlen(key);
-
-    uint8_t i;
-    int64_t hash = fnv_offset_bias;
-
-    //printf("Key: %s\n", key);
-    //printf("Iterations: %i\n", iterations);
-    for(i = 0; i < iterations; i++) { // 8========D
-        hash ^= key[i]; // XOR key octet
-        hash *= fnv_prime; // Multiply by prime
-    }
-    //printf("Hash: 0x%" PRIX64 "\n", hash);
-
-    return hash;
-}
-*/
-
 inline int _ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
 }
 
-int _ol_calc_idx(size_t ht_size, int64_t hash) {
+int _ol_calc_idx(const size_t ht_size, const unsigned char *hash) {
     int index;
     index = hash % _ol_ht_bucket_max(ht_size);
-    //printf("max bucket size: %i\n", _ol_ht_bucket_max(ht_size));
-    //printf("[X] Index: %u\n", index);
     return index;
 }
 
@@ -147,6 +122,14 @@ int _ol_get_index_search(ol_database *db, int64_t hash, const char *key) {
 }
 */
 
+ol_bucket *_ol_traverse_ll(ol_bucket *bucket) {
+    ol_bucket *tmp_bucket = bucket;
+    while (tmp_bucket->next != NULL) {
+        tmp_bucket = tmp_bucket->next;
+    }
+    return tmp_bucket;
+}
+
 int _ol_grow_and_rehash_db(ol_database *db) {
     int i;
     int new_index;
@@ -159,9 +142,14 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     for (i = 0; i < _ol_ht_bucket_max(db->cur_ht_size); i++) {
         bucket = db->hashes[i];
         if (bucket != NULL) {
-            new_index = _ol_get_index_insert(tmp_hashes, to_alloc,
-                                             bucket->hash, bucket->key);
-            tmp_hashes[new_index] = bucket;
+            new_index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
+            if (tmp_hashes[new_index] != NULL) {
+                // _ol_traverse_ll returns the last bucket in LL
+                ol_bucket *last_bucket = _ol_traverse_ll(tmp_hashes[new_index]);
+                last_bucket->next = bucket;
+            } else {
+                tmp_hashes[new_index] = bucket;
+            }
         }
     }
     free(db->hashes);
@@ -203,25 +191,28 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
     index = 0;
 
     // Looks like we don't have an old hash
-    ol_bucket *new_hash = malloc(sizeof(ol_bucket));
-    if (new_hash == NULL) {
+    ol_bucket *new_bucket = malloc(sizeof(ol_bucket));
+    if (new_bucket == NULL) {
         return 1;
     }
 
+    new_bucket->next = NULL;
+
     //Silently truncate because #yolo
-    if (strncpy(new_hash->key, key, KEY_SIZE) != new_hash->key) {
+    if (strncpy(new_bucket->key, key, KEY_SIZE) != new_bucket->key) {
         return 2;
     }
 
-    new_hash->data_size = vsize;
+    new_bucket->data_size = vsize;
     unsigned char *data = malloc(vsize);
     if (memcpy(data, value, vsize) != data) {
         return 3;
     }
-    new_hash->data_ptr = data;
-    new_hash->hash = hash;
+    new_bucket->data_ptr = data;
+    new_bucket->hash = hash;
 
     int bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
+    // TODO: rehash this shit at 80%
     if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
         printf("[-] Record count is now %i so regrowing hash table.\n", db->rcrd_cnt);
         int ret;
@@ -232,7 +223,7 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
         }
     }
 
-    index = _ol_get_index_insert(db->hashes, db->cur_ht_size, hash, key);
+    ret = _ol_set_bucket(db, );
 
     // Insert it into our db struct
     db->hashes[index] = new_hash;

@@ -35,10 +35,10 @@ typedef enum {
 /* Data that the DB stores */
 typedef unsigned char *ol_val;
 typedef struct bucket {
-    char      key[KEY_SIZE]; // The key used to reference the data
-    ol_val    data_ptr;
-    size_t    data_size;
-    __int64_t hash;
+    char             key[KEY_SIZE]; // The key used to reference the data
+    ol_val           data_ptr;
+    size_t           data_size;
+    unsigned char    hash;
     struct ol_bucket *next; // The next ol_bucket in this chain, if any
 } ol_bucket;
 
