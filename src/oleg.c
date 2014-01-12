@@ -65,16 +65,6 @@ int ol_close(ol_database *db){
     return 0;
 }
 
-inline int _ol_ht_bucket_max(size_t ht_size) {
-    return (ht_size/sizeof(ol_bucket *));
-}
-
-int _ol_calc_idx(const size_t ht_size, const unsigned char *hash) {
-    int index;
-    index = hash % _ol_ht_bucket_max(ht_size);
-    return index;
-}
-
 /*
 int _ol_get_index_insert(ol_bucket **ht, size_t ht_size, int64_t hash, const char *key) {
     int index = _ol_calc_idx(ht_size, hash);
@@ -122,12 +112,35 @@ int _ol_get_index_search(ol_database *db, int64_t hash, const char *key) {
 }
 */
 
-ol_bucket *_ol_traverse_ll(ol_bucket *bucket) {
+inline int _ol_ht_bucket_max(size_t ht_size) {
+    return (ht_size/sizeof(ol_bucket *));
+}
+
+int _ol_calc_idx(const size_t ht_size, const unsigned char *hash) {
+    int index;
+    index = hash % _ol_ht_bucket_max(ht_size);
+    return index;
+}
+
+
+ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
     ol_bucket *tmp_bucket = bucket;
     while (tmp_bucket->next != NULL) {
         tmp_bucket = tmp_bucket->next;
     }
     return tmp_bucket;
+}
+
+ol_bucket *_ol_get_bucket(const ol_database *db, const unsigned char *hash, const char *key) {
+    int index = _ol_calc_idx(db->cur_ht_size, hash);
+    if (db->hashes[index] != NULL) {
+        ol_bucket *tmp_bucket = db->hashes[index];
+        if (strncmp(tmp_bucket->key, key, KEY_SIZE) == 0) {
+            return tmp_bucket;
+        } else {
+            tmp_bucket = _ol_get_last_bucket_in_slot(tmp_bucket);
+        }
+    }
 }
 
 int _ol_grow_and_rehash_db(ol_database *db) {
