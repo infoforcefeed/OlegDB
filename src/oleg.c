@@ -64,53 +64,6 @@ int ol_close(ol_database *db){
     return 0;
 }
 
-/*
-int _ol_get_index_insert(ol_bucket **ht, size_t ht_size, int64_t hash, const char *key) {
-    int index = _ol_calc_idx(ht_size, hash);
-
-    if(ht[index]->key != NULL) {
-        //db->key_collisions++;
-        int i;
-        int quad = 1;
-        int hash_table_size = (ht_size/sizeof(hash));
-        for (i = 0; i < hash_table_size; i++){ // 8===============D
-            int tmp_idx = _ol_calc_idx(ht_size, (int64_t)(index + quad));
-            if (ht[tmp_idx] == NULL || strncmp(ht[tmp_idx]->key, key, KEY_SIZE) == 0) {
-                return tmp_idx;
-            }
-            quad += pow((double)i, (double)2);
-        }
-        return -1; // Everything is fucked and we are out of keyspace
-    }
-    return index;
-}
-
-int _ol_get_index_search(ol_database *db, int64_t hash, const char *key) {
-    int index = _ol_calc_idx(db->cur_ht_size, hash);
-    //printf("Calculated index: %ui\n", index);
-
-    if(db->hashes[index]->key != NULL) {
-        if (strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
-            return index;
-        } else {
-            int i;
-            int quad = 1;
-            for (i = 0; i < (db->cur_ht_size/sizeof(hash)); i++) { // 8==========D
-                size_t ht_size = db->cur_ht_size;
-                int tmp_idx = _ol_calc_idx(ht_size, (int64_t)(index + quad));
-                if (db->hashes[tmp_idx]->key != NULL) {
-                    if (strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
-                        return index;
-                    }
-                }
-                quad += pow((double)i, (double)2);
-            }
-        }
-    }
-    return -1;
-}
-*/
-
 inline int _ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
 }
