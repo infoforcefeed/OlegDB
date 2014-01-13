@@ -103,6 +103,7 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
     // TODO: error codes?
     int index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
     if (db->hashes[index] != NULL) {
+        db->key_collisions++;
         ol_bucket *tmp_bucket = db->hashes[index];
         tmp_bucket = _ol_get_last_bucket_in_slot(tmp_bucket);
         tmp_bucket->next = bucket;
