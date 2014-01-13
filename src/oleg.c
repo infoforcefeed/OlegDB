@@ -92,8 +92,13 @@ ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char
         ol_bucket *tmp_bucket = db->hashes[index];
         if (strncmp(tmp_bucket->key, key, KEY_SIZE) == 0) {
             return tmp_bucket;
-        } else {
-            tmp_bucket = _ol_get_last_bucket_in_slot(tmp_bucket);
+        } else if (tmp_bucket->next != NULL) {
+            do {
+                tmp_bucket = tmp_bucket->next;
+                if (strncmp(tmp_bucket->key, key, KEY_SIZE) == 0) {
+                    return tmp_bucket;
+                }
+            } while (tmp_bucket->next != NULL);
         }
     }
     return NULL;
