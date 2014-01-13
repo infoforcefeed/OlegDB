@@ -18,6 +18,7 @@
 #include <string.h>
 #include <time.h>
 #include "oleg.h"
+#include "murmur3.h"
 
 ol_database *ol_open(char *path, ol_filemode filemode){
     ol_database *new_db = malloc(sizeof(struct ol_database));
@@ -25,8 +26,6 @@ ol_database *ol_open(char *path, ol_filemode filemode){
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = calloc(1, to_alloc);
     new_db->cur_ht_size = to_alloc;
-    new_db->tmp_hashes = NULL; // Make sure it's NULL on start
-    new_db->rehashes = 0;
 
     time_t created;
     time(&created);
@@ -40,7 +39,7 @@ ol_database *ol_open(char *path, ol_filemode filemode){
 }
 
 int ol_close(ol_database *db){
-    int iterations = db->cur_ht_size/sizeof(int64_t);
+    int iterations = _ol_ht_bucket_max(db->cur_ht_size);
     int i;
     int rcrd_cnt = db->rcrd_cnt;
     int freed = 0;
@@ -66,41 +65,8 @@ int ol_close(ol_database *db){
     return 0;
 }
 
-int64_t _ol_gen_hash(char *key) {
-    // https://en.wikipedia.org/wiki/Fowler_Noll_Vo_hash
-    const int64_t fnv_offset_bias = 0xcbf29ce484222325;
-    const int64_t fnv_prime = 0x100000001b3;
-
-    const int iterations = strlen(key);
-
-    int i;
-    int64_t hash = fnv_offset_bias;
-
-    //printf("Key: %s\n", key);
-    //printf("Iterations: %i\n", iterations);
-    /* Rather insidiously hash the entire key, but truncate to 16 *
-     * chars later.                                               */
-    for(i = 0; i < iterations; i++) { // 8========D
-        hash ^= key[i]; // XOR key octet
-        hash *= fnv_prime; // Multiply by prime
-    }
-    //printf("Hash: 0x%" PRIX64 "\n", hash);
-
-    return hash;
-}
-
-int _ol_ht_bucket_max(size_t ht_size) {
-    return (ht_size/sizeof(int64_t));
-}
-
-int _ol_calc_idx(size_t ht_size, int64_t hash) {
-    int index;
-    //index = hash % (ht_size/sizeof(hash));
-    index = hash % _ol_ht_bucket_max(ht_size);
-    return index;
-}
-
-int _ol_get_index_insert(ol_hash **ht, size_t ht_size, int64_t hash, char *key) {
+/*
+int _ol_get_index_insert(ol_bucket **ht, size_t ht_size, int64_t hash, const char *key) {
     int index = _ol_calc_idx(ht_size, hash);
 
     if(ht[index]->key != NULL) {
@@ -110,18 +76,19 @@ int _ol_get_index_insert(ol_hash **ht, size_t ht_size, int64_t hash, char *key) 
         int hash_table_size = (ht_size/sizeof(hash));
         for (i = 0; i < hash_table_size; i++){ // 8===============D
             int tmp_idx = _ol_calc_idx(ht_size, (int64_t)(index + quad));
-            if (ht[tmp_idx] == NULL) {
+            if (ht[tmp_idx] == NULL || strncmp(ht[tmp_idx]->key, key, KEY_SIZE) == 0) {
                 return tmp_idx;
             }
-            quad++;
+            quad += pow((double)i, (double)2);
         }
         return -1; // Everything is fucked and we are out of keyspace
     }
     return index;
 }
 
-int _ol_get_index_search(ol_database *db, int64_t hash, char *key) {
+int _ol_get_index_search(ol_database *db, int64_t hash, const char *key) {
     int index = _ol_calc_idx(db->cur_ht_size, hash);
+    //printf("Calculated index: %ui\n", index);
 
     if(db->hashes[index]->key != NULL) {
         if (strncmp(db->hashes[index]->key, key, KEY_SIZE) == 0) {
@@ -143,88 +110,133 @@ int _ol_get_index_search(ol_database *db, int64_t hash, char *key) {
     }
     return -1;
 }
+*/
+
+inline int _ol_ht_bucket_max(size_t ht_size) {
+    return (ht_size/sizeof(ol_bucket *));
+}
+
+int _ol_calc_idx(const size_t ht_size, const unsigned char *hash) {
+    int index;
+    index = hash % _ol_ht_bucket_max(ht_size);
+    return index;
+}
+
+
+ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
+    ol_bucket *tmp_bucket = bucket;
+    while (tmp_bucket->next != NULL) {
+        tmp_bucket = tmp_bucket->next;
+    }
+    return tmp_bucket;
+}
+
+ol_bucket *_ol_get_bucket(const ol_database *db, const unsigned char *hash, const char *key) {
+    int index = _ol_calc_idx(db->cur_ht_size, hash);
+    if (db->hashes[index] != NULL) {
+        ol_bucket *tmp_bucket = db->hashes[index];
+        if (strncmp(tmp_bucket->key, key, KEY_SIZE) == 0) {
+            return tmp_bucket;
+        } else {
+            tmp_bucket = _ol_get_last_bucket_in_slot(tmp_bucket);
+        }
+    }
+}
 
 int _ol_grow_and_rehash_db(ol_database *db) {
     int i;
     int new_index;
-    ol_hash *bucket;
+    ol_bucket *bucket;
+    ol_bucket **tmp_hashes = NULL;
 
     size_t to_alloc = db->cur_ht_size * 2;
     printf("[-] Growing DB to %zu bytes\n", to_alloc);
-    db->tmp_hashes = calloc(1, to_alloc);
-    for (i = 0; i < (db->cur_ht_size/sizeof(int64_t)); i++) {
+    tmp_hashes = calloc(1, to_alloc);
+    for (i = 0; i < _ol_ht_bucket_max(db->cur_ht_size); i++) {
         bucket = db->hashes[i];
-        new_index = _ol_get_index_insert(db->tmp_hashes, to_alloc,
-                                         bucket->hash, bucket->key);
-        db->tmp_hashes[new_index] = bucket;
+        if (bucket != NULL) {
+            new_index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
+            if (tmp_hashes[new_index] != NULL) {
+                // _ol_traverse_ll returns the last bucket in LL
+                ol_bucket *last_bucket = _ol_traverse_ll(tmp_hashes[new_index]);
+                last_bucket->next = bucket;
+            } else {
+                tmp_hashes[new_index] = bucket;
+            }
+        }
     }
-    db->hashes = db->tmp_hashes;
-    db->tmp_hashes = NULL;
+    free(db->hashes);
+    db->hashes = tmp_hashes;
     db->cur_ht_size = to_alloc;
+    printf("[-] Current hash table size is now: %zu\n", to_alloc);
     return 0;
 }
 
-ol_val ol_unjar(ol_database *db, char *key) {
-    int64_t hash = _ol_gen_hash(key);
-    int index = _ol_get_index_search(db, hash, key);
+ol_val ol_unjar(ol_database *db, const char *key) {
+    unsigned char hash[32];
+    MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
+    ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
-    if (index >= 0) {
-        return db->hashes[index]->data_ptr;
+    if (bucket != NULL) {
+        return bucket->data_ptr;
     }
 
     return NULL;
 }
 
-int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
+int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize) {
     // Check to see if we have an existing entry with that key
-    int64_t hash = _ol_gen_hash(key);
-    int index = _ol_get_index_search(db, hash, key);
-    // TODO check for errors (-1) from the search function
-    ol_hash *old_hash = db->hashes[index];
+    unsigned char hash[32];
+    MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
+    ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
-    if (old_hash != NULL && index >= 0) {
+    if (bucket != NULL && strncmp(bucket->key, key, KEY_SIZE) == 0) {
         printf("[-] realloc\n");
         unsigned char *data = realloc(old_hash->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data) {
             return 4;
         }
 
-        old_hash->data_size = vsize;
-        old_hash->data_ptr = data;
+        bucket->data_size = vsize;
+        bucket->data_ptr = data;
         return 0;
     }
     index = 0;
 
     // Looks like we don't have an old hash
-    ol_hash *new_hash = malloc(sizeof(ol_hash));
-    if (new_hash == NULL) {
+    ol_bucket *new_bucket = malloc(sizeof(ol_bucket));
+    if (new_bucket == NULL) {
         return 1;
     }
 
+    new_bucket->next = NULL;
+
     //Silently truncate because #yolo
-    if (strncpy(new_hash->key, key, KEY_SIZE) != new_hash->key) {
+    if (strncpy(new_bucket->key, key, KEY_SIZE) != new_bucket->key) {
         return 2;
     }
 
-    new_hash->data_size = vsize;
+    new_bucket->data_size = vsize;
     unsigned char *data = malloc(vsize);
     if (memcpy(data, value, vsize) != data) {
         return 3;
     }
-    new_hash->data_ptr = data;
-    new_hash->hash = hash;
+    new_bucket->data_ptr = data;
+    new_bucket->hash = hash;
 
-    // Do we need to rehash?
-    if (db->rcrd_cnt == (db->cur_ht_size/sizeof(hash))) {
+    int bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
+    // TODO: rehash this shit at 80%
+    if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
+        printf("[-] Record count is now %i so regrowing hash table.\n", db->rcrd_cnt);
         int ret;
         ret = _ol_grow_and_rehash_db(db);
         if (ret > 0) {
             printf("Error: Problem rehashing DB. Error code: %i\n", ret);
-            exit(1);
+            return 4;
         }
     }
 
-    index = _ol_get_index_insert(db->hashes, db->cur_ht_size, hash, key);
+    ret = _ol_set_bucket(db, );
 
     // Insert it into our db struct
     db->hashes[index] = new_hash;
@@ -233,16 +245,17 @@ int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize) {
     return 0;
 }
 
-int ol_scoop(ol_database *db, char *key) {
+int ol_scoop(ol_database *db, const char *key) {
     // you know... like scoop some data from the jar and eat it? All gone.
-    int64_t hash = _ol_gen_hash(key);
+    unsigned char hash[32];
+    MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
     int index = _ol_get_index_search(db, hash, key);
 
     if (index < 0) {
         return 1;
     }
 
-    ol_hash *old_hash = db->hashes[index];
+    ol_bucket *old_hash = db->hashes[index];
 
     if (old_hash != NULL) {
         ol_val free_me = old_hash->data_ptr;

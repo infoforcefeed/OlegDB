@@ -10,6 +10,7 @@ else
 endif
 
 all:
+	$(cc) $(CFLAGS) -I./include -o murmur3.o -c ./src/murmur3.c
 	$(cc) $(CFLAGS) -I./include -o oleg.o -c ./src/oleg.c
 	$(cc) $(CFLAGS) -I./include -o test.o -c ./src/test.c
 	$(cc) $(CFLAGS) -I./include -o server.o -c ./src/server.c

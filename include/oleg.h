@@ -20,8 +20,9 @@
 /* Hardcoded key size */
 #define KEY_SIZE 16
 /* The size (in bytes) of a hash block */
-#define HASH_MALLOC 8192
+#define HASH_MALLOC 65536
 #define PATH_LENGTH 256
+#define DEVILS_SEED 666
 
 /* Modes of opening and operating on a DB */
 typedef enum {
@@ -34,11 +35,12 @@ typedef enum {
 /* Data that the DB stores */
 typedef unsigned char *ol_val;
 typedef struct bucket {
-    char      key[KEY_SIZE]; // The key used to reference the data
-    ol_val    data_ptr;
-    size_t    data_size;
-    __int64_t hash;
-} ol_hash;
+    char             key[KEY_SIZE]; // The key used to reference the data
+    ol_val           data_ptr;
+    size_t           data_size;
+    unsigned char    hash;
+    struct ol_bucket *next; // The next ol_bucket in this chain, if any
+} ol_bucket;
 
 typedef struct ol_database {
     char    name[8];                 // Name of the database
@@ -46,10 +48,8 @@ typedef struct ol_database {
     int     rcrd_cnt;                // Number of records in the database. Eventually consistent.
     int     key_collisions;          // How many times have our keys collided.
     time_t  created;                 // For uptime.
-    int     rehashes;                // How many times have we rehashed
     size_t  cur_ht_size;             // Gotta keep track of that table size
-    ol_hash **tmp_hashes;            // For rehashing
-    ol_hash **hashes;                // All hashes in the DB
+    ol_bucket **hashes;                // All hashes in the DB
 } ol_database;
 
 typedef struct ol_meta {
@@ -61,11 +61,11 @@ ol_database *ol_open(char *path, ol_filemode filemode);
 /* Closes a database, makes sure everything is written and frees memory */
 int ol_close(ol_database *database);
 /* Unjar a value from the mayo */
-ol_val ol_unjar(ol_database *db, char *key);
+ol_val ol_unjar(ol_database *db, const char *key);
 /* it's easy to piss in a big bucket; it's NOT easy to piss in 19 jars */
-int ol_jar(ol_database *db, char *key, unsigned char *value, size_t vsize);
+int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize);
 /* Get that crap out of my mayo jar */
-int ol_scoop(ol_database *db, char *key);
+int ol_scoop(ol_database *db, const char *key);
 /* Helper for meta info */
 int ol_uptime(ol_database *db);
 int _ol_ht_bucket_max(size_t);
