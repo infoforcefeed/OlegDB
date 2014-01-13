@@ -16,7 +16,7 @@ all:
 	$(cc) $(CFLAGS) -I./include -o test.o -c ./src/test.c
 	$(cc) $(CFLAGS) -I./include -o server.o -c ./src/server.c
 	$(cc) $(CFLAGS) -I./include -o main.o -c ./src/main.c
-	$(cc) $(CFLAGS) parsing.o main.o test.o server.o oleg.o $(MATH_LINKER) -o olegdb
+	$(cc) $(CFLAGS) parsing.o main.o test.o server.o oleg.o murmur3.o $(MATH_LINKER) -o olegdb
 
 clean:
 	rm *.o
