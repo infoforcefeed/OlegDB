@@ -13,6 +13,7 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -34,22 +35,23 @@ typedef enum {
 
 /* Data that the DB stores */
 typedef unsigned char *ol_val;
-typedef struct bucket {
-    char             key[KEY_SIZE]; // The key used to reference the data
-    ol_val           data_ptr;
-    size_t           data_size;
-    unsigned char    hash;
-    struct ol_bucket *next; // The next ol_bucket in this chain, if any
-} ol_bucket;
+struct ol_bucket {
+    char              key[KEY_SIZE]; // The key used to reference the data
+    ol_val            data_ptr;
+    size_t            data_size;
+    uint32_t          hash;
+    struct ol_bucket  *next; // The next ol_bucket in this chain, if any
+};
+typedef struct ol_bucket ol_bucket; // To enable self-referential struct
 
 typedef struct ol_database {
-    char    name[8];                 // Name of the database
-    char    path[PATH_LENGTH];       // Path to the database directory
-    int     rcrd_cnt;                // Number of records in the database. Eventually consistent.
-    int     key_collisions;          // How many times have our keys collided.
-    time_t  created;                 // For uptime.
-    size_t  cur_ht_size;             // Gotta keep track of that table size
-    ol_bucket **hashes;                // All hashes in the DB
+    char      name[8];           // Name of the database
+    char      path[PATH_LENGTH]; // Path to the database directory
+    int       rcrd_cnt;          // Number of records in the database. Eventually consistent.
+    int       key_collisions;    // How many times have our keys collided.
+    time_t    created;           // For uptime.
+    size_t    cur_ht_size;       // Gotta keep track of that table size
+    ol_bucket **hashes;          // All hashes in the DB
 } ol_database;
 
 typedef struct ol_meta {

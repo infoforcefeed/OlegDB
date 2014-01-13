@@ -12,7 +12,6 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 #include <math.h>
-#include <inttypes.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -116,12 +115,11 @@ inline int _ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
 }
 
-int _ol_calc_idx(const size_t ht_size, const unsigned char *hash) {
+int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
     int index;
     index = hash % _ol_ht_bucket_max(ht_size);
     return index;
 }
-
 
 ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
     ol_bucket *tmp_bucket = bucket;
@@ -131,7 +129,7 @@ ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
     return tmp_bucket;
 }
 
-ol_bucket *_ol_get_bucket(const ol_database *db, const unsigned char *hash, const char *key) {
+ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char *key) {
     int index = _ol_calc_idx(db->cur_ht_size, hash);
     if (db->hashes[index] != NULL) {
         ol_bucket *tmp_bucket = db->hashes[index];
@@ -141,6 +139,20 @@ ol_bucket *_ol_get_bucket(const ol_database *db, const unsigned char *hash, cons
             tmp_bucket = _ol_get_last_bucket_in_slot(tmp_bucket);
         }
     }
+    return NULL;
+}
+
+int _ol_set_bucket(const ol_database *db, ol_bucket *bucket) {
+    // TODO: error codes?
+    int index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
+    if (db->hashes[index] != NULL) {
+        ol_bucket *tmp_bucket = db->hashes[index];
+        tmp_bucket = _ol_get_last_bucket_in_slot(tmp_bucket);
+        tmp_bucket->next = bucket;
+    } else {
+        db->hashes[index] = bucket;
+    }
+    return 0;
 }
 
 int _ol_grow_and_rehash_db(ol_database *db) {
@@ -158,7 +170,8 @@ int _ol_grow_and_rehash_db(ol_database *db) {
             new_index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
             if (tmp_hashes[new_index] != NULL) {
                 // _ol_traverse_ll returns the last bucket in LL
-                ol_bucket *last_bucket = _ol_traverse_ll(tmp_hashes[new_index]);
+                ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(
+                        tmp_hashes[new_index]);
                 last_bucket->next = bucket;
             } else {
                 tmp_hashes[new_index] = bucket;
@@ -173,7 +186,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
 }
 
 ol_val ol_unjar(ol_database *db, const char *key) {
-    unsigned char hash[32];
+    uint32_t hash;
     MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
@@ -186,13 +199,14 @@ ol_val ol_unjar(ol_database *db, const char *key) {
 
 int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize) {
     // Check to see if we have an existing entry with that key
-    unsigned char hash[32];
+    int ret;
+    uint32_t hash;
     MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
     if (bucket != NULL && strncmp(bucket->key, key, KEY_SIZE) == 0) {
         printf("[-] realloc\n");
-        unsigned char *data = realloc(old_hash->data_ptr, vsize);
+        unsigned char *data = realloc(bucket->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data) {
             return 4;
         }
@@ -201,7 +215,6 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
         bucket->data_ptr = data;
         return 0;
     }
-    index = 0;
 
     // Looks like we don't have an old hash
     ol_bucket *new_bucket = malloc(sizeof(ol_bucket));
@@ -227,8 +240,7 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
     int bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
     // TODO: rehash this shit at 80%
     if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
-        printf("[-] Record count is now %i so regrowing hash table.\n", db->rcrd_cnt);
-        int ret;
+        printf("[-] Record count is now %i; growing hash table.\n", db->rcrd_cnt);
         ret = _ol_grow_and_rehash_db(db);
         if (ret > 0) {
             printf("Error: Problem rehashing DB. Error code: %i\n", ret);
@@ -236,41 +248,56 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
         }
     }
 
-    ret = _ol_set_bucket(db, );
+    ret = _ol_set_bucket(db, new_bucket);
+
+    if(ret > 0) {
+        printf("Error: Problem inserting bucket into slot: Error code:%i\n", ret);
+    }
 
     // Insert it into our db struct
-    db->hashes[index] = new_hash;
-    db->rcrd_cnt += 1;
+    //db->hashes[index] = new_hash;
+    //db->rcrd_cnt += 1;
 
     return 0;
 }
 
 int ol_scoop(ol_database *db, const char *key) {
     // you know... like scoop some data from the jar and eat it? All gone.
-    unsigned char hash[32];
+    uint32_t hash;
     MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
-    int index = _ol_get_index_search(db, hash, key);
+    int index = _ol_calc_idx(db->cur_ht_size, hash);
 
     if (index < 0) {
         return 1;
     }
 
-    ol_bucket *old_hash = db->hashes[index];
+    if (db->hashes[index] != NULL) {
+        ol_bucket *bucket = db->hashes[index];
 
-    if (old_hash != NULL) {
-        ol_val free_me = old_hash->data_ptr;
-
-        free(free_me);
-        free(old_hash);
-
-        old_hash = NULL;
-
-        db->hashes[index] = NULL;
-
-        // Decrement our record count
-        db->rcrd_cnt -= 1;
-
-        return 0;
+        if (strncmp(bucket->key, key, KEY_SIZE) == 0){
+            if (bucket->next != NULL) {
+                db->hashes[index] = bucket->next;
+            } else {
+                db->hashes[index] = NULL;
+            }
+            free(bucket);
+            db->rcrd_cnt -= 1;
+            return 0;
+        } else if (bucket->next != NULL) {
+            ol_bucket *last;
+            do {
+                last = bucket;
+                bucket = bucket->next;
+                if (strncmp(bucket->key, key, KEY_SIZE) == 0) {
+                    if (bucket->next != NULL) {
+                        last->next = bucket->next;
+                    }
+                    free(bucket);
+                    db->rcrd_cnt -= 1;
+                    return 0;
+                }
+            } while (bucket->next != NULL);
+        }
     }
     return 2;
 }
