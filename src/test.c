@@ -22,7 +22,7 @@ int test_open_close() {
 }
 
 int test_bucket_max() {
-    int expected_bucket_max = 1024;
+    int expected_bucket_max = HASH_MALLOC / 8;
     ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
 
     int generated_bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
@@ -40,7 +40,7 @@ int test_jar() {
     printf("Opened DB: %p.\n", db);
 
     int i;
-    int max_records = 10000;
+    int max_records = 100000;
     unsigned char to_insert[] = "123456789";
     for (i = 0; i < max_records; i++) { // 8======D
         char key[16] = "crazy hash";

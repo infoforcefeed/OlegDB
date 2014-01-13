@@ -46,11 +46,15 @@ int ol_close(ol_database *db){
     printf("[-] Iterations: %d.\n", iterations);
     for (i = 0; i <= iterations; i++) { // 8=======D
         if (db->hashes[i] != NULL) {
-            ol_val free_me = db->hashes[i]->data_ptr;
-            //printf("%s is free now.\n", db->hashes[i]->key);
-            free(free_me);
-            free(db->hashes[i]);
-            freed++;
+            ol_bucket *bucket = db->hashes[i];
+            ol_bucket *next_bucket;
+            while (next_bucket != NULL) {
+                next_bucket = bucket->next;
+                ol_val bucket_data = bucket->data_ptr;
+                free(bucket_data);
+                free(bucket);
+                freed++;
+            }
         }
     }
 

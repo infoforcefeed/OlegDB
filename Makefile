@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Werror -g
+CFLAGS=-Wall -Werror -g3
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 cc=gcc -std=c99
 
