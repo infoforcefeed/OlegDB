@@ -95,7 +95,7 @@ ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char
     return NULL;
 }
 
-int _ol_set_bucket(const ol_database *db, ol_bucket *bucket) {
+int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
     // TODO: error codes?
     int index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
     if (db->hashes[index] != NULL) {
@@ -105,6 +105,7 @@ int _ol_set_bucket(const ol_database *db, ol_bucket *bucket) {
     } else {
         db->hashes[index] = bucket;
     }
+    db->rcrd_cnt++;
     return 0;
 }
 
