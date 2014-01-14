@@ -151,7 +151,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
 
 ol_val ol_unjar(ol_database *db, const char *key) {
     uint32_t hash;
-    MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
+    MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
     if (bucket != NULL) {
@@ -165,7 +165,7 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
     // Check to see if we have an existing entry with that key
     int ret;
     uint32_t hash;
-    MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
+    MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
     if (bucket != NULL && strncmp(bucket->key, key, KEY_SIZE) == 0) {
@@ -228,7 +228,7 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
 int ol_scoop(ol_database *db, const char *key) {
     // you know... like scoop some data from the jar and eat it? All gone.
     uint32_t hash;
-    MurmurHash3_x64_128(key, strlen(key), DEVILS_SEED, &hash);
+    MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
     int index = _ol_calc_idx(db->cur_ht_size, hash);
 
     if (index < 0) {
