@@ -160,6 +160,14 @@ void handle_delete(ol_database *db, const http *request,
         sizeof(cliaddr));
 }
 
+void _ol_close_client(int connfd) {
+    printf("[-] Closing client: %i\n", connfd);
+    if(close(connfd) != 0) { // BAI
+        printf("[x] Error: Could not close client FD\n");
+        exit(1);
+    }
+}
+
 void ol_server(ol_database *db, int port) {
     int sock, connfd;
     struct sockaddr_in servaddr, cliaddr;
@@ -174,6 +182,7 @@ void ol_server(ol_database *db, int port) {
 
     if (bind(sock, (struct sockaddr *)&servaddr, sizeof(servaddr))) {
         printf("[X] Error: Could not bind socket.\n");
+        ol_close(db);
         exit(1);
     };
 
@@ -189,6 +198,7 @@ void ol_server(ol_database *db, int port) {
     while (1) { // 8======D
         char mesg[1000];
         clilen = sizeof(cliaddr);
+        printf("Waiting for connection...\n");
         connfd = accept(sock, (struct sockaddr *)&cliaddr, &clilen);
 
         printf("\n[-] ------\n");
@@ -215,20 +225,26 @@ void ol_server(ol_database *db, int port) {
 
             if (strncmp(request->method, "GET", 3) == 0) {
                 handle_get(db, request, connfd, cliaddr);
+                _ol_close_client(connfd);
+                free(request);
                 break;
             } else if (strncmp(request->method, "POST", 4) == 0) {
                 handle_post(db, request, connfd, cliaddr);
+                _ol_close_client(connfd);
+                free(request);
                 break;
             } else if (strncmp(request->method, "DELETE", 6) == 0) {
                 handle_delete(db, request, connfd, cliaddr);
+                _ol_close_client(connfd);
+                free(request);
                 break;
             } else {
                 printf("[X] No matching method.\n");
                 handle_not_found(connfd, cliaddr);
+                _ol_close_client(connfd);
+                free(request);
                 break;
             }
-            close(connfd); // BAI
         }
-        free(request);
     }
 }

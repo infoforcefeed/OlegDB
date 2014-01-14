@@ -16,8 +16,26 @@
 int test_open_close() {
     ol_database *db = ol_open(DB_PATH, OL_CONSUME_DIR);
     printf("Opened DB: %p.\n", db);
+    int ret = ol_close(db);
+    if (ret > 0){
+        printf("Couldn't free all memory.\n");
+    } else {
+        printf("Closed DB.\n");
+    }
+    return 0;
+}
 
-    printf("Closed DB.\n");
+int test_bucket_max() {
+    int expected_bucket_max = HASH_MALLOC / 8;
+    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+
+    int generated_bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
+    if (expected_bucket_max != generated_bucket_max) {
+        printf("Error: Unexpected bucket max. Got: %d", generated_bucket_max);
+        ol_close(db);
+        return 1;
+    }
+    ol_close(db);
     return 0;
 }
 
@@ -26,16 +44,19 @@ int test_jar() {
     printf("Opened DB: %p.\n", db);
 
     int i;
-    int max_records = 10000;
-    unsigned char to_insert[] = "Wu-tang cat ain't nothin' to fuck with";
+    int max_records = 1000000;
+    unsigned char to_insert[] = "123456789";
     for (i = 0; i < max_records; i++) { // 8======D
-        char key[16] = "testkey";
-        char append[5] = "";
+        char key[16] = "crazy hash";
+        char append[10] = "";
 
         sprintf(append, "%i", i);
         strcat(key, append);
 
-        int insert_result = ol_jar(db, key, to_insert, strlen((char*)to_insert));
+        //printf("[-] Record count: %i\n", db->rcrd_cnt);
+
+        size_t len = strlen((char *)to_insert);
+        int insert_result = ol_jar(db, key, to_insert, len);
 
         if (insert_result > 0) {
             printf("Error: Could not insert. Error code: %i\n", insert_result);
@@ -195,6 +216,7 @@ void run_tests(int results[2]) {
 
     ol_test_start();
     ol_run_test(test_open_close);
+    ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
     ol_run_test(test_unjar);
     ol_run_test(test_scoop);
