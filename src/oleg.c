@@ -54,7 +54,6 @@ int ol_close(ol_database *db){
                 free(ptr->data_ptr);
                 free(ptr);
                 freed++;
-                bucket = next_bucket;
             }
         }
     }
