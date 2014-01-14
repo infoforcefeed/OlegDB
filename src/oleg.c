@@ -47,13 +47,14 @@ int ol_close(ol_database *db){
     for (i = 0; i <= iterations; i++) { // 8=======D
         if (db->hashes[i] != NULL) {
             ol_bucket *bucket = db->hashes[i];
-            ol_bucket *next_bucket;
+            ol_bucket *next_bucket = bucket->next;
             while (next_bucket != NULL) {
                 next_bucket = bucket->next;
                 ol_val bucket_data = bucket->data_ptr;
                 free(bucket_data);
                 free(bucket);
                 freed++;
+                bucket = next_bucket;
             }
         }
     }
