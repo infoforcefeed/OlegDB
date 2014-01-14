@@ -256,6 +256,7 @@ int ol_scoop(ol_database *db, const char *key) {
                     if (bucket->next != NULL) {
                         last->next = bucket->next;
                     }
+                    free(bucket->data_ptr);
                     free(bucket);
                     db->rcrd_cnt -= 1;
                     return 0;
