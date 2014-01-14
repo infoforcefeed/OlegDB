@@ -25,6 +25,11 @@ ol_database *ol_open(char *path, ol_filemode filemode){
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = calloc(1, to_alloc);
     new_db->cur_ht_size = to_alloc;
+    /* NULL everything */
+    int i;
+    for (i = 0; i < _ol_ht_bucket_max(to_alloc); i++){
+        new_db->hashes[i] = NULL;
+    }
 
     time_t created;
     time(&created);
@@ -46,10 +51,9 @@ int ol_close(ol_database *db){
     printf("[-] Iterations: %d.\n", iterations);
     for (i = 0; i <= iterations; i++) { // 8=======D
         if (db->hashes[i] != NULL) {
-            ol_bucket *head = db->hashes[i];
             ol_bucket *ptr;
             ol_bucket *next;
-            for (ptr = head; NULL != ptr; ptr = next) {
+            for (ptr = db->hashes[i]; NULL != ptr; ptr = next) {
                 next = ptr->next;
                 free(ptr->data_ptr);
                 free(ptr);
@@ -244,6 +248,7 @@ int ol_scoop(ol_database *db, const char *key) {
             } else {
                 db->hashes[index] = NULL;
             }
+            free(bucket->data_ptr);
             free(bucket);
             db->rcrd_cnt -= 1;
             return 0;

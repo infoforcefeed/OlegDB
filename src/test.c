@@ -16,8 +16,12 @@
 int test_open_close() {
     ol_database *db = ol_open(DB_PATH, OL_CONSUME_DIR);
     printf("Opened DB: %p.\n", db);
-
-    printf("Closed DB.\n");
+    int ret = ol_close(db);
+    if (ret > 0){
+        printf("Couldn't free all memory.\n");
+    } else {
+        printf("Closed DB.\n");
+    }
     return 0;
 }
 
@@ -40,7 +44,7 @@ int test_jar() {
     printf("Opened DB: %p.\n", db);
 
     int i;
-    int max_records = 100000;
+    int max_records = 1000000;
     unsigned char to_insert[] = "123456789";
     for (i = 0; i < max_records; i++) { // 8======D
         char key[16] = "crazy hash";
