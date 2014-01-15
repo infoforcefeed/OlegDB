@@ -200,8 +200,8 @@ void ol_server(ol_database *db, int port) {
         clilen = sizeof(cliaddr);
         printf("Waiting for connection...\n");
         connfd = accept(sock, (struct sockaddr *)&cliaddr, &clilen);
-
         printf("\n[-] ------\n");
+        printf("[-] Opened client: %i\n", connfd);
         printf("[-] Records: %i\n", db->rcrd_cnt);
         printf("[-] DB: %p\n", db);
 
@@ -225,26 +225,16 @@ void ol_server(ol_database *db, int port) {
 
             if (strncmp(request->method, "GET", 3) == 0) {
                 handle_get(db, request, connfd, cliaddr);
-                _ol_close_client(connfd);
-                free(request);
-                break;
             } else if (strncmp(request->method, "POST", 4) == 0) {
                 handle_post(db, request, connfd, cliaddr);
-                _ol_close_client(connfd);
-                free(request);
-                break;
             } else if (strncmp(request->method, "DELETE", 6) == 0) {
                 handle_delete(db, request, connfd, cliaddr);
-                _ol_close_client(connfd);
-                free(request);
-                break;
             } else {
                 printf("[X] No matching method.\n");
                 handle_not_found(connfd, cliaddr);
-                _ol_close_client(connfd);
-                free(request);
-                break;
             }
+            _ol_close_client(connfd);
+            free(request);
         }
     }
 }
