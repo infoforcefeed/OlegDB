@@ -235,6 +235,7 @@ void ol_server(ol_database *db, int port) {
             }
             _ol_close_client(connfd);
             free(request);
+            break;
         }
     }
 }
