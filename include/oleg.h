@@ -45,13 +45,14 @@ struct ol_bucket {
 typedef struct ol_bucket ol_bucket; // To enable self-referential struct
 
 typedef struct ol_database {
-    char      name[8];           // Name of the database
-    char      path[PATH_LENGTH]; // Path to the database directory
-    int       rcrd_cnt;          // Number of records in the database. Eventually consistent.
-    int       key_collisions;    // How many times have our keys collided.
-    time_t    created;           // For uptime.
-    size_t    cur_ht_size;       // Gotta keep track of that table size
-    ol_bucket **hashes;          // All hashes in the DB
+    char      name[8];                 // Name of the database
+    char      path[PATH_LENGTH];       // Path to the database directory
+    char      *dump_file;              // Path and filename of db dump
+    int       rcrd_cnt;                // Number of records in the database. Eventually consistent.
+    int       key_collisions;          // How many times have our keys collided.
+    time_t    created;                 // For uptime.
+    size_t    cur_ht_size;             // Gotta keep track of that table size
+    ol_bucket **hashes;                // All hashes in the DB
 } ol_database;
 
 typedef struct ol_meta {
