@@ -24,10 +24,10 @@ int ol_save_db(ol_database *db) {
     }
 
     /* do the saving here */
-    printf("size: %zu\n", sizeof(VERSION));
     snprintf(header, sizeof(header), "%s%03d", DUMP_SIG, DUMP_VERSION);
-    printf("header is: %s", header);
-    fwrite(header, sizeof(header), 1, fd);
+    printf("header is: %s\n", header);
+    int header_size = fwrite(header, sizeof(header), 1, fd);
+    printf("Wrote %i for the header\n", header_size);
     int *num_records = &db->rcrd_cnt;
     fwrite(num_records, sizeof(db->rcrd_cnt), 1, fd);
 
@@ -38,7 +38,7 @@ int ol_save_db(ol_database *db) {
         bucket = db->hashes[i];
         if (bucket != NULL) {
             do {
-                size_t key_size = sizeof(bucket->key);
+                size_t key_size = strlen(bucket->key);
                 fwrite(&key_size, sizeof(int), 1, fd);
                 fwrite(bucket->key, sizeof(char), key_size, fd);
                 fwrite(&bucket->data_size, sizeof(int), 1, fd);
@@ -87,23 +87,21 @@ int ol_load_db(ol_database *db, char *filename) {
         printf("Error: Cannot parse this version\n");
         return -1;
     }
-    buf[0] = '\0';
-    fread(&buf, 1, 1, fd);
-    rcrd_cnt = *buf;
+    fread(&rcrd_cnt, sizeof(int), 1, fd);
     printf("rcrd_cnt is: %i\n", rcrd_cnt);
 
     char *tmp_key, *tmp_value;
     int key_size, value_size;
     for (i = 0; i < rcrd_cnt; i++) {
-        fread(&key_size, 1, 1, fd);
+        fread(&key_size, sizeof(int), 1, fd);
         printf("Key size is: %i\n", key_size);
         tmp_key = malloc(key_size);
-        fread(tmp_key, key_size, 1, fd);
+        fread(tmp_key, sizeof(char), key_size, fd);
         printf("tmp_key is: %s\n", tmp_key);
-        fread(&value_size, 1, 1, fd);
+        fread(&value_size, sizeof(int), 1, fd);
         printf("value size is: %i\n", value_size);
         tmp_value = malloc(value_size);
-        fread(tmp_value, value_size, 1, fd);
+        fread(tmp_value, sizeof(char), value_size, fd);
         printf("tmp_value is: %s\n", tmp_value);
     }
 
