@@ -25,6 +25,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "oleg.h"
+#include "dump.h"
 
 #define DB_PATH "/tmp/oleg_is_king"
 

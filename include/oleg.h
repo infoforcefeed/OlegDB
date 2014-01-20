@@ -27,6 +27,9 @@
 #include <time.h>
 
 
+/* ye ol version */
+#define VERSION "0.1.0"
+
 /* Hardcoded key size */
 #define KEY_SIZE 16
 /* The size (in bytes) of a hash block */
