@@ -4,7 +4,7 @@
 -define(LISTEN_PORT, 8080).
 
 server_manager(Port) ->
-    case gen_tcp:listen(Port, [list, {active, false}, {reuseaddr, true}]) of
+    case gen_tcp:listen(Port, [binary, {active, false}, {reuseaddr, true}]) of
         {ok, Sock} ->
             io:format("[-] Listening on port ~p~n", [?LISTEN_PORT]),
             do_accept(Sock);
@@ -34,7 +34,6 @@ request_handler(Accepted) ->
         {error, timeout} ->
             io:format("[-] Client timed out.~n"),
             ok
-
     end.
 
 main() ->
