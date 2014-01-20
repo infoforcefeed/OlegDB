@@ -22,6 +22,8 @@ all:
 	$(cc) $(CFLAGS) $(MATH_LINKER) -shared -Wl,-soname,$(SONAME) -o $(LIB_DIR)liboleg.so.$(VERSION) murmur3.o oleg.o
 	$(cc) $(CFLAGS) $(MATH_LINKER) -L$(LIB_DIR) -l:liboleg.so.$(VERSION) -o $(BIN_DIR)oleg_test murmur3.o oleg.o test.o main.o
 	if ! [ -L $(LIB_DIR)$(SONAME) ]; then ln -s $(LIB_DIR)liboleg.so.$(VERSION) $(LIB_DIR)$(SONAME); fi
+	# Erlang stuff
+	erlc -smp -W1 -Werror -b beam -I./include -o $(BIN_DIR) ./src/olegdb.erl
 
 clean:
 	rm $(BIN_DIR)*
