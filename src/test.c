@@ -56,14 +56,12 @@ int test_jar() {
     int i;
     int max_records = 1000000;
     unsigned char to_insert[] = "123456789";
-    for (i = 0; i < max_records; i++) { // 8======D
+    for (i = 0; i < max_records; i++) { /* 8======D */
         char key[16] = "crazy hash";
         char append[10] = "";
 
         sprintf(append, "%i", i);
         strcat(key, append);
-
-        //printf("[-] Record count: %i\n", db->rcrd_cnt);
 
         size_t len = strlen((char *)to_insert);
         int insert_result = ol_jar(db, key, to_insert, len);
@@ -91,7 +89,7 @@ int test_jar() {
 }
 
 int test_unjar() {
-    // TODO: This test should actually make sure all of the data is consistent
+    /* TODO: This test should actually make sure all of the data is consistent */
     ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 

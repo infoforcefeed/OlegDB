@@ -26,8 +26,9 @@
 #include "test.h"
 #include "oleg.h"
 
-/* I'm sorry Vishnu */
-//OMG WHY
+/* I'm sorry Vishnu
+* OMG WHY
+*/
 ol_database *db;
 
 void clean_up(int signum) {

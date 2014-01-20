@@ -59,7 +59,7 @@ int ol_close(ol_database *db){
     int freed = 0;
     printf("[-] Freeing %d records.\n", rcrd_cnt);
     printf("[-] Iterations: %d.\n", iterations);
-    for (i = 0; i <= iterations; i++) { // 8=======D
+    for (i = 0; i <= iterations; i++) { /* 8=======D */
         if (db->hashes[i] != NULL) {
             ol_bucket *ptr;
             ol_bucket *next;
@@ -119,7 +119,7 @@ ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char
 }
 
 int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
-    // TODO: error codes?
+    /* TODO: error codes? */
     int index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
     if (db->hashes[index] != NULL) {
         db->key_collisions++;
@@ -147,7 +147,6 @@ int _ol_grow_and_rehash_db(ol_database *db) {
         if (bucket != NULL) {
             new_index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
             if (tmp_hashes[new_index] != NULL) {
-                // _ol_traverse_ll returns the last bucket in LL
                 ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(
                         tmp_hashes[new_index]);
                 last_bucket->next = bucket;
@@ -176,12 +175,12 @@ ol_val ol_unjar(ol_database *db, const char *key) {
 }
 
 int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize) {
-    // Check to see if we have an existing entry with that key
     int ret;
     uint32_t hash;
     MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
+    /* Check to see if we have an existing entry with that key */
     if (bucket != NULL && strncmp(bucket->key, key, KEY_SIZE) == 0) {
         printf("[-] realloc\n");
         unsigned char *data = realloc(bucket->data_ptr, vsize);
@@ -194,7 +193,7 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
         return 0;
     }
 
-    // Looks like we don't have an old hash
+    /* Looks like we don't have an old hash */
     ol_bucket *new_bucket = malloc(sizeof(ol_bucket));
     if (new_bucket == NULL) {
         return 1;
@@ -202,7 +201,7 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
 
     new_bucket->next = NULL;
 
-    //Silently truncate because #yolo
+    /* Silently truncate because #yolo */
     if (strncpy(new_bucket->key, key, KEY_SIZE) != new_bucket->key) {
         return 2;
     }
@@ -216,7 +215,7 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
     new_bucket->hash = hash;
 
     int bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
-    // TODO: rehash this shit at 80%
+    /* TODO: rehash this shit at 80% */
     if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
         printf("[-] Record count is now %i; growing hash table.\n", db->rcrd_cnt);
         ret = _ol_grow_and_rehash_db(db);
@@ -232,15 +231,11 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
         printf("Error: Problem inserting bucket into slot: Error code:%i\n", ret);
     }
 
-    // Insert it into our db struct
-    //db->hashes[index] = new_hash;
-    //db->rcrd_cnt += 1;
-
     return 0;
 }
 
 int ol_scoop(ol_database *db, const char *key) {
-    // you know... like scoop some data from the jar and eat it? All gone.
+    /* you know... like scoop some data from the jar and eat it? All gone. */
     uint32_t hash;
     MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
     int index = _ol_calc_idx(db->cur_ht_size, hash);
@@ -283,7 +278,7 @@ int ol_scoop(ol_database *db, const char *key) {
 }
 
 int ol_uptime(ol_database *db) {
-    // Make uptime
+    /* Make uptime */
     time_t now;
     double diff;
     time(&now);

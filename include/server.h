@@ -34,7 +34,7 @@
 #define MAX_CLIENTS 100
 #define LOCAL_PORT 8080
 #define SOCK_RECV_MAX 1000
-#define CLENGTH_LENGTH 16 // the length of "Content-Length: " in chars
+#define CLENGTH_LENGTH 16 /* the length of "Content-Length: " in chars */
 
 #define METHOD_MAX 32
 #define URL_MAX 256
