@@ -22,9 +22,9 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "test.h"
 #include "oleg.h"
-#include "server.h"
 
 /* I'm sorry Vishnu */
 //OMG WHY
@@ -53,16 +53,6 @@ int main(int argc, char *argv[]) {
             usage(argv[0]);
             return 1;
         }
-    } else {
-        printf("Starting olegdb\n");
-        fflush(stdout);
-
-        signal(SIGTERM, clean_up);
-        signal(SIGINT, clean_up);
-
-        db = ol_open(DB_PATH,
-                OL_MANUFACTURE_DIR | OL_CONSUME_DIR | OL_SLAUGHTER_DIR);
-        ol_server(db, LOCAL_PORT);
     }
 
     printf("No.\n");
