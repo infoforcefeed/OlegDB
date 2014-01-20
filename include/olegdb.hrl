@@ -21,6 +21,6 @@
 %%% THE SOFTWARE.
 -record(ol_record, {database,
                     key,
-                    content_type=nil,
+                    content_type="application/octet-stream",
                     content_length=nil,
                     value}).
