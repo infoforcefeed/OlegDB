@@ -33,6 +33,17 @@ To run tests:
 
 curl2sudo® install script coming soon.
 
+Dumps
+=====
+
+Olegdb dumps are binary.
+
+10 byte -> OLEGDBDUMP
+1 byte  -> Version number hex
+1 byte  -> Number of keys
+1 byte  -> Size of data (n)
+n bytes -> data (keys and values)
+
 Roadmap
 =======
 
