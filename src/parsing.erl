@@ -13,7 +13,10 @@ read_line1(<<Chunk:1/binary, Rest/binary>>, Tail) ->
             Tail;
         _ ->
             read_line1(Rest, <<Chunk:1/binary,Tail/binary>>)
-    end.
+    end;
+read_line1(_, Tail) -> Tail.
 
 parse_http(Data) ->
-    read_line(Data).
+    Line = read_line(Data),
+    io:format("[-] Data: ~p~n", [Line]),
+    Line.
