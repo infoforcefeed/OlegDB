@@ -27,7 +27,7 @@ request_handler(Accepted) ->
     % Read in all data, timeout after 60 seconds
     case gen_tcp:recv(Accepted, 0, 60000) of
         {ok, Data} ->
-            gen_tcp:send(Accepted, Data),
+            gen_tcp:send(Accepted, parsing:parse_http(Data)),
             request_handler(Accepted);
         {error, closed} ->
             ok;
