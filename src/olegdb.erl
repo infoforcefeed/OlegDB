@@ -58,16 +58,26 @@ request_handler(Accepted) ->
             ok
     end.
 
+not_found_response() ->
+    "HTTP/1.1 404 Not Found\r\n"
+    "Status: 404 Not Found\r\n"
+    "Server: OlegDB/fresh_cuts_n_jams\r\n"
+    "Content-Length: 26\r\n"
+    "Connection: close\r\n"
+    "Content-Type: text/plain\r\n"
+    "\r\n"
+    "These aren't your ghosts.\n".
+
 route(Bits) -> 
     case Bits of
         <<"GET", _/binary>> ->
             io:format("[-] Header: ~p~n", [parsing:parse_get(Bits)]),
-            "Get request.";
+            not_found_response();
         <<"POST", _/binary>> ->
             io:format("[-] Header: ~p~n", [parsing:parse_post(Bits)]),
-            "Post request";
+            not_found_response();
         _ ->
-            "These aren't your ghosts."
+            not_found_response()
     end.
 
 main() ->
