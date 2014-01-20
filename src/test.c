@@ -224,16 +224,6 @@ int test_dump() {
     ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
-    char key[] = "muh_key";
-    unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
-    int inserted = ol_jar(db, key, val, strlen((char*)val));
-
-    if (inserted > 0) {
-        printf("Error: Could not insert. Error code: %i\n", inserted);
-        ol_close(db);
-        return 1;
-    }
-
     int i;
     int max_records = 100;
     unsigned char to_insert[] = "123456789";
@@ -256,9 +246,22 @@ int test_dump() {
         }
     }
 
-    ol_save_db(db);
+    printf("[-] Dumping DB to disk.\n");
+    int ret;
+    ret = ol_save_db(db);
+    if (ret != 0) {
+        printf("Error: Could not save DB");
+    }
+    printf("[-] Dumped %i records\n", max_records);
 
     ol_close(db);
+
+    db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+
+    char *tmp_path = "/tmp/tmp-olegdb.dump";
+
+    printf("[-] Loading DB from disk\n");
+    ol_load_db(db, tmp_path);
 
     return 0;
 }
