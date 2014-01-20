@@ -20,15 +20,29 @@ Dependencies
 Installation
 ============
 
+OlegDB consists of a server written in Erlang and a C library for all of the
+heavy lifting. Binaries are in `build/bin/` and the library is in `build/lib/`.
+Beam files are also thrown in `build/bin/`.
+
 ```bash
+# Building everything:
 make
-./olegdb
+# Just the erlang beam files:
+make erlang
+# Just the C library:
+make liboleg
 ```
 
 To run tests:
 
 ```bash
-./olegdb test
+./run_tests.sh
+```
+
+To run the erlang server:
+
+```bash
+./run_server.sh
 ```
 
 curl2sudo® install script coming soon.
