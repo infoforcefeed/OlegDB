@@ -1,22 +1,18 @@
 -module(parsing).
--export([parse_http/1]).
+-include("olegdb.hrl").
+-export([parse_get/1, parse_post/1]).
 
-read_line(Data) ->
-    read_line1(Data, <<>>).
+parse_get(Data) ->
+    case binary:split(Data, [<<"\r\n\r\n">>]) of
+        [Header|_ ] -> Header;
+        X -> X
+    end.
 
-read_line1(<<>>, Tail) -> Tail;
-read_line1(<<Chunk:1/binary, Rest/binary>>, Tail) ->
-    case Chunk of
-        <<"\r">> ->
-            Tail;
-        <<"\n">> ->
-            Tail;
-        _ ->
-            read_line1(Rest, <<Chunk:1/binary,Tail/binary>>)
-    end;
-read_line1(_, Tail) -> Tail.
+parse_post(Data) ->
+    case binary:split(Data, [<<"\r\n\r\n">>]) of
+        [Header|_] -> Header;
+        X -> X
+    end.
 
-parse_http(Data) ->
-    Line = read_line(Data),
-    io:format("[-] Data: ~p~n", [Line]),
-    Line.
+%parse_header(_, Record) ->
+%    Record.

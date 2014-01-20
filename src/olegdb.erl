@@ -1,4 +1,5 @@
 -module(olegdb).
+-include("olegdb.hrl").
 -export([main/0]).
 
 -define(LISTEN_PORT, 8080).
@@ -27,13 +28,25 @@ request_handler(Accepted) ->
     % Read in all data, timeout after 60 seconds
     case gen_tcp:recv(Accepted, 0, 60000) of
         {ok, Data} ->
-            gen_tcp:send(Accepted, parsing:parse_http(Data)),
+            gen_tcp:send(Accepted, route(Data)),
             request_handler(Accepted);
         {error, closed} ->
             ok;
         {error, timeout} ->
             io:format("[-] Client timed out.~n"),
             ok
+    end.
+
+route(Bits) -> 
+    case Bits of
+        <<"GET", _/binary>> ->
+            io:format("[-] Header: ~p~n", [parsing:parse_get(Bits)]),
+            "Get request.";
+        <<"POST", _/binary>> ->
+            io:format("[-] Header: ~p~n", [parsing:parse_post(Bits)]),
+            "Post request";
+        _ ->
+            "These aren't your ghosts."
     end.
 
 main() ->

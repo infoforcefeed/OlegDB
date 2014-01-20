@@ -1,0 +1,1 @@
+-record(ol_record, {database, key, content_type, value}).
