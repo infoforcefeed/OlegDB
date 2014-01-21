@@ -27,8 +27,9 @@ liboleg:
 	if ! [ -L $(LIB_DIR)$(SONAME) ]; then ln -s $(LIB_DIR)liboleg.so.$(VERSION) $(LIB_DIR)$(SONAME); fi
 
 erlang:
+	erlc $(ERLFLAGS) ./src/ol_http.erl
+	erlc $(ERLFLAGS) ./src/ol_parse.erl
 	erlc $(ERLFLAGS) ./src/olegdb.erl
-	erlc $(ERLFLAGS) ./src/parsing.erl
 
 clean:
 	rm $(BIN_DIR)*
