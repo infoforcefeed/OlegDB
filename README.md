@@ -38,11 +38,18 @@ Dumps
 
 Olegdb dumps are binary.
 
-10 byte -> OLEGDBDUMP  
-1 byte  -> Version number hex  
-1 byte  -> Number of keys  
-1 byte  -> Size of data (n)  
+There is a header struct in [dump.h](./include/dump.h) that is written to the
+beginning of the file.
+
+10 bytes -> OLEGDBDUMP  
+3 byte  -> Version number ascii  
+8 byte  -> Record count  
 n bytes -> data (keys and values)
+
+Keys are always 16 bytes, so you read 16 bytes after reading the number of keys
+to get the first bucket key. Following that is a size_t (8 bytes) value that is
+the size of the data. We will call this data_size. Read data_size. This is the
+key's data. Continue the process until Record count is exhausted.
 
 Roadmap
 =======
