@@ -57,14 +57,13 @@ int ol_save_db(ol_database *db) {
     fflush(fd);
     fclose(fd);
 
-    //sleep(100);
-
-    // ret = rename(tmpfile, db->dump_file);
-    // if (ret == -1) {
-    //     printf("Error: Can't rename file: %s\n", strerror(errno));
-    //     unlink(tmpfile);
-    //     return -1;
-    // }
+    //int ret;
+    //rename(tmpfile, db->dump_file);
+    //if (ret == -1) {
+    //    printf("Error: Can't rename file: %s\n", strerror(errno));
+    //    unlink(tmpfile);
+    //    return -1;
+    //}
     return 0;
 }
 
