@@ -42,9 +42,9 @@ There is a header struct in [dump.h](./include/dump.h) that is written to the
 beginning of the file.
 
 10 bytes -> OLEGDBDUMP  
-3 byte  -> Version number ascii  
-8 byte  -> Record count  
-n bytes -> data (keys and values)
+3 bytes   -> Version number ascii  
+4 bytes   -> Record count  
+n bytes   -> data (keys and values)
 
 Keys are always 16 bytes, so you read 16 bytes after reading the number of keys
 to get the first bucket key. Following that is a size_t (8 bytes) value that is
