@@ -251,6 +251,7 @@ int test_dump() {
     ret = ol_save_db(db);
     if (ret != 0) {
         printf("Error: Could not save DB");
+        return 1;
     }
     printf("[-] Dumped %i records\n", max_records);
 
@@ -263,6 +264,21 @@ int test_dump() {
     printf("[-] Loading DB from disk\n");
     ol_load_db(db, tmp_path);
 
+    if (db->rcrd_cnt != 143) {
+        printf("Error: Not all records were loaded. %i\n", db->rcrd_cnt);
+        return 2;
+    }
+    printf("[-] Loaded %i records from dump file.\n", db->rcrd_cnt);
+
+    char findme[] = "crazy hash3";
+    unsigned char *dataz;
+    dataz = ol_unjar(db, findme);
+    if (dataz == NULL || strncmp((char *)dataz, "123456789", sizeof("123456789") != 0)) {
+        printf("Error: Records were corrupt or something.\n");
+        return 3;
+    }
+
+    ol_close(db);
     return 0;
 }
 

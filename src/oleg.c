@@ -208,7 +208,7 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
     }
 
     new_bucket->data_size = vsize;
-    unsigned char *data = malloc(vsize);
+    unsigned char *data = calloc(1, vsize);
     if (memcpy(data, value, vsize) != data) {
         return 3;
     }
