@@ -12,4 +12,5 @@ struct dump_header {
 };
 
 int ol_save_db(ol_database *db);
+int ol_background_save(ol_database *db);
 int ol_load_db(ol_database *db, char *filename);

@@ -218,14 +218,10 @@ int test_update() {
     return 0;
 }
 
-int test_dump() {
-    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
-    printf("Opened DB: %p.\n", db);
-
+static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
     int i;
-    int max_records = 143;
     unsigned char to_insert[] = "123456789";
-    for (i = 0; i < max_records; i++) { // 8======D
+    for (i = 0; i < NUM_KEYS; i++) { // 8======D
         char key[16] = "crazy hash";
         char append[10] = "";
 
@@ -243,15 +239,59 @@ int test_dump() {
             return 2;
         }
     }
+    return 0;
+}
+
+int test_dump_forking() {
+    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    printf("Opened DB: %p.\n", db);
+
+    int ret;
+    ret = _insert_keys(db, 1000000);
+    if (ret > 0) {
+        printf("[x] Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
+    ret = ol_background_save(db);
+
+    if (ret != 0) {
+        printf("Error: Could not background save DB");
+        return 1;
+    }
+
+    /* Close the DB to try and load it */
+    ol_close(db);
+
+    db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    char *tmp_path = "/tmp/tmp-olegdb.dump";
+    printf("[-] Loading DB from disk\n");
+    ol_load_db(db, tmp_path);
+
+    /* Finally, close and exit */
+    ol_close(db);
+    return 0;
+}
+
+int test_dump() {
+    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    printf("Opened DB: %p.\n", db);
+
+    int ret;
+    unsigned int num_keys = 1000;
+    ret = _insert_keys(db, num_keys);
+    if (ret > 0) {
+        printf("[x] Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
 
     printf("[-] Dumping DB to disk.\n");
-    int ret;
     ret = ol_save_db(db);
     if (ret != 0) {
         printf("Error: Could not save DB");
         return 1;
     }
-    printf("[-] Dumped %i records\n", max_records);
+    printf("[-] Dumped %i records\n", num_keys);
 
     ol_close(db);
 
@@ -262,7 +302,7 @@ int test_dump() {
     printf("[-] Loading DB from disk\n");
     ol_load_db(db, tmp_path);
 
-    if (db->rcrd_cnt != 143) {
+    if (db->rcrd_cnt != num_keys) {
         printf("Error: Not all records were loaded. %i\n", db->rcrd_cnt);
         return 2;
     }
@@ -292,6 +332,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_scoop);
     ol_run_test(test_update);
     ol_run_test(test_dump);
+    ol_run_test(test_dump_forking);
     ol_run_test(test_uptime);
 
     results[0] = tests_run;
