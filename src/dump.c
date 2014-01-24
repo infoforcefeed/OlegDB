@@ -16,7 +16,27 @@ static inline int _ol_serialize_bucket(const ol_bucket *bucket, FILE *fd) {
     } while (bucket != NULL);
     return 0;
 }
-static inline int _ol_deserialize_bucket(const ol_bucket *bucket, FILE *fd) {
+
+static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
+    char *tmp_key;
+    unsigned char *tmp_value;
+    size_t value_size;
+    tmp_key = malloc(KEY_SIZE);
+    if (tmp_key == NULL) {
+        printf("Error: Cannot allocate memory for tmp_key\n");
+        return -1;
+    }
+    fread(tmp_key, sizeof(char), KEY_SIZE, fd);
+    fread(&value_size, sizeof(size_t), 1, fd);
+    tmp_value = calloc(1, value_size);
+    if (tmp_value == NULL) {
+        printf("Error: Cannot allocate memory for tmp_value\n");
+        return -1;
+    }
+    fread(tmp_value, sizeof(char), value_size, fd);
+    ol_jar(db, tmp_key, tmp_value, value_size);
+    free(tmp_key);
+    free(tmp_value);
     return 0;
 }
 
@@ -90,18 +110,14 @@ int ol_load_db(ol_database *db, char *filename) {
         printf("Error: Cannot parse this version\n");
         return -1;
     }
-    char *tmp_key;
-    unsigned char *tmp_value;
-    size_t value_size;
+
+    /* Load up the database */
+    int ret;
     for (i = 0; i < header.rcrd_cnt; i++) {
-        tmp_key = malloc(KEY_SIZE);
-        fread(tmp_key, sizeof(char), KEY_SIZE, fd);
-        fread(&value_size, sizeof(size_t), 1, fd);
-        tmp_value = calloc(1, value_size);
-        fread(tmp_value, sizeof(char), value_size, fd);
-        ol_jar(db, tmp_key, tmp_value, value_size);
-        free(tmp_key);
-        free(tmp_value);
+        ret = _ol_store_bin_object(db, fd);
+        if (ret != 0) {
+            printf("Error: Could not read bucket from dump file\n");
+        }
     }
 
     fclose(fd);
