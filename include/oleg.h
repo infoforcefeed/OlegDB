@@ -27,6 +27,9 @@
 #include <time.h>
 
 
+/* ye ol version */
+#define VERSION "0.1.0"
+
 /* Hardcoded key size */
 #define KEY_SIZE 16
 /* The size (in bytes) of a hash block */
@@ -56,6 +59,7 @@ typedef struct ol_bucket ol_bucket; /* To enable self-referential struct */
 typedef struct ol_database {
     char      name[8];           /* Name of the database */
     char      path[PATH_LENGTH]; /* Path to the database directory */
+    char      *dump_file;        /* Path and filename of db dump */
     int       rcrd_cnt;          /* Number of records in the database. Eventually consistent. */
     int       key_collisions;    /* How many times have our keys collided. */
     time_t    created;           /* For uptime. */

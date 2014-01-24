@@ -49,6 +49,8 @@ ol_database *ol_open(char *path, ol_filemode filemode){
     new_db->key_collisions = 0;
     strncpy(new_db->name, "OLEG", sizeof("OLEG"));
     strncpy(new_db->path, path, PATH_LENGTH);
+    new_db->dump_file = calloc(1, sizeof("/tmp/olegdb.dump"));
+    memcpy(new_db->dump_file, "/tmp/olegdb.dump", sizeof("/tmp/olegdb.dump"));
     return new_db;
 }
 
@@ -73,6 +75,7 @@ int ol_close(ol_database *db){
     }
 
     free(db->hashes);
+    free(db->dump_file);
     free(db);
     if (freed != rcrd_cnt) {
         printf("[X] Error: Couldn't free all records.\n");
@@ -207,7 +210,7 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
     }
 
     new_bucket->data_size = vsize;
-    unsigned char *data = malloc(vsize);
+    unsigned char *data = calloc(1, vsize);
     if (memcpy(data, value, vsize) != data) {
         return 3;
     }

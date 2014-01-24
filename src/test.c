@@ -218,6 +218,68 @@ int test_update() {
     return 0;
 }
 
+int test_dump() {
+    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    printf("Opened DB: %p.\n", db);
+
+    int i;
+    int max_records = 143;
+    unsigned char to_insert[] = "123456789";
+    for (i = 0; i < max_records; i++) { // 8======D
+        char key[16] = "crazy hash";
+        char append[10] = "";
+
+        sprintf(append, "%i", i);
+        strcat(key, append);
+
+        //printf("[-] Record count: %i\n", db->rcrd_cnt);
+
+        size_t len = strlen((char *)to_insert);
+        int insert_result = ol_jar(db, key, to_insert, len);
+
+        if (insert_result > 0) {
+            printf("Error: Could not insert. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 2;
+        }
+    }
+
+    printf("[-] Dumping DB to disk.\n");
+    int ret;
+    ret = ol_save_db(db);
+    if (ret != 0) {
+        printf("Error: Could not save DB");
+        return 1;
+    }
+    printf("[-] Dumped %i records\n", max_records);
+
+    ol_close(db);
+
+    db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+
+    char *tmp_path = "/tmp/tmp-olegdb.dump";
+
+    printf("[-] Loading DB from disk\n");
+    ol_load_db(db, tmp_path);
+
+    if (db->rcrd_cnt != 143) {
+        printf("Error: Not all records were loaded. %i\n", db->rcrd_cnt);
+        return 2;
+    }
+    printf("[-] Loaded %i records from dump file.\n", db->rcrd_cnt);
+
+    char findme[] = "crazy hash3";
+    unsigned char *dataz;
+    dataz = ol_unjar(db, findme);
+    if (dataz == NULL || strncmp((char *)dataz, "123456789", sizeof("123456789") != 0)) {
+        printf("Error: Records were corrupt or something.\n");
+        return 3;
+    }
+
+    ol_close(db);
+    return 0;
+}
+
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
@@ -229,6 +291,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_unjar);
     ol_run_test(test_scoop);
     ol_run_test(test_update);
+    ol_run_test(test_dump);
     ol_run_test(test_uptime);
 
     results[0] = tests_run;
