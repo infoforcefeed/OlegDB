@@ -40,6 +40,29 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
     return 0;
 }
 
+int ol_background_save(ol_database *db) {
+    int pid;
+
+    pid = fork();
+    if (pid == 0) {
+        int ret;
+        ret = ol_save_db(db);
+        if (ret != 0) {
+            printf("Error: Could not save database to disk\n");
+            exit(ret);
+        }
+        exit(ret);
+    } else {
+        if (pid == -1) {
+            printf("Could not background to dump\n");
+            return -1;
+        }
+        printf("Backgrounding ol_dump. PID: %d\n", pid);
+        return 0;
+    }
+    return 0;
+}
+
 int ol_save_db(ol_database *db) {
     //int ret;
     FILE *fd;
