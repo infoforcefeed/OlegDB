@@ -40,7 +40,7 @@ int test_bucket_max() {
     int expected_bucket_max = HASH_MALLOC / 8;
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
 
-    int generated_bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
+    int generated_bucket_max = ol_ht_bucket_max(db->cur_ht_size);
     if (expected_bucket_max != generated_bucket_max) {
         printf("Error: Unexpected bucket max. Got: %d", generated_bucket_max);
         ol_close(db);

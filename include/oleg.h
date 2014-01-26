@@ -91,42 +91,100 @@ typedef struct ol_bucket {
     struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
 } ol_bucket;
 
-
+/* xXx STRUCT=ol_database xXx
+* xXx DESCRIPTION=The object representing a database. xXx
+* xXx get_db_name=A function pointer that returns the path/name.db to reduec code duplication. Used for writing and reading of dump files. xXx
+* xXx name=The name of the database. xXx
+* xXx path[PATH_LENGTH]=Path to the database's working directory. xXx
+* xXx dump_file=Path and filename of db dump. xXx
+* xXx rcrd_cnt=Number of records in the database. xXx
+* xXx key_collisions=Number of key collisions this database has had since initialization. xXx
+* xXx created=Timestamp of when the database was initialized. xXx
+* xXx cur_ht_size=The current amount, in bytes, of space allocated for storing ol_bucket objects. xXx
+* xXx **hashes=The actual hashtable. Stores ol_bucket instances. xXx
+*/
 typedef struct ol_database {
-    void      (*get_db_name)(struct ol_database *db,char*);       /* Function to grab db name */
-    char      name[64];           /* Name of the database */
-    char      path[PATH_LENGTH]; /* Path to the database directory */
-    char      *dump_file;        /* Path and filename of db dump */
-    int       rcrd_cnt;          /* Number of records in the database. Eventually consistent. */
-    int       key_collisions;    /* How many times have our keys collided. */
-    time_t    created;           /* For uptime. */
-    size_t    cur_ht_size;       /* Gotta keep track of that table size */
-    ol_bucket **hashes;          /* All hashes in the DB */
+    void      (*get_db_name)(struct ol_database *db,char*);
+    char      name[64];
+    char      path[PATH_LENGTH];
+    char      *dump_file;
+    int       rcrd_cnt;
+    int       key_collisions;
+    time_t    created;
+    size_t    cur_ht_size;
+    ol_bucket **hashes;
 } ol_database;
 
+/* xXx STRUCT=ol_meta xXx
+* xXx DESCRIPTION=Structure used to record meta-information about the database. xXx
+*/
 typedef struct ol_meta {
     time_t uptime;
 } ol_meta;
 
 /* xXx FUNCTION=ol_open xXx
- * xXx path=The directory where the database will be stored. xXx
- * xXx name=The name of the database. This is used to create the dumpfile, and keep track of the database. xXx
+ * xXx DESCRIPTION=Opens a database for use. xXx
+ * xXx *path=The directory where the database will be stored. xXx
+ * xXx *name=The name of the database. This is used to create the dumpfile, and keep track of the database. xXx
  * xXx filemode=The filemode used to interact with the database. See xXx REF=ol_filemode xXx xXx
  */
 ol_database *ol_open(char *path, char *name, ol_filemode filemode);
-/* Closes a database, makes sure everything is written and frees memory */
+
+/* xXx FUNCTION=ol_close xXx
+ * xXx DESCRIPTION=Closes a database cleanly, frees memory and makes sure everything is written. xXx
+ * xXx *database=The database to close. xXx
+ */
 int ol_close(ol_database *database);
-/* Unjar a value from the mayo */
+
+/* xXx FUNCTION=ol_unjar xXx
+ * xXx DESCRIPTION=Unjar a value from the mayo. xXx
+ * xXx *db=Database to retrieve value from. xXx
+ * xXx *key=The key to use. xXx
+ */
 ol_val ol_unjar(ol_database *db, const char *key);
-/* it's easy to piss in a big bucket; it's NOT easy to piss in 19 jars */
+
+/* xXx FUNCTION=ol_jar xXx
+ * xXx DESCRIPTION=Put a value into the mayo. It's easy to piss in a bucket, it's not easy to piss in 19 jars. Uses default content type. xXx
+ * xXx *db=Database to retrieve value from. xXx
+ * xXx *key=The key to use. xXx
+ * xXx *value=The value to insert. xXx
+ * xXx vsize=The size of the value in bytes. xXx
+ */
 int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize);
-/* ol_jar with specified content type */
+/* xXx FUNCTION=ol_jar_ct xXx
+ * xXx DESCRIPTION=Put a value into the mayo. It's easy to piss in a bucket, it's not easy to piss in 19 jars. Allws you to specify content type. xXx
+ * xXx *db=Database to retrieve value from. xXx
+ * xXx *key=The key to use. xXx
+ * xXx *value=The value to insert. xXx
+ * xXx vsize=The size of the value in bytes. xXx
+ * xXx *content_type=The content type to store, or really anything. Store your middle name if you want to. xXx
+ * xXx content_type_size=The length of the content_type string. xXx
+ */
 int ol_jar_ct(ol_database *db, const char *key,unsigned char *value, size_t vsize,
         const char *content_type, const size_t content_type_size);
-/* Get the stored content type of a jarred value */
+
+/* xXx FUNCTION=ol_content_type xXx
+ * xXx DESCRIPTION=Retrieves the content type for a given key from the database. xXx
+ * xXx *db=Database to retrieve value from. xXx
+ * xXx *key=The key to use. xXx
+ */
 char *ol_content_type(ol_database *db, const char *key);
-/* Get that crap out of my mayo jar */
+
+/* xXx FUNCTION=ol_scoop xXx
+ * xXx DESCRIPTION=Removes an object from the database. Get that crap out of the mayo jar. xXx
+ * xXx *db=Database to retrieve value from. xXx
+ * xXx *key=The key to use. xXx
+ */
 int ol_scoop(ol_database *db, const char *key);
-/* Helper for meta info */
+
+/* xXx FUNCTION=ol_uptime xXx
+ * xXx DESCRIPTION=Gets the time, in seconds, that a database has been up. xXx
+ * xXx *db=Database to retrieve value from. xXx
+ */
 int ol_uptime(ol_database *db);
-int _ol_ht_bucket_max(size_t);
+
+/* xXx FUNCTION=ol_ht_bucket_max xXx
+ * xXx DESCRIPTION=Returns the maximum amount of ol_bucket objects that can be stored in db. xXx
+ * xXx *db=Database to retrieve value from. xXx
+ */
+int ol_ht_bucket_max(size_t ht_size);

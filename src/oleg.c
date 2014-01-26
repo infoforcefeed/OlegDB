@@ -28,7 +28,12 @@
 #include <sys/stat.h>
 #include <time.h>
 #include "oleg.h"
+#include "dump.h"
 #include "murmur3.h"
+
+inline int ol_ht_bucket_max(size_t ht_size) {
+    return (ht_size/sizeof(ol_bucket *));
+}
 
 void _ol_get_dump_name(ol_database *db, char *dump_file) {
     sprintf(dump_file, "%s/%s.dump", db->path, db->name);
@@ -42,7 +47,7 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     new_db->cur_ht_size = to_alloc;
     /* NULL everything */
     int i;
-    for (i = 0; i < _ol_ht_bucket_max(to_alloc); i++){
+    for (i = 0; i < ol_ht_bucket_max(to_alloc); i++){
         new_db->hashes[i] = NULL;
     }
 
@@ -72,7 +77,11 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
 }
 
 int ol_close(ol_database *db){
-    int iterations = _ol_ht_bucket_max(db->cur_ht_size);
+    int ret = ol_save_db(db);
+    if (ret != 0) {
+        printf("Could not save DB, freeing anyway.\n");
+    }
+    int iterations = ol_ht_bucket_max(db->cur_ht_size);
     int i;
     int rcrd_cnt = db->rcrd_cnt;
     int freed = 0;
@@ -103,13 +112,9 @@ int ol_close(ol_database *db){
     return 0;
 }
 
-inline int _ol_ht_bucket_max(size_t ht_size) {
-    return (ht_size/sizeof(ol_bucket *));
-}
-
 int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
     int index;
-    index = hash % _ol_ht_bucket_max(ht_size);
+    index = hash % ol_ht_bucket_max(ht_size);
     return index;
 }
 
@@ -163,7 +168,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     size_t to_alloc = db->cur_ht_size * 2;
     printf("[-] Growing DB to %zu bytes\n", to_alloc);
     tmp_hashes = calloc(1, to_alloc);
-    for (i = 0; i < _ol_ht_bucket_max(db->cur_ht_size); i++) {
+    for (i = 0; i < ol_ht_bucket_max(db->cur_ht_size); i++) {
         bucket = db->hashes[i];
         if (bucket != NULL) {
             new_index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
@@ -250,7 +255,7 @@ int _ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize,
     }
     new_bucket->content_type = ct_real;
 
-    int bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
+    int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
     /* TODO: rehash this shit at 80% */
     if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
         printf("[-] Record count is now %i; growing hash table.\n", db->rcrd_cnt);

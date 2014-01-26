@@ -86,7 +86,7 @@ int ol_save_db(ol_database *db) {
     }
 
     int i;
-    int bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
+    int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
     ol_bucket *bucket;
     for (i = 0; i < bucket_max; i++) {
         bucket = db->hashes[i];
