@@ -124,6 +124,7 @@ typedef struct ol_meta {
 
 /* xXx FUNCTION=ol_open xXx
  * xXx DESCRIPTION=Opens a database for use. xXx
+ * xXx RETURNS=A new database object. xXx
  * xXx *path=The directory where the database will be stored. xXx
  * xXx *name=The name of the database. This is used to create the dumpfile, and keep track of the database. xXx
  * xXx filemode=The filemode used to interact with the database. See xXx REF=ol_filemode xXx xXx
@@ -132,12 +133,14 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode);
 
 /* xXx FUNCTION=ol_close xXx
  * xXx DESCRIPTION=Closes a database cleanly, frees memory and makes sure everything is written. xXx
+ * xXx RETURNS=0 on success, 1 if not everything could be freed. xXx
  * xXx *database=The database to close. xXx
  */
 int ol_close(ol_database *database);
 
 /* xXx FUNCTION=ol_unjar xXx
  * xXx DESCRIPTION=Unjar a value from the mayo. xXx
+ * xXx RETURNS=A pointer to an ol_val object, or NULL if the object was not found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  */
@@ -145,6 +148,7 @@ ol_val ol_unjar(ol_database *db, const char *key);
 
 /* xXx FUNCTION=ol_jar xXx
  * xXx DESCRIPTION=Put a value into the mayo. It's easy to piss in a bucket, it's not easy to piss in 19 jars. Uses default content type. xXx
+ * xXx RETURNS=0 on sucess. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  * xXx *value=The value to insert. xXx
@@ -153,6 +157,7 @@ ol_val ol_unjar(ol_database *db, const char *key);
 int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize);
 /* xXx FUNCTION=ol_jar_ct xXx
  * xXx DESCRIPTION=Put a value into the mayo. It's easy to piss in a bucket, it's not easy to piss in 19 jars. Allws you to specify content type. xXx
+ * xXx RETURNS=0 on sucess. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  * xXx *value=The value to insert. xXx
@@ -165,6 +170,7 @@ int ol_jar_ct(ol_database *db, const char *key,unsigned char *value, size_t vsiz
 
 /* xXx FUNCTION=ol_content_type xXx
  * xXx DESCRIPTION=Retrieves the content type for a given key from the database. xXx
+ * xXx RETURNS=Stored content type, or NULL if it was not found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  */
@@ -172,6 +178,7 @@ char *ol_content_type(ol_database *db, const char *key);
 
 /* xXx FUNCTION=ol_scoop xXx
  * xXx DESCRIPTION=Removes an object from the database. Get that crap out of the mayo jar. xXx
+ * xXx RETURNS=0 on success, 2 if the object wasn't found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  */
@@ -179,12 +186,14 @@ int ol_scoop(ol_database *db, const char *key);
 
 /* xXx FUNCTION=ol_uptime xXx
  * xXx DESCRIPTION=Gets the time, in seconds, that a database has been up. xXx
+ * xXx RETURNS=Uptime in seconds since database initialization. xXx
  * xXx *db=Database to retrieve value from. xXx
  */
 int ol_uptime(ol_database *db);
 
 /* xXx FUNCTION=ol_ht_bucket_max xXx
- * xXx DESCRIPTION=Returns the maximum amount of ol_bucket objects that can be stored in db. xXx
+ * xXx DESCRIPTION=Does some sizeof witchery to return the maximum current size of the database. xXx
+ * xXx RETURNS=Uptime in seconds since database initialization. xXx
  * xXx *db=Database to retrieve value from. xXx
  */
 int ol_ht_bucket_max(size_t ht_size);
