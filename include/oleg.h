@@ -48,10 +48,12 @@ typedef enum {
 /* Data that the DB stores */
 typedef unsigned char *ol_val;
 struct ol_bucket {
+    char              key[KEY_SIZE]; /* The key used to reference the data */
+    char              *content_type;
+    size_t            ctype_size;
     ol_val            data_ptr;
     size_t            data_size;
     uint32_t          hash;
-    char              key[KEY_SIZE]; /* The key used to reference the data */
     struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
 };
 typedef struct ol_bucket ol_bucket; /* To enable self-referential struct */
@@ -80,6 +82,9 @@ int ol_close(ol_database *database);
 ol_val ol_unjar(ol_database *db, const char *key);
 /* it's easy to piss in a big bucket; it's NOT easy to piss in 19 jars */
 int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize);
+/* ol_jar with specified content type */
+int ol_jar_ct(ol_database *db, const char *key,unsigned char *value, size_t vsize,
+        const char *content_type, const size_t content_type_size);
 /* Get that crap out of my mayo jar */
 int ol_scoop(ol_database *db, const char *key);
 /* Helper for meta info */

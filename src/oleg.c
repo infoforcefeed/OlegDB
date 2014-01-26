@@ -84,6 +84,7 @@ int ol_close(ol_database *db){
             ol_bucket *next;
             for (ptr = db->hashes[i]; NULL != ptr; ptr = next) {
                 next = ptr->next;
+                free(ptr->content_type);
                 free(ptr->data_ptr);
                 free(ptr);
                 freed++;
@@ -194,7 +195,8 @@ ol_val ol_unjar(ol_database *db, const char *key) {
     return NULL;
 }
 
-int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize) {
+int _ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize,
+        const char *ct, const size_t ctsize) {
     int ret;
     uint32_t hash;
     MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
@@ -208,6 +210,13 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
             return 4;
         }
 
+        char *ct_real = realloc(bucket->content_type, ctsize);
+        if (memcpy(ct_real, ct, ctsize) != ct_real) {
+            return 5;
+        }
+
+        bucket->ctype_size = ctsize;
+        bucket->content_type = ct_real;
         bucket->data_size = vsize;
         bucket->data_ptr = data;
         return 0;
@@ -234,6 +243,13 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
     new_bucket->data_ptr = data;
     new_bucket->hash = hash;
 
+    new_bucket->ctype_size = ctsize;
+    char *ct_real = calloc(1, ctsize);
+    if (memcpy(ct_real, ct, ctsize) != ct_real) {
+        return 7;
+    }
+    new_bucket->content_type = ct_real;
+
     int bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
     /* TODO: rehash this shit at 80% */
     if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
@@ -252,6 +268,15 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
     }
 
     return 0;
+}
+
+int ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize) {
+    return _ol_jar(db, key, value, vsize, "application/octet-stream", 24);
+}
+
+int ol_jar_ct(ol_database *db, const char *key,unsigned char *value, size_t vsize,
+        const char *content_type, const size_t content_type_size) {
+    return _ol_jar(db, key, value, vsize, content_type, content_type_size);
 }
 
 int ol_scoop(ol_database *db, const char *key) {
@@ -286,6 +311,7 @@ int ol_scoop(ol_database *db, const char *key) {
                     if (bucket->next != NULL) {
                         last->next = bucket->next;
                     }
+                    free(bucket->content_type);
                     free(bucket->data_ptr);
                     free(bucket);
                     db->rcrd_cnt -= 1;
