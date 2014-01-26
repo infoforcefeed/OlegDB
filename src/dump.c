@@ -64,7 +64,6 @@ int ol_background_save(ol_database *db) {
 }
 
 int ol_save_db(ol_database *db) {
-    //int ret;
     FILE *fd;
     struct dump_header header;
     char tmpfile[512];
