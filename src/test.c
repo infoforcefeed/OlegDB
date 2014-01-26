@@ -57,7 +57,7 @@ int test_jar() {
     int max_records = RECORD_COUNT;
     unsigned char to_insert[] = "123456789";
     for (i = 0; i < max_records; i++) { /* 8======D */
-        char key[16] = "crazy hash";
+        char key[] = "crazy hash";
         char append[10] = "";
 
         sprintf(append, "%i", i);
@@ -220,9 +220,9 @@ int test_update() {
 
 static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
     int i;
-    unsigned char to_insert[] = "123456789";
+    unsigned char to_insert[] = "Hello I am some data for you";
     for (i = 0; i < NUM_KEYS; i++) { // 8======D
-        char key[16] = "crazy hash";
+        char key[] = "crazy hash";
         char append[10] = "";
 
         sprintf(append, "%i", i);
@@ -318,9 +318,14 @@ int test_dump() {
     char findme[] = "crazy hash3";
     unsigned char *dataz;
     dataz = ol_unjar(db, findme);
-    if (dataz == NULL || strncmp((char *)dataz, "123456789", sizeof("123456789") != 0)) {
-        printf("Error: Records were corrupt or something.\n");
+    if (dataz == NULL) {
+        printf("NULL DATAZ.\n");
         return 3;
+    }
+
+    if (strncmp((char *)dataz, "123456789", sizeof("123456789") != 0)) {
+        printf("Error: Records were corrupt or something.\n");
+        return 4;
     }
 
     ol_close(db);

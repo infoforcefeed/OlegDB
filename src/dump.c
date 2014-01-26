@@ -78,7 +78,7 @@ int ol_save_db(ol_database *db) {
 
     /* do the saving here */
     snprintf(header.sig, sizeof(DUMP_SIG), "%s", DUMP_SIG);
-    snprintf(header.version, sizeof(DUMP_VERSION), "%03d", DUMP_VERSION);
+    snprintf(header.version, sizeof(header.version)+1, "%04i", DUMP_VERSION);
     header.rcrd_cnt = db->rcrd_cnt;
     if (fwrite(&header, sizeof(header), 1, fd) != 1) {
         printf("Error: Can't write header to file. %s\n", strerror(errno));
@@ -128,11 +128,12 @@ int ol_load_db(ol_database *db, char *filename) {
     }
 
     fread(&header, sizeof(header), 1, fd);
-    if (memcmp(header.sig, DUMP_SIG, 10) != 0) {
+    if (memcmp(header.sig, DUMP_SIG, 4) != 0) {
         fclose(fd);
         printf("Error: Not a valid oleg dump\n");
         return -1;
     }
+
     dump_version = atoi(header.version);
     if (dump_version != DUMP_VERSION) {
         fclose(fd);

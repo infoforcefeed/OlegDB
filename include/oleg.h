@@ -48,17 +48,17 @@ typedef enum {
 /* Data that the DB stores */
 typedef unsigned char *ol_val;
 struct ol_bucket {
-    char              key[KEY_SIZE]; /* The key used to reference the data */
     ol_val            data_ptr;
     size_t            data_size;
     uint32_t          hash;
+    char              key[KEY_SIZE]; /* The key used to reference the data */
     struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
 };
 typedef struct ol_bucket ol_bucket; /* To enable self-referential struct */
 
 typedef struct ol_database {
     void      (*get_db_name)(struct ol_database *db,char*);       /* Function to grab db name */
-    char      name[8];           /* Name of the database */
+    char      name[64];           /* Name of the database */
     char      path[PATH_LENGTH]; /* Path to the database directory */
     char      *dump_file;        /* Path and filename of db dump */
     int       rcrd_cnt;          /* Number of records in the database. Eventually consistent. */
