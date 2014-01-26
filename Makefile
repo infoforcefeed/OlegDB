@@ -6,6 +6,7 @@ BUILD_DIR=$(shell pwd)/build/
 LIB_DIR=$(BUILD_DIR)lib/
 BIN_DIR=$(BUILD_DIR)bin/
 SONAME=liboleg.so.1
+ERLFLAGS=-smp -W1 -Werror -b beam -I./include -o $(BIN_DIR)
 
 MATH_LINKER=
 ifeq ($(uname_S),Darwin)
@@ -14,7 +15,9 @@ else
 	MATH_LINKER=-lm
 endif
 
-all:
+all: liboleg erlang
+
+liboleg:
 	$(cc) $(CFLAGS) -c -fPIC -I./include ./src/murmur3.c
 	$(cc) $(CFLAGS) -c -fPIC -I./include ./src/oleg.c
 	$(cc) $(CFLAGS) -c -fPIC -I./include ./src/dump.c
@@ -24,6 +27,11 @@ all:
 	$(cc) $(CFLAGS) -c -I./include ./src/test.c
 	$(cc) $(CFLAGS) -c -I./include ./src/main.c
 	$(cc) $(CFLAGS) -I./include -L$(LIB_DIR) $(MATH_LINKER) -o $(BIN_DIR)oleg_test test.o main.o -loleg
+
+erlang:
+	erlc $(ERLFLAGS) ./src/ol_http.erl
+	erlc $(ERLFLAGS) ./src/ol_parse.erl
+	erlc $(ERLFLAGS) ./src/olegdb.erl
 
 clean:
 	rm $(BIN_DIR)*
