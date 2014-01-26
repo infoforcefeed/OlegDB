@@ -47,6 +47,7 @@ int main(int argc, char *argv[]) {
     if (argc >= 2) {
         signal(SIGTERM, clean_up);
         signal(SIGINT, clean_up);
+        signal(SIGCHLD, SIG_IGN);
         if (strcmp(argv[1], "test") == 0) {
             printf("Running tests.\n");
             int results[2];
