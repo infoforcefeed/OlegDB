@@ -31,7 +31,7 @@
 #define VERSION "0.1.0"
 
 /* Hardcoded key size */
-#define KEY_SIZE 16
+#define KEY_SIZE 32
 /* The size (in bytes) of a hash block */
 #define HASH_MALLOC 65536
 #define PATH_LENGTH 256

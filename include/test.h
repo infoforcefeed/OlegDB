@@ -29,7 +29,7 @@
 
 #define DB_PATH "/tmp/oleg_is_king"
 #define DB_NAME "testdb"
-#define RECORD_COUNT 1000000
+#define RECORD_COUNT 10000000
 
 #define ol_test_start() int test_return_val = 0;
 #define ol_run_test(test) printf("\n-----\n%s\n", #test); test_return_val = test();\
