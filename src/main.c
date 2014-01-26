@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include "test.h"
 #include "oleg.h"
 
@@ -44,6 +45,8 @@ void usage(char *name) {
 
 int main(int argc, char *argv[]) {
     if (argc >= 2) {
+        signal(SIGTERM, clean_up);
+        signal(SIGINT, clean_up);
         if (strcmp(argv[1], "test") == 0) {
             printf("Running tests.\n");
             int results[2];
