@@ -61,10 +61,10 @@ request_handler(Accepted) ->
 route(Bits) -> 
     case Bits of
         <<"GET", _/binary>> ->
-            io:format("[-] Header: ~p~n", [parsing:parse_get(Bits)]),
+            io:format("[-] Header: ~p~n", [ol_parse:parse_get(Bits)]),
             ol_http:not_found_response();
         <<"POST", _/binary>> ->
-            io:format("[-] Header: ~p~n", [parsing:parse_post(Bits)]),
+            io:format("[-] Header: ~p~n", [ol_parse:parse_post(Bits)]),
             ol_http:not_found_response();
         _ ->
             ol_http:not_found_response()
