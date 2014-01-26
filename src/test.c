@@ -21,6 +21,7 @@
 * THE SOFTWARE.
 */
 
+#include <stdlib.h>
 #include "test.h"
 
 int test_open_close() {
@@ -222,7 +223,8 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
     int i;
     unsigned char to_insert[] = "Hello I am some data for you";
     for (i = 0; i < NUM_KEYS; i++) { // 8======D
-        char key[] = "crazy hash";
+        /* DONT NEED YOUR SHIT, GCC */
+        char key[64] = "crazy hash";
         char append[10] = "";
 
         sprintf(append, "%i", i);
@@ -314,18 +316,20 @@ int test_dump() {
         return 2;
     }
     printf("[-] Loaded %i records from dump file.\n", db->rcrd_cnt);
+    printf("[-] Checking for corruption.\n");
+    int i;
+    for (i = 0; i < (db->cur_ht_size/sizeof(ol_bucket*));i++) {
+        ol_bucket *temp = db->hashes[i];
 
-    char findme[] = "crazy hash3";
-    unsigned char *dataz;
-    dataz = ol_unjar(db, findme);
-    if (dataz == NULL) {
-        printf("NULL DATAZ.\n");
-        return 3;
-    }
-
-    if (strncmp((char *)dataz, "123456789", sizeof("123456789") != 0)) {
-        printf("Error: Records were corrupt or something.\n");
-        return 4;
+        if (temp != NULL) {
+            do {
+                if (temp->data_ptr == NULL || temp->data_size == 0) {
+                    printf("Error: Records were corrupt or something. I: %i\n", i);
+                    exit(1);
+                }
+                temp = temp->next;
+            } while(temp != NULL);
+        }
     }
 
     ol_close(db);
