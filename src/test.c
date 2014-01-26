@@ -24,7 +24,7 @@
 #include "test.h"
 
 int test_open_close() {
-    ol_database *db = ol_open(DB_PATH, OL_CONSUME_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_CONSUME_DIR);
     printf("Opened DB: %p.\n", db);
     int ret = ol_close(db);
     if (ret > 0){
@@ -37,7 +37,7 @@ int test_open_close() {
 
 int test_bucket_max() {
     int expected_bucket_max = HASH_MALLOC / 8;
-    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
 
     int generated_bucket_max = _ol_ht_bucket_max(db->cur_ht_size);
     if (expected_bucket_max != generated_bucket_max) {
@@ -50,7 +50,7 @@ int test_bucket_max() {
 }
 
 int test_jar() {
-    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
     int i;
@@ -90,7 +90,7 @@ int test_jar() {
 
 int test_unjar() {
     /* TODO: This test should actually make sure all of the data is consistent */
-    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
     char key[] = "muh_hash_tho";
@@ -122,7 +122,7 @@ int test_unjar() {
 }
 
 int test_scoop() {
-    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
     char key[] = "muh_hash_tho";
@@ -154,7 +154,7 @@ int test_scoop() {
 }
 
 int test_uptime() {
-    ol_database *db = ol_open(DB_PATH, OL_CARESS_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_CARESS_DIR);
     printf("Opened DB: %p.\n", db);
 
     sleep(3);
@@ -172,7 +172,7 @@ int test_uptime() {
 }
 
 int test_update() {
-    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
     char key[] = "muh_hash_thoalk";
@@ -243,7 +243,7 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
 }
 
 int test_dump_forking() {
-    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
     int ret;
@@ -263,7 +263,7 @@ int test_dump_forking() {
     /* Close the DB to try and load it */
     ol_close(db);
 
-    db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     char *tmp_path = "/tmp/tmp-olegdb.dump";
     printf("[-] Loading DB from disk\n");
     ol_load_db(db, tmp_path);
@@ -274,7 +274,7 @@ int test_dump_forking() {
 }
 
 int test_dump() {
-    ol_database *db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
 
     int ret;
@@ -295,7 +295,7 @@ int test_dump() {
 
     ol_close(db);
 
-    db = ol_open(DB_PATH, OL_SLAUGHTER_DIR);
+    db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
 
     char *tmp_path = "/tmp/tmp-olegdb.dump";
 

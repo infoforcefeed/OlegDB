@@ -29,7 +29,7 @@
 #include "oleg.h"
 #include "murmur3.h"
 
-ol_database *ol_open(char *path, ol_filemode filemode){
+ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     ol_database *new_db = malloc(sizeof(struct ol_database));
 
     size_t to_alloc = HASH_MALLOC;
@@ -47,10 +47,16 @@ ol_database *ol_open(char *path, ol_filemode filemode){
     new_db->created = created;
     new_db->rcrd_cnt = 0;
     new_db->key_collisions = 0;
-    strncpy(new_db->name, "OLEG", sizeof("OLEG"));
+
+    strncpy(new_db->name, name, strlen(name));
     strncpy(new_db->path, path, PATH_LENGTH);
-    new_db->dump_file = calloc(1, sizeof("/tmp/olegdb.dump"));
-    memcpy(new_db->dump_file, "/tmp/olegdb.dump", sizeof("/tmp/olegdb.dump"));
+
+    char dump_file[512];
+    sprintf(dump_file, "%s/%s.dump", path, name);
+
+    new_db->dump_file = calloc(1, strlen(dump_file));
+    memcpy(new_db->dump_file, dump_file, strlen(dump_file));
+
     return new_db;
 }
 

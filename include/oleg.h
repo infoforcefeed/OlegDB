@@ -72,7 +72,7 @@ typedef struct ol_meta {
 } ol_meta;
 
 /* Opens a database using the filemode(s) specified */
-ol_database *ol_open(char *path, ol_filemode filemode);
+ol_database *ol_open(char *path, char *name, ol_filemode filemode);
 /* Closes a database, makes sure everything is written and frees memory */
 int ol_close(ol_database *database);
 /* Unjar a value from the mayo */
