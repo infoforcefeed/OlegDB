@@ -68,7 +68,6 @@ int ol_save_db(ol_database *db) {
     struct dump_header header;
     char tmpfile[512];
     sprintf(tmpfile, "%s-tmp", db->dump_file);
-    printf("Trying to open file %s\n", tmpfile);
 
     fd = fopen(tmpfile, "w+");
     if (!fd) {

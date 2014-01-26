@@ -79,7 +79,7 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
 int ol_close(ol_database *db){
     int ret = ol_save_db(db);
     if (ret != 0) {
-        printf("Could not save DB, freeing anyway.\n");
+        /* TODO: Do something meaningful here. */
     }
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
     int i;
