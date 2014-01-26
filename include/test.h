@@ -29,6 +29,7 @@
 
 #define DB_PATH "/tmp/oleg_is_king"
 #define DB_NAME "testdb"
+#define RECORD_COUNT 100
 
 #define ol_test_start() int test_return_val = 0;
 #define ol_run_test(test) printf("\n-----\n%s\n", #test); test_return_val = test();\

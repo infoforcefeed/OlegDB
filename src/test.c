@@ -54,7 +54,7 @@ int test_jar() {
     printf("Opened DB: %p.\n", db);
 
     int i;
-    int max_records = 1000000;
+    int max_records = RECORD_COUNT;
     unsigned char to_insert[] = "123456789";
     for (i = 0; i < max_records; i++) { /* 8======D */
         char key[16] = "crazy hash";
@@ -247,7 +247,7 @@ int test_dump_forking() {
     printf("Opened DB: %p.\n", db);
 
     int ret;
-    ret = _insert_keys(db, 1000000);
+    ret = _insert_keys(db, RECORD_COUNT);
     if (ret > 0) {
         printf("[x] Error inserting keys. Error code: %d\n", ret);
         return 1;
@@ -284,7 +284,7 @@ int test_dump() {
     printf("Opened DB: %p.\n", db);
 
     int ret;
-    unsigned int num_keys = 1000;
+    unsigned int num_keys = RECORD_COUNT;
     ret = _insert_keys(db, num_keys);
     if (ret > 0) {
         printf("[x] Error inserting keys. Error code: %d\n", ret);
