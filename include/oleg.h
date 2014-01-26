@@ -85,6 +85,8 @@ int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize)
 /* ol_jar with specified content type */
 int ol_jar_ct(ol_database *db, const char *key,unsigned char *value, size_t vsize,
         const char *content_type, const size_t content_type_size);
+/* Get the stored content type of a jarred value */
+char *ol_content_type(ol_database *db, const char *key);
 /* Get that crap out of my mayo jar */
 int ol_scoop(ol_database *db, const char *key);
 /* Helper for meta info */

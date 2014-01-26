@@ -281,6 +281,38 @@ int test_dump_forking() {
     return 0;
 }
 
+int test_ct() {
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    printf("Opened DB: %p.\n", db);
+
+    char key[] = "alksjdflkjwef";
+    unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
+    char content_type[] = "application/json";
+    size_t ct_size = sizeof(content_type);
+    int inserted = ol_jar_ct(db, key, val, strlen((char*)val), content_type, ct_size);
+
+    if (inserted > 0) {
+        printf("Error: Could not insert. Error code: %i\n", inserted);
+        ol_close(db);
+        return 1;
+    }
+
+    ol_val item = ol_unjar(db, key);
+    if (item == NULL) {
+        printf("Error: Could not find key: %s\n", key);
+        ol_close(db);
+        return 2;
+    }
+
+    char *content_type_retrieved = ol_content_type(db, key);
+    if (strncmp(content_type, content_type_retrieved, ct_size) != 0) {
+        printf("Error: Content types were different.\n");
+        return 3;
+    }
+    ol_close(db);
+    return 0;
+}
+
 int test_dump() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     printf("Opened DB: %p.\n", db);
@@ -347,6 +379,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_unjar);
     ol_run_test(test_scoop);
     ol_run_test(test_update);
+    ol_run_test(test_ct);
     ol_run_test(test_dump);
     ol_run_test(test_dump_forking);
     ol_run_test(test_uptime);

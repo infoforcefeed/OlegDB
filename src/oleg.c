@@ -323,6 +323,18 @@ int ol_scoop(ol_database *db, const char *key) {
     return 2;
 }
 
+char *ol_content_type(ol_database *db, const char *key) {
+    uint32_t hash;
+    MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
+    ol_bucket *bucket = _ol_get_bucket(db, hash, key);
+
+    if (bucket != NULL) {
+        return bucket->content_type;
+    }
+
+    return NULL;
+}
+
 int ol_uptime(ol_database *db) {
     /* Make uptime */
     time_t now;
