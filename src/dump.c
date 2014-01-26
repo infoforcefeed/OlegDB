@@ -67,9 +67,11 @@ int ol_save_db(ol_database *db) {
     //int ret;
     FILE *fd;
     struct dump_header header;
-    char tmpfile[256] = "/tmp/tmp-olegdb.dump";
+    char tmpfile[512];
+    sprintf(tmpfile, "%s-tmp", db->dump_file);
+    printf("Trying to open file %s\n", tmpfile);
 
-    fd = fopen(tmpfile, "w");
+    fd = fopen(tmpfile, "w+");
     if (!fd) {
         printf("Error: Can't opening file: %s\n", strerror(errno));
         return -1;
@@ -100,21 +102,26 @@ int ol_save_db(ol_database *db) {
     fflush(fd);
     fclose(fd);
 
-    //int ret;
-    //rename(tmpfile, db->dump_file);
-    //if (ret == -1) {
-    //    printf("Error: Can't rename file: %s\n", strerror(errno));
-    //    unlink(tmpfile);
-    //    return -1;
-    //}
+    int ret;
+    ret = rename(tmpfile, db->dump_file);
+    if (ret == -1) {
+        printf("Error: Can't rename file: %s\n", strerror(errno));
+        unlink(tmpfile);
+        return -1;
+    }
     return 0;
 }
 
 int ol_load_db(ol_database *db, char *filename) {
+    /* Pass in a filename so we can load in dumpfiles other than what
+     * the db thinks we should have. For instance, a new or alternate
+     * dataset.
+     */
     FILE *fd;
     int i, dump_version;
     struct dump_header header;
 
+    printf("Opening file %s\n", filename);
     fd = fopen(filename, "r");
     if (!fd) {
         printf("Error: Can't opening file: %s\n", strerror(errno));

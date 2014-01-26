@@ -57,6 +57,7 @@ struct ol_bucket {
 typedef struct ol_bucket ol_bucket; /* To enable self-referential struct */
 
 typedef struct ol_database {
+    void      (*get_db_name)(struct ol_database *db,char*);       /* Function to grab db name */
     char      name[8];           /* Name of the database */
     char      path[PATH_LENGTH]; /* Path to the database directory */
     char      *dump_file;        /* Path and filename of db dump */

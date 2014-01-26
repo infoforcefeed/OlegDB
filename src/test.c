@@ -264,9 +264,15 @@ int test_dump_forking() {
     ol_close(db);
 
     db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
-    char *tmp_path = "/tmp/tmp-olegdb.dump";
+
+    char tmp_path[512];
+    db->get_db_name(db, tmp_path);
+
     printf("[-] Loading DB from disk\n");
-    ol_load_db(db, tmp_path);
+    if (ol_load_db(db, tmp_path) == -1) {
+        printf("[-] Could not load DB.\n");
+        return 2;
+    };
 
     /* Finally, close and exit */
     ol_close(db);
@@ -288,7 +294,7 @@ int test_dump() {
     printf("[-] Dumping DB to disk.\n");
     ret = ol_save_db(db);
     if (ret != 0) {
-        printf("Error: Could not save DB");
+        printf("Error: Could not save DB\n");
         return 1;
     }
     printf("[-] Dumped %i records\n", num_keys);
@@ -297,7 +303,8 @@ int test_dump() {
 
     db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
 
-    char *tmp_path = "/tmp/tmp-olegdb.dump";
+    char tmp_path[512];
+    db->get_db_name(db, tmp_path);
 
     printf("[-] Loading DB from disk\n");
     ol_load_db(db, tmp_path);

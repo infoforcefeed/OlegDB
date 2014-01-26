@@ -25,9 +25,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include "oleg.h"
 #include "murmur3.h"
+
+void _ol_get_dump_name(ol_database *db, char *dump_file) {
+    sprintf(dump_file, "%s/%s.dump", db->path, db->name);
+}
 
 ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     ol_database *new_db = malloc(sizeof(struct ol_database));
@@ -51,8 +56,14 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     strncpy(new_db->name, name, strlen(name));
     strncpy(new_db->path, path, PATH_LENGTH);
 
+    struct stat st = {0};
+    if (stat(path, &st) == -1) {
+        mkdir(path, 0755);
+    }
+
     char dump_file[512];
-    sprintf(dump_file, "%s/%s.dump", path, name);
+    new_db->get_db_name = &_ol_get_dump_name;
+    new_db->get_db_name(new_db, dump_file);
 
     new_db->dump_file = calloc(1, strlen(dump_file));
     memcpy(new_db->dump_file, dump_file, strlen(dump_file));
