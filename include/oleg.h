@@ -27,17 +27,38 @@
 #include <time.h>
 
 
-/* ye ol version */
+/* xXx DEFINE=VERSION xXx
+* xXx DESCRIPTION=The current version of the OlegDB. xXx
+*/
 #define VERSION "0.1.0"
 
-/* Hardcoded key size */
+/* xXx DEFINE=KEY_SIZE xXx
+* xXx DESCRIPTION=The hardcoded upperbound for key lengths. xXx
+*/
 #define KEY_SIZE 32
-/* The size (in bytes) of a hash block */
+
+/* xXx DEFINE=HASH_MALLOC xXx
+* xXx DESCRIPTION=The size, in bytes, to allocate when initially creating the database. ol_bucket pointers are stored here. xXx
+*/
 #define HASH_MALLOC 65536
+
+/* xXx DEFINE=PATH_LENGTH xXx
+* xXx DESCRIPTION=The maximum length of a database's path. xXx
+*/
 #define PATH_LENGTH 256
+
+/* xXx DEFINE=DEVILS_SEED xXx
+* xXx DESCRIPTION=The seed to feed into the murmur3 algorithm. xXx
+*/
 #define DEVILS_SEED 666
 
-/* Modes of opening and operating on a DB */
+/* xXx ENUM=ol_filemode xXx
+* xXx DESCRIPTION=The filemodes to open and manipulate a database with. OR them together to use multiple. xXx
+* xXx OL_CONSUME_DIR=Open database for reading. xXx
+* xXx OL_SLAUGHTER_DIR=Open database in for writing. xXx
+* xXx OL_CARESS_DIR=Open database in appendonly mode. xXx
+* xXx OL_SLAUGHTER_DIR=Open database and create directories and dumpfiles if they don't exist. xXx
+*/
 typedef enum {
     OL_CONSUME_DIR      = 1 << 0, /* Read */
     OL_SLAUGHTER_DIR    = 1 << 1, /* Write */
@@ -45,9 +66,22 @@ typedef enum {
     OL_MANUFACTURE_DIR  = 1 << 3  /* Create */
 } ol_filemode;
 
-/* Data that the DB stores */
+/* xXx TYPEDEF=ol_val xXx
+ * xXx DESCRIPTION=Typedef for the values that can be stored inside the database. xXx
+ */
 typedef unsigned char *ol_val;
-struct ol_bucket {
+
+/* xXx STRUCT=ol_bucket xXx
+* xXx DESCRIPTION=This is the object stored in the database's hashtable. Contains references to value, key, etc. xXx
+* xXx key[KEY_SIZE]=The key used for this bucket. xXx
+* xXx *content_type=The content-type of this object. Defaults to "application/octet-stream". xXx
+* xXx ctype_size=Length of the string representing content-type. xXx
+* xXx data_ptr=Location of this key's value. xXx
+* xXx data_size=Length of the value in bytes. xXx
+* xXx hash=Hashed value of this key. xXx
+* xXx next=Collisions are resolved via linked list. This contains the pointer to the next object in the chain, or NULL. xXx
+*/
+typedef struct ol_bucket {
     char              key[KEY_SIZE]; /* The key used to reference the data */
     char              *content_type;
     size_t            ctype_size;
@@ -55,8 +89,8 @@ struct ol_bucket {
     size_t            data_size;
     uint32_t          hash;
     struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
-};
-typedef struct ol_bucket ol_bucket; /* To enable self-referential struct */
+} ol_bucket;
+
 
 typedef struct ol_database {
     void      (*get_db_name)(struct ol_database *db,char*);       /* Function to grab db name */
@@ -74,7 +108,11 @@ typedef struct ol_meta {
     time_t uptime;
 } ol_meta;
 
-/* Opens a database using the filemode(s) specified */
+/* xXx FUNCTION=ol_open xXx
+ * xXx path=The directory where the database will be stored. xXx
+ * xXx name=The name of the database. This is used to create the dumpfile, and keep track of the database. xXx
+ * xXx filemode=The filemode used to interact with the database. See xXx REF=ol_filemode xXx xXx
+ */
 ol_database *ol_open(char *path, char *name, ol_filemode filemode);
 /* Closes a database, makes sure everything is written and frees memory */
 int ol_close(ol_database *database);
