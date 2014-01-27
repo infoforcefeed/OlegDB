@@ -1,6 +1,8 @@
 Project Oleg
 ============
 
+[![Build Status](https://drone.io/github.com/infoforcefeed/Project-Oleg/status.png)](https://drone.io/github.com/infoforcefeed/Project-Oleg/latest)
+
 Alternate title: "How far can we push a mayonnaise metaphor?"
 
 ````
