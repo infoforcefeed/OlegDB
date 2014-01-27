@@ -155,8 +155,9 @@ ol_val ol_unjar(ol_database *db, const char *key);
  * xXx vsize=The size of the value in bytes. xXx
  */
 int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize);
+
 /* xXx FUNCTION=ol_jar_ct xXx
- * xXx DESCRIPTION=Put a value into the mayo. It's easy to piss in a bucket, it's not easy to piss in 19 jars. Allws you to specify content type. xXx
+ * xXx DESCRIPTION=Put a value into the mayo. It's easy to piss in a bucket, it's not easy to piss in 19 jars. Allows you to specify content type. xXx
  * xXx RETURNS=0 on sucess. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
@@ -197,3 +198,4 @@ int ol_uptime(ol_database *db);
  * xXx *db=Database to retrieve value from. xXx
  */
 int ol_ht_bucket_max(size_t ht_size);
+
