@@ -127,7 +127,7 @@ typedef struct ol_meta {
  * xXx RETURNS=A new database object. xXx
  * xXx *path=The directory where the database will be stored. xXx
  * xXx *name=The name of the database. This is used to create the dumpfile, and keep track of the database. xXx
- * xXx filemode=The filemode used to interact with the database. See xXx REF=ol_filemode xXx xXx
+ * xXx filemode=The filemode used to interact with the database. See ol_filemode. xXx
  */
 ol_database *ol_open(char *path, char *name, ol_filemode filemode);
 
@@ -194,7 +194,7 @@ int ol_uptime(ol_database *db);
 
 /* xXx FUNCTION=ol_ht_bucket_max xXx
  * xXx DESCRIPTION=Does some sizeof witchery to return the maximum current size of the database. xXx
- * xXx RETURNS=Uptime in seconds since database initialization. xXx
+ * xXx RETURNS=The maximum possible bucket slots for db. xXx
  * xXx *db=Database to retrieve value from. xXx
  */
 int ol_ht_bucket_max(size_t ht_size);
