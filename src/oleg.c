@@ -30,6 +30,9 @@
 #include "oleg.h"
 #include "dump.h"
 #include "murmur3.h"
+#define DEBUG 1
+#include "errhandle.h"
+
 
 inline int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
@@ -40,6 +43,7 @@ void _ol_get_dump_name(ol_database *db, char *dump_file) {
 }
 
 ol_database *ol_open(char *path, char *name, ol_filemode filemode){
+    debug("Opening \"%s\" database", name);
     ol_database *new_db = malloc(sizeof(struct ol_database));
 
     size_t to_alloc = HASH_MALLOC;
@@ -77,6 +81,7 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
 }
 
 int ol_close(ol_database *db){
+    debug("Closing \"%s\" database.", db->name);
     int ret = ol_save_db(db);
     if (ret != 0) {
         /* TODO: Do something meaningful here. */
@@ -85,8 +90,8 @@ int ol_close(ol_database *db){
     int i;
     int rcrd_cnt = db->rcrd_cnt;
     int freed = 0;
-    printf("[-] Freeing %d records.\n", rcrd_cnt);
-    printf("[-] Iterations: %d.\n", iterations);
+    debug("Freeing %d records.", rcrd_cnt);
+    debug("Hash table iterations: %d.", iterations);
     for (i = 0; i <= iterations; i++) { /* 8=======D */
         if (db->hashes[i] != NULL) {
             ol_bucket *ptr;
@@ -166,7 +171,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     ol_bucket **tmp_hashes = NULL;
 
     size_t to_alloc = db->cur_ht_size * 2;
-    printf("[-] Growing DB to %zu bytes\n", to_alloc);
+    debug("Growing DB to %zu bytes.", to_alloc);
     tmp_hashes = calloc(1, to_alloc);
     for (i = 0; i < ol_ht_bucket_max(db->cur_ht_size); i++) {
         bucket = db->hashes[i];
@@ -184,7 +189,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     free(db->hashes);
     db->hashes = tmp_hashes;
     db->cur_ht_size = to_alloc;
-    printf("[-] Current hash table size is now: %zu\n", to_alloc);
+    debug("Current hash table size is now: %zu bytes.", to_alloc);
     return 0;
 }
 
@@ -209,7 +214,6 @@ int _ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize,
 
     /* Check to see if we have an existing entry with that key */
     if (bucket != NULL && strncmp(bucket->key, key, KEY_SIZE) == 0) {
-        printf("[-] realloc\n");
         unsigned char *data = realloc(bucket->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data) {
             return 4;
@@ -258,7 +262,7 @@ int _ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize,
     int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
     /* TODO: rehash this shit at 80% */
     if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
-        printf("[-] Record count is now %i; growing hash table.\n", db->rcrd_cnt);
+        debug("Record count is now %i; growing hash table.", db->rcrd_cnt);
         ret = _ol_grow_and_rehash_db(db);
         if (ret > 0) {
             printf("Error: Problem rehashing DB. Error code: %i\n", ret);

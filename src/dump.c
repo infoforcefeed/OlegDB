@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include "oleg.h"
 #include "dump.h"
+#include "errhandle.h"
 
 
 static inline int _ol_serialize_bucket(const ol_bucket *bucket, FILE *fd) {
@@ -57,7 +58,7 @@ int ol_background_save(ol_database *db) {
             printf("Could not background to dump\n");
             return -1;
         }
-        printf("Backgrounding ol_dump. PID: %d\n", pid);
+        log_info("Backgrounding ol_dump. PID: %d", pid);
         return 0;
     }
     return 0;
@@ -119,7 +120,7 @@ int ol_load_db(ol_database *db, char *filename) {
     int i, dump_version;
     struct dump_header header;
 
-    printf("Opening file %s\n", filename);
+    debug("Opening file %s", filename);
     fd = fopen(filename, "r");
     if (!fd) {
         printf("Error: Can't opening file: %s\n", strerror(errno));
