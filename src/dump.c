@@ -8,7 +8,7 @@
 #include "errhandle.h"
 
 
-static inline int _ol_serialize_bucket(const ol_bucket *bucket, FILE *fd) {
+static inline int _ol_write_bucket(const ol_bucket *bucket, FILE *fd) {
     do {
         fwrite(&bucket->key, sizeof(char), KEY_SIZE, fd);
         fwrite(&bucket->data_size, sizeof(size_t), 1, fd);
@@ -22,23 +22,27 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
     char *tmp_key;
     unsigned char *tmp_value;
     size_t value_size;
+
     tmp_key = malloc(KEY_SIZE);
-    if (tmp_key == NULL) {
-        printf("Error: Cannot allocate memory for tmp_key\n");
-        return -1;
-    }
+    check_mem(tmp_key);
+
     fread(tmp_key, sizeof(char), KEY_SIZE, fd);
     fread(&value_size, sizeof(size_t), 1, fd);
+
     tmp_value = calloc(1, value_size);
-    if (tmp_value == NULL) {
-        printf("Error: Cannot allocate memory for tmp_value\n");
-        return -1;
-    }
+    check_mem(tmp_value);
+
     fread(tmp_value, sizeof(char), value_size, fd);
     ol_jar(db, tmp_key, tmp_value, value_size);
+
     free(tmp_key);
     free(tmp_value);
     return 0;
+
+error:
+    free(tmp_key);
+    free(tmp_value);
+    return -1;
 }
 
 int ol_background_save(ol_database *db) {
@@ -48,20 +52,17 @@ int ol_background_save(ol_database *db) {
     if (pid == 0) {
         int ret;
         ret = ol_save_db(db);
-        if (ret != 0) {
-            printf("Error: Could not save database to disk\n");
-            exit(ret);
-        }
-        exit(ret);
+        if(ret == 0)
+            log_err("Could not save DB to disk."); exit(ret);
     } else {
-        if (pid == -1) {
-            printf("Could not background to dump\n");
-            return -1;
-        }
+        check(pid > 0, "Could not background dump.");
         log_info("Backgrounding ol_dump. PID: %d", pid);
         return 0;
     }
     return 0;
+
+error:
+    return -1;
 }
 
 int ol_save_db(ol_database *db) {
@@ -70,45 +71,37 @@ int ol_save_db(ol_database *db) {
     char tmpfile[512];
     sprintf(tmpfile, "%s-tmp", db->dump_file);
 
+    debug("Opening file %s", tmpfile);
     fd = fopen(tmpfile, "w+");
-    if (!fd) {
-        printf("Error: Can't opening file: %s\n", strerror(errno));
-        return -1;
-    }
+    check(fd, "Failed to open file: %s", tmpfile);
 
-    /* do the saving here */
+    /* Write the header to the file */
     snprintf(header.sig, sizeof(DUMP_SIG), "%s", DUMP_SIG);
     snprintf(header.version, sizeof(header.version)+1, "%04i", DUMP_VERSION);
     header.rcrd_cnt = db->rcrd_cnt;
-    if (fwrite(&header, sizeof(header), 1, fd) != 1) {
-        printf("Error: Can't write header to file. %s\n", strerror(errno));
-        return -1;
-    }
+    check(fwrite(&header, sizeof(header), 1, fd) == 1, "Write failed.");
 
+    /* Start serializing the struct and write to the file */
     int i;
     int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
-    ol_bucket *bucket;
+    ol_bucket *item;
     for (i = 0; i < bucket_max; i++) {
-        bucket = db->hashes[i];
-        if (bucket != NULL) {
-            if (_ol_serialize_bucket(bucket, fd) != 0) {
-                printf("Error: Could not serialize bucket\n");
-                return -1;
-            }
-        }
+        item = db->hashes[i];
+        if (item != NULL)
+            check(_ol_write_bucket(item, fd) == 0, "Recording bucket failed.");
     }
 
     fflush(fd);
     fclose(fd);
 
-    int ret;
-    ret = rename(tmpfile, db->dump_file);
-    if (ret == -1) {
-        printf("Error: Can't rename file: %s\n", strerror(errno));
-        unlink(tmpfile);
-        return -1;
-    }
+    debug("Renaming file: %s -> %s.", tmpfile, db->dump_file);
+    check(rename(tmpfile, db->dump_file) == 0, "Could not rename.")
+
     return 0;
+
+error:
+    unlink(tmpfile);
+    return -1;
 }
 
 int ol_load_db(ol_database *db, char *filename) {
@@ -122,10 +115,7 @@ int ol_load_db(ol_database *db, char *filename) {
 
     debug("Opening file %s", filename);
     fd = fopen(filename, "r");
-    if (!fd) {
-        printf("Error: Can't opening file: %s\n", strerror(errno));
-        return -1;
-    }
+    check(fd, "Failed to open file: %s", filename);
 
     fread(&header, sizeof(header), 1, fd);
     if (memcmp(header.sig, DUMP_SIG, 4) != 0) {
@@ -142,15 +132,14 @@ int ol_load_db(ol_database *db, char *filename) {
     }
 
     /* Load up the database */
-    int ret;
     for (i = 0; i < header.rcrd_cnt; i++) {
-        ret = _ol_store_bin_object(db, fd);
-        if (ret != 0) {
-            printf("Error: Could not read bucket from dump file\n");
-        }
+        check(_ol_store_bin_object(db, fd) == 0, "Could not read item.");
     }
 
     fclose(fd);
 
     return 0;
+
+error:
+    return -1;
 }

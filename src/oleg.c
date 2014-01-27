@@ -30,7 +30,6 @@
 #include "oleg.h"
 #include "dump.h"
 #include "murmur3.h"
-#define DEBUG 1
 #include "errhandle.h"
 
 
