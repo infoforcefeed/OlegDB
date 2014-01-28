@@ -22,32 +22,34 @@
 *
 * This is where the magic happens.
 */
+#include "ei.h"
 #include "erl_driver.h"
+#include "logging.h"
 #include "oleg.h"
 
 /* This is used to store and manipulate state. */
 typedef struct {
-    ErlDrvPort port,
+    ErlDrvPort port;
     ol_database *db;
 } oleg_data;
 
 static ErlDrvData oleg_start(ErlDrvPort port, char *buff) {
-    oleg_data *data = (oleg_data*)driver_alloc(sizeof(oleg_data));
-    data->port = port;
-    data->db = NULL;
+    oleg_data *d = (oleg_data*)driver_alloc(sizeof(oleg_data));
+    d->port = port;
+    d->db = NULL;
     return (ErlDrvData)d;
 }
 
 static void oleg_stop(ErlDrvData data) {
-    oleg_data *data = (oleg_data*)data;
-    if (data->db != NULL) {
-        ol_close(data->db);
+    oleg_data *d = (oleg_data*)data;
+    if (d->db != NULL) {
+        ol_close(d->db);
     }
-    driver_free((char *)data);
+    driver_free(data);
 }
 
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
-    printf("Hello, world!\n");
+    ol_log_msg(LOG_INFO, "Hello, world!\n");
 }
 
 /* Various callbacks */
