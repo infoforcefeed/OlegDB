@@ -104,8 +104,8 @@ int _ol_close(ol_database *db){
     free(db->dump_file);
     free(db);
     if (freed != rcrd_cnt) {
-        ol_log_msg(LOG_INFO, "[X] Error: Couldn't free all records.");
-        ol_log_msg(LOG_INFO, "[X] Records freed: %i\n", freed);
+        ol_log_msg(LOG_INFO, "Error: Couldn't free all records.");
+        ol_log_msg(LOG_INFO, "Records freed: %i\n", freed);
         return 1;
     }
     return 0;
@@ -186,6 +186,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     size_t to_alloc = db->cur_ht_size * 2;
     debug("Growing DB to %zu bytes.", to_alloc);
     tmp_hashes = calloc(1, to_alloc);
+    check_mem(tmp_hashes);
     for (i = 0; i < ol_ht_bucket_max(db->cur_ht_size); i++) {
         bucket = db->hashes[i];
         if (bucket != NULL) {
@@ -204,6 +205,9 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     db->cur_ht_size = to_alloc;
     debug("Current hash table size is now: %zu bytes.", to_alloc);
     return 0;
+
+error:
+    return -1;
 }
 
 ol_val ol_unjar(ol_database *db, const char *key) {
