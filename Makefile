@@ -22,7 +22,8 @@ liboleg:
 	$(cc) $(CFLAGS) -c -fPIC -I./include ./src/murmur3.c
 	$(cc) $(CFLAGS) -c -fPIC -I./include ./src/oleg.c
 	$(cc) $(CFLAGS) -c -fPIC -I./include ./src/dump.c
-	$(cc) $(CFLAGS) $(MATH_LINKER) -shared -Wl,-soname,$(SONAME) -o $(LIB_DIR)liboleg.so.$(VERSION) murmur3.o dump.o oleg.o
+	$(cc) $(CFLAGS) -c -fPIC -I./include ./src/logging.c
+	$(cc) $(CFLAGS) $(MATH_LINKER) -shared -Wl,-soname,$(SONAME) -o $(LIB_DIR)liboleg.so.$(VERSION) murmur3.o logging.o dump.o oleg.o
 	if ! [ -L $(LIB_DIR)$(SONAME) ]; then ln -s $(LIB_DIR)liboleg.so.$(VERSION) $(LIB_DIR)$(SONAME); fi
 	if ! [ -L $(LIB_DIR)liboleg.so ]; then ln -s $(LIB_DIR)liboleg.so.$(VERSION) $(LIB_DIR)liboleg.so; fi
 	$(cc) $(CFLAGS) -c -I./include ./src/test.c

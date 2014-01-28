@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include "oleg.h"
+#include "logging.h"
 #include "dump.h"
 #include "murmur3.h"
 #include "errhandle.h"
@@ -104,8 +105,8 @@ int _ol_close(ol_database *db){
     free(db->dump_file);
     free(db);
     if (freed != rcrd_cnt) {
-        printf("[X] Error: Couldn't free all records.\n");
-        printf("[X] Records freed: %i\n", freed);
+        ol_log_msg("[X] Error: Couldn't free all records.");
+        ol_log_msg("[X] Records freed: %i\n", freed);
         return 1;
     }
     return 0;
