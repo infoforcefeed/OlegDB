@@ -138,6 +138,13 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode);
  */
 int ol_close(ol_database *database);
 
+/* xXx FUNCTION=ol_close_save xXx
+ * xXx DESCRIPTION=Dumps and closes a database cleanly, frees memory and makes sure everything is written. xXx
+ * xXx RETURNS=0 on success, 1 if not everything could be freed. xXx
+ * xXx *database=The database to close. xXx
+ */
+int ol_close_save(ol_database *database);
+
 /* xXx FUNCTION=ol_unjar xXx
  * xXx DESCRIPTION=Unjar a value from the mayo. xXx
  * xXx RETURNS=A pointer to an ol_val object, or NULL if the object was not found. xXx

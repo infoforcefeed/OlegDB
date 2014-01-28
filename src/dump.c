@@ -52,7 +52,7 @@ int ol_background_save(ol_database *db) {
     if (pid == 0) {
         int ret;
         ret = ol_save_db(db);
-        if(ret == 0)
+        if(ret != 0)
             log_err("Could not save DB to disk."); exit(ret);
     } else {
         check(pid > 0, "Could not background dump.");

@@ -79,12 +79,7 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     return new_db;
 }
 
-int ol_close(ol_database *db){
-    debug("Closing \"%s\" database.", db->name);
-    int ret = ol_save_db(db);
-    if (ret != 0) {
-        /* TODO: Do something meaningful here. */
-    }
+int _ol_close(ol_database *db){
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
     int i;
     int rcrd_cnt = db->rcrd_cnt;
@@ -114,6 +109,27 @@ int ol_close(ol_database *db){
         return 1;
     }
     return 0;
+}
+
+int ol_close_save(ol_database *db) {
+    debug("Saving and closing \"%s\" database.", db->name);
+    check(ol_save_db(db) == 0, "Could not save DB.");
+    check(_ol_close(db) == 0, "Could not close DB.");
+
+    return 0;
+
+error:
+    return 1;
+}
+
+int ol_close(ol_database *db) {
+    debug("Closing \"%s\" database.", db->name);
+    check(_ol_close(db) == 0, "Could not close DB.");
+
+    return 0;
+
+error:
+    return 1;
 }
 
 int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
