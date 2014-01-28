@@ -36,6 +36,7 @@ liboleg:
 		$(MATH_LINKER) -loleg 
 
 erlang:
+	erlc $(ERLFLAGS) ./src/ol_database.erl
 	erlc $(ERLFLAGS) ./src/ol_http.erl
 	erlc $(ERLFLAGS) ./src/ol_parse.erl
 	erlc $(ERLFLAGS) ./src/olegdb.erl
