@@ -7,6 +7,7 @@ LIB_DIR=$(BUILD_DIR)lib/
 BIN_DIR=$(BUILD_DIR)bin/
 SONAME=liboleg.so.1
 ERLFLAGS=-smp -W1 -Werror -b beam -I./include -o $(BIN_DIR)
+ERL_HEADERS=`erl -eval 'io:format("~s~n", [code:lib_dir()])' -s init stop -noshell`
 
 MATH_LINKER=
 ifeq ($(uname_S),Darwin)
