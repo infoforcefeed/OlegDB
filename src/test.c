@@ -32,7 +32,7 @@ int test_open_close() {
     if (ret > 0){
         ol_log_msg("Couldn't free all memory.");
     } else {
-        ol_log_msg("Closed DB.");
+        ol_log_msg("Closed DB: %p.", db);
     }
     return 0;
 }
@@ -53,7 +53,7 @@ int test_bucket_max() {
 
 int test_jar() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
-    ol_log_msg("Opened DB: %p.\n", db);
+    ol_log_msg("Opened DB: %p.", db);
 
     int i;
     int max_records = RECORD_COUNT;
@@ -245,7 +245,7 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
 
 int test_dump_forking() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
-    ol_log_msg("Opened DB: %p.\n", db);
+    ol_log_msg("Opened DB: %p.", db);
 
     int ret;
     ret = _insert_keys(db, RECORD_COUNT);

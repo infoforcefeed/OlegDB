@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "oleg.h"
+#include "logging.h"
 #include "dump.h"
 #include "errhandle.h"
 
@@ -56,7 +57,7 @@ int ol_background_save(ol_database *db) {
             log_err("Could not save DB to disk."); exit(ret);
     } else {
         check(pid > 0, "Could not background dump.");
-        log_info("Backgrounding ol_dump. PID: %d", pid);
+        ol_log_msg("Backgrounding ol_dump. PID: %d", pid);
         return 0;
     }
     return 0;
