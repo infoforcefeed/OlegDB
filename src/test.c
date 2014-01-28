@@ -41,12 +41,14 @@ int test_bucket_max() {
     int expected_bucket_max = HASH_MALLOC / 8;
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
 
+    ol_log_msg(LOG_INFO, "Expected max is: %i", expected_bucket_max);
     int generated_bucket_max = ol_ht_bucket_max(db->cur_ht_size);
     if (expected_bucket_max != generated_bucket_max) {
-        ol_log_msg(LOG_INFO, "Error: Unexpected bucket max. Got: %d", generated_bucket_max);
+        ol_log_msg(LOG_INFO, "Unexpected bucket max. Got: %d", generated_bucket_max);
         ol_close(db);
         return 1;
     }
+    ol_log_msg(LOG_INFO, "Generated max is: %i", expected_bucket_max);
     ol_close(db);
     return 0;
 }
@@ -69,13 +71,13 @@ int test_jar() {
         int insert_result = ol_jar(db, key, to_insert, len);
 
         if (insert_result > 0) {
-            printf("Error: Could not insert. Error code: %i\n", insert_result);
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
             ol_close(db);
             return 2;
         }
 
         if (db->rcrd_cnt != i+1) {
-            printf("Error: Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
+            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
             ol_close(db);
             return 3;
         }
@@ -84,7 +86,7 @@ int test_jar() {
     ol_log_msg(LOG_INFO, "Saw %d collisions.", db->key_collisions);
 
     if (ol_close(db) != 0) {
-        printf("Couldn't free all memory.\n");
+        ol_log_msg(LOG_ERR, "Couldn't free all memory.\n");
         return 1;
     }
     return 0;
@@ -100,7 +102,7 @@ int test_unjar() {
     int inserted = ol_jar(db, key, val, strlen((char*)val));
 
     if (inserted > 0) {
-        printf("Error: Could not insert. Error code: %i\n", inserted);
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
         ol_close(db);
         return 1;
     }
@@ -108,13 +110,13 @@ int test_unjar() {
     ol_val item = ol_unjar(db, key);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
-        printf("Error: Could not find key: %s\n", key);
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
-        printf("Error: Returned value was not the same.\n");
+        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
         ol_close(db);
         return 3;
     }
@@ -131,7 +133,7 @@ int test_scoop() {
     unsigned char val[] = "{json: \"ain't real\"}";
     int inserted = ol_jar(db, key, val, strlen((char*)val));
     if (db->rcrd_cnt != 1 || inserted > 0) {
-        printf("Record not inserted. Record count: %i\n", db->rcrd_cnt);
+        ol_log_msg(LOG_ERR, "Record not inserted. Record count: %i\n", db->rcrd_cnt);
         return 2;
     }
     ol_log_msg(LOG_INFO, "Value inserted. Records: %i", db->rcrd_cnt);
@@ -140,13 +142,13 @@ int test_scoop() {
     if (ol_scoop(db, "muh_hash_tho") == 0) {
         ol_log_msg(LOG_INFO, "Deleted record.");
     } else {
-        printf("Could not delete record.\n");
+        ol_log_msg(LOG_ERR, "Could not delete record.\n");
         ol_close(db);
         return 1;
     }
 
     if (db->rcrd_cnt != 0) {
-        printf("Record not deleted.\n");
+        ol_log_msg(LOG_ERR, "Record not deleted.\n");
         return 2;
     }
 
@@ -164,7 +166,7 @@ int test_uptime() {
     ol_log_msg(LOG_INFO, "Uptime: %.i seconds", uptime);
 
     if (uptime < 3) {
-        printf("Uptime incorrect.\n");
+        ol_log_msg(LOG_ERR, "Uptime incorrect.\n");
         ol_close(db);
         return 1;
     }
@@ -182,20 +184,20 @@ int test_update() {
     int inserted = ol_jar(db, key, val, strlen((char*)val));
 
     if (inserted > 0) {
-        printf("Error: Could not insert. Error code: %i\n", inserted);
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
         ol_close(db);
         return 1;
     }
 
     ol_val item = ol_unjar(db, key);
     if (item == NULL) {
-        printf("Error: Could not find key: %s\n", key);
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
-        printf("Error: Returned value was not the same.\n");
+        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
         ol_close(db);
         return 3;
     }
@@ -205,13 +207,13 @@ int test_update() {
 
     item = ol_unjar(db, key);
     if (item == NULL) {
-        printf("Error: Could not find key: %s\n", key);
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
         return 2;
     }
 
     if (memcmp(item, new_val, strlen((char*)new_val)) != 0) {
-        printf("Error: Returned value was not the new value.\nVal: %s\n", item);
+        ol_log_msg(LOG_ERR, "Returned value was not the new value.\nVal: %s\n", item);
         ol_close(db);
         return 3;
     }
@@ -236,7 +238,7 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
         int insert_result = ol_jar(db, key, to_insert, len);
 
         if (insert_result > 0) {
-            printf("Error: Could not insert. Error code: %i\n", insert_result);
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
             ol_close(db);
             return 2;
         }
@@ -251,14 +253,14 @@ int test_dump_forking() {
     int ret;
     ret = _insert_keys(db, RECORD_COUNT);
     if (ret > 0) {
-        printf("[x] Error inserting keys. Error code: %d\n", ret);
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
         return 1;
     }
 
     ret = ol_background_save(db);
 
     if (ret != 0) {
-        printf("Error: Could not background save DB");
+        ol_log_msg(LOG_ERR, "Could not background save DB");
         return 1;
     }
 
@@ -272,7 +274,7 @@ int test_dump_forking() {
 
     ol_log_msg(LOG_INFO, "Loading DB from disk");
     if (ol_load_db(db, tmp_path) == -1) {
-        printf("Could not load DB.\n");
+        ol_log_msg(LOG_ERR, "Could not load DB.\n");
         return 2;
     };
 
@@ -292,21 +294,21 @@ int test_ct() {
     int inserted = ol_jar_ct(db, key, val, strlen((char*)val), content_type, ct_size);
 
     if (inserted > 0) {
-        printf("Error: Could not insert. Error code: %i\n", inserted);
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
         ol_close(db);
         return 1;
     }
 
     ol_val item = ol_unjar(db, key);
     if (item == NULL) {
-        printf("Error: Could not find key: %s\n", key);
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
         return 2;
     }
 
     char *content_type_retrieved = ol_content_type(db, key);
     if (strncmp(content_type, content_type_retrieved, ct_size) != 0) {
-        printf("Error: Content types were different.\n");
+        ol_log_msg(LOG_ERR, "Content types were different.\n");
         return 3;
     }
     ol_log_msg(LOG_INFO, "Content type retrieved successfully.");
@@ -323,14 +325,14 @@ int test_dump() {
     unsigned int num_keys = RECORD_COUNT;
     ret = _insert_keys(db, num_keys);
     if (ret > 0) {
-        printf("[x] Error inserting keys. Error code: %d\n", ret);
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
         return 1;
     }
 
     ol_log_msg(LOG_INFO, "Dumping DB to disk.");
     ret = ol_save_db(db);
     if (ret != 0) {
-        printf("Error: Could not save DB\n");
+        ol_log_msg(LOG_ERR, "Could not save DB\n");
         return 1;
     }
     ol_log_msg(LOG_INFO, "Dumped %i records", num_keys);
@@ -346,7 +348,7 @@ int test_dump() {
     ol_load_db(db, tmp_path);
 
     if (db->rcrd_cnt != num_keys) {
-        printf("Error: Not all records were loaded. %i\n", db->rcrd_cnt);
+        ol_log_msg(LOG_ERR, "Not all records were loaded. %i\n", db->rcrd_cnt);
         return 2;
     }
     ol_log_msg(LOG_INFO, "Loaded %i records from dump file.", db->rcrd_cnt);
@@ -358,7 +360,7 @@ int test_dump() {
         if (temp != NULL) {
             do {
                 if (temp->data_ptr == NULL || temp->data_size == 0) {
-                    printf("Error: Records were corrupt or something. I: %i\n", i);
+                    ol_log_msg(LOG_ERR, "Records were corrupt or something. I: %i\n", i);
                     exit(1);
                 }
                 temp = temp->next;
