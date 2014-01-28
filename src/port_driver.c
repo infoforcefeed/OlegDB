@@ -34,7 +34,7 @@ typedef struct {
 } oleg_data;
 
 static ErlDrvData oleg_start(ErlDrvPort port, char *buff) {
-    oleg_data *d = (oleg_data*)driver_alloc(sizeof(oleg_data));
+    oleg_data *d = (oleg_data*)malloc(sizeof(oleg_data));
     d->port = port;
     d->db = NULL;
     return (ErlDrvData)d;
@@ -45,7 +45,7 @@ static void oleg_stop(ErlDrvData data) {
     if (d->db != NULL) {
         ol_close(d->db);
     }
-    driver_free(data);
+    free(data);
 }
 
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
