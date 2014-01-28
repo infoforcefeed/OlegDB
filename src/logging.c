@@ -62,5 +62,5 @@ void ol_log_msg(int level, const char *fmsg, ...) {
 
     fprintf(fd, "%s %s %s\n", buffer, sym_buf, msg);
 
-    fflush(stdout);
+    fflush(fd);
 }
