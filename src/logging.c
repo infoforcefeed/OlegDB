@@ -15,6 +15,7 @@ void ol_log_msg(int level, const char *fmsg, ...) {
     char *sym = "[-][!][x]";
     char sym_buf[4];
 
+    /* No funny bizz with the level. If it ain't mod 3 and < 7, make it 0 */
     if (level % 3 != 0 || level > 6)
         level = 0;
 
