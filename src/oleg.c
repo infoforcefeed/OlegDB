@@ -105,8 +105,8 @@ int _ol_close(ol_database *db){
     free(db->dump_file);
     free(db);
     if (freed != rcrd_cnt) {
-        ol_log_msg("[X] Error: Couldn't free all records.");
-        ol_log_msg("[X] Records freed: %i\n", freed);
+        ol_log_msg(LOG_INFO, "[X] Error: Couldn't free all records.");
+        ol_log_msg(LOG_INFO, "[X] Records freed: %i\n", freed);
         return 1;
     }
     return 0;

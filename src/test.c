@@ -27,12 +27,12 @@
 
 int test_open_close() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_CONSUME_DIR);
-    ol_log_msg("Opened DB: %p.", db);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
     int ret = ol_close(db);
     if (ret > 0){
-        ol_log_msg("Couldn't free all memory.");
+        ol_log_msg(LOG_INFO, "Couldn't free all memory.");
     } else {
-        ol_log_msg("Closed DB.");
+        ol_log_msg(LOG_INFO, "Closed DB: %p.", db);
     }
     return 0;
 }
@@ -43,7 +43,7 @@ int test_bucket_max() {
 
     int generated_bucket_max = ol_ht_bucket_max(db->cur_ht_size);
     if (expected_bucket_max != generated_bucket_max) {
-        ol_log_msg("Error: Unexpected bucket max. Got: %d", generated_bucket_max);
+        ol_log_msg(LOG_INFO, "Error: Unexpected bucket max. Got: %d", generated_bucket_max);
         ol_close(db);
         return 1;
     }
@@ -53,7 +53,7 @@ int test_bucket_max() {
 
 int test_jar() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
-    ol_log_msg("Opened DB: %p.\n", db);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     int i;
     int max_records = RECORD_COUNT;
@@ -80,8 +80,8 @@ int test_jar() {
             return 3;
         }
     }
-    ol_log_msg("Records inserted: %i.", db->rcrd_cnt);
-    ol_log_msg("Saw %d collisions.", db->key_collisions);
+    ol_log_msg(LOG_INFO, "Records inserted: %i.", db->rcrd_cnt);
+    ol_log_msg(LOG_INFO, "Saw %d collisions.", db->key_collisions);
 
     if (ol_close(db) != 0) {
         printf("Couldn't free all memory.\n");
@@ -93,7 +93,7 @@ int test_jar() {
 int test_unjar() {
     /* TODO: This test should actually make sure all of the data is consistent */
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
-    ol_log_msg("Opened DB: %p.", db);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
@@ -106,7 +106,7 @@ int test_unjar() {
     }
 
     ol_val item = ol_unjar(db, key);
-    ol_log_msg("Retrieved value.");
+    ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         printf("Error: Could not find key: %s\n", key);
         ol_close(db);
@@ -125,7 +125,7 @@ int test_unjar() {
 
 int test_scoop() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
-    ol_log_msg("Opened DB: %p.", db);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
@@ -134,11 +134,11 @@ int test_scoop() {
         printf("Record not inserted. Record count: %i\n", db->rcrd_cnt);
         return 2;
     }
-    ol_log_msg("Value inserted. Records: %i", db->rcrd_cnt);
+    ol_log_msg(LOG_INFO, "Value inserted. Records: %i", db->rcrd_cnt);
 
 
     if (ol_scoop(db, "muh_hash_tho") == 0) {
-        ol_log_msg("Deleted record.");
+        ol_log_msg(LOG_INFO, "Deleted record.");
     } else {
         printf("Could not delete record.\n");
         ol_close(db);
@@ -150,18 +150,18 @@ int test_scoop() {
         return 2;
     }
 
-    ol_log_msg("Record count is: %i", db->rcrd_cnt);
+    ol_log_msg(LOG_INFO, "Record count is: %i", db->rcrd_cnt);
     ol_close(db);
     return 0;
 }
 
 int test_uptime() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_CARESS_DIR);
-    ol_log_msg("Opened DB: %p.", db);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     sleep(3);
     int uptime = ol_uptime(db);
-    ol_log_msg("Uptime: %.i seconds", uptime);
+    ol_log_msg(LOG_INFO, "Uptime: %.i seconds", uptime);
 
     if (uptime < 3) {
         printf("Uptime incorrect.\n");
@@ -175,7 +175,7 @@ int test_uptime() {
 
 int test_update() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
-    ol_log_msg("Opened DB: %p.", db);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[] = "muh_hash_thoalk";
     unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
@@ -215,6 +215,7 @@ int test_update() {
         ol_close(db);
         return 3;
     }
+    ol_log_msg(LOG_INFO, "New value returned successfully.");
 
     ol_close(db);
     return 0;
@@ -245,7 +246,7 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
 
 int test_dump_forking() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
-    ol_log_msg("Opened DB: %p.\n", db);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     int ret;
     ret = _insert_keys(db, RECORD_COUNT);
@@ -269,7 +270,7 @@ int test_dump_forking() {
     char tmp_path[512];
     db->get_db_name(db, tmp_path);
 
-    ol_log_msg("Loading DB from disk");
+    ol_log_msg(LOG_INFO, "Loading DB from disk");
     if (ol_load_db(db, tmp_path) == -1) {
         printf("Could not load DB.\n");
         return 2;
@@ -282,7 +283,7 @@ int test_dump_forking() {
 
 int test_ct() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
-    ol_log_msg("Opened DB: %p.", db);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[] = "alksjdflkjwef";
     unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
@@ -308,13 +309,15 @@ int test_ct() {
         printf("Error: Content types were different.\n");
         return 3;
     }
+    ol_log_msg(LOG_INFO, "Content type retrieved successfully.");
+
     ol_close(db);
     return 0;
 }
 
 int test_dump() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
-    ol_log_msg("Opened DB: %p.", db);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     int ret;
     unsigned int num_keys = RECORD_COUNT;
@@ -324,13 +327,13 @@ int test_dump() {
         return 1;
     }
 
-    ol_log_msg("Dumping DB to disk.");
+    ol_log_msg(LOG_INFO, "Dumping DB to disk.");
     ret = ol_save_db(db);
     if (ret != 0) {
         printf("Error: Could not save DB\n");
         return 1;
     }
-    ol_log_msg("Dumped %i records", num_keys);
+    ol_log_msg(LOG_INFO, "Dumped %i records", num_keys);
 
     ol_close(db);
 
@@ -339,15 +342,15 @@ int test_dump() {
     char tmp_path[512];
     db->get_db_name(db, tmp_path);
 
-    ol_log_msg("Loading DB from disk.");
+    ol_log_msg(LOG_INFO, "Loading DB from disk.");
     ol_load_db(db, tmp_path);
 
     if (db->rcrd_cnt != num_keys) {
         printf("Error: Not all records were loaded. %i\n", db->rcrd_cnt);
         return 2;
     }
-    ol_log_msg("Loaded %i records from dump file.", db->rcrd_cnt);
-    ol_log_msg("Checking for corruption.");
+    ol_log_msg(LOG_INFO, "Loaded %i records from dump file.", db->rcrd_cnt);
+    ol_log_msg(LOG_INFO, "Checking for corruption.");
     int i;
     for (i = 0; i < (db->cur_ht_size/sizeof(ol_bucket*));i++) {
         ol_bucket *temp = db->hashes[i];
