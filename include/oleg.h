@@ -66,6 +66,18 @@ typedef enum {
     OL_MANUFACTURE_DIR  = 1 << 3  /* Create */
 } ol_filemode;
 
+/* xXx ENUM=ol_feature_flags xXx
+* xXx DESCRIPTION=Feature flags tell the database what it should be doing. xXx
+* xXx OL_F_APPENDONLY=Enable the append only log xXx
+* xXx OL_F_SEMIVOL=Tell servers that it's okay to fsync every once in a while xXx
+* xXx OL_F_REGDUMPS=Tell servers to snapshot the data using ol_save() regularly xXx
+*/
+typedef enum {
+    OL_F_APPENDONLY     = 1 << 0,
+    OL_F_SEMIVOL        = 1 << 1,
+    OL_F_REGDUMPS       = 1 << 2
+} ol_feature_flags;
+
 /* xXx TYPEDEF=ol_val xXx
  * xXx DESCRIPTION=Typedef for the values that can be stored inside the database. xXx
  */

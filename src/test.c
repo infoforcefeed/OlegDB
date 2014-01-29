@@ -372,6 +372,25 @@ int test_dump() {
     return 0;
 }
 
+int test_feature_flags() {
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+
+    db->enable(OL_F_APPENDONLY);
+
+    if (!db->is_enabled(OL_F_APPENDONLY)) {
+        ol_log_msg(LOG_ERROR, "Feature did not enable correctly.");
+        return 1;
+    }
+
+    db->disable(OL_F_APPENDONLY);
+
+    if(db->is_enabled(OL_F_APPENDONLY)) {
+        ol_log_msg(LOG_ERROR, "Feature did not disable correctly.");
+        return 2;
+    }
+}
+
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
@@ -386,6 +405,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_ct);
     ol_run_test(test_dump);
     ol_run_test(test_dump_forking);
+    ol_run_test(test_feature_flags);
     ol_run_test(test_uptime);
 
     results[0] = tests_run;
