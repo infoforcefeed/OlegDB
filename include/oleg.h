@@ -24,6 +24,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <time.h>
 
 
@@ -117,9 +118,13 @@ typedef struct ol_bucket {
 */
 typedef struct ol_database {
     void      (*get_db_name)(struct ol_database *db,char*);
+    void      (*enable)(int, int*);
+    void      (*disable)(int, int*);
+    bool      (*is_enabled)(int, int*);
     char      name[64];
     char      path[PATH_LENGTH];
     char      *dump_file;
+    int       feature_set;
     int       rcrd_cnt;
     int       key_collisions;
     time_t    created;

@@ -42,6 +42,18 @@ void _ol_get_dump_name(ol_database *db, char *dump_file) {
     sprintf(dump_file, "%s/%s.dump", db->path, db->name);
 }
 
+void _ol_enable(int feature, int *feature_set) {
+    *feature_set |= feature;
+}
+
+void _ol_disable(int feature, int *feature_set) {
+    *feature_set &= ~feature;
+}
+
+bool _ol_is_enabled(int feature, int *feature_set) {
+    return (*feature_set & feature);
+}
+
 ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     debug("Opening \"%s\" database", name);
     ol_database *new_db = malloc(sizeof(struct ol_database));
@@ -57,10 +69,14 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
 
     time_t created;
     time(&created);
-
     new_db->created = created;
     new_db->rcrd_cnt = 0;
     new_db->key_collisions = 0;
+
+    /* Function pointers for feature flags */
+    new_db->enable = &_ol_enable;
+    new_db->disable = &_ol_disable;
+    new_db->is_enabled = &_ol_is_enabled;
 
     strncpy(new_db->name, name, strlen(name));
     strncpy(new_db->path, path, PATH_LENGTH);

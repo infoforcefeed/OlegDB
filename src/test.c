@@ -376,19 +376,23 @@ int test_feature_flags() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
-    db->enable(OL_F_APPENDONLY);
+    db->enable(OL_F_APPENDONLY, &db->feature_set);
 
-    if (!db->is_enabled(OL_F_APPENDONLY)) {
-        ol_log_msg(LOG_ERROR, "Feature did not enable correctly.");
+    if (!db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+        ol_log_msg(LOG_ERR, "Feature did not enable correctly.");
         return 1;
     }
+    ol_log_msg(LOG_INFO, "Feature was enabled.");
 
-    db->disable(OL_F_APPENDONLY);
+    db->disable(OL_F_APPENDONLY, &db->feature_set);
 
-    if(db->is_enabled(OL_F_APPENDONLY)) {
-        ol_log_msg(LOG_ERROR, "Feature did not disable correctly.");
+    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+        ol_log_msg(LOG_ERR, "Feature did not disable correctly.");
         return 2;
     }
+    ol_log_msg(LOG_INFO, "Feature was disabled.");
+
+    return 0;
 }
 
 void run_tests(int results[2]) {
