@@ -66,9 +66,8 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     strncpy(new_db->path, path, PATH_LENGTH);
 
     struct stat st = {0};
-    if (stat(path, &st) == -1) {
+    if (stat(path, &st) == -1)
         mkdir(path, 0755);
-    }
 
     char dump_file[512];
     new_db->get_db_name = &_ol_get_dump_name;
@@ -105,8 +104,8 @@ int _ol_close(ol_database *db){
     free(db->dump_file);
     free(db);
     if (freed != rcrd_cnt) {
-        ol_log_msg(LOG_INFO, "[X] Error: Couldn't free all records.");
-        ol_log_msg(LOG_INFO, "[X] Records freed: %i\n", freed);
+        ol_log_msg(LOG_INFO, "Error: Couldn't free all records.");
+        ol_log_msg(LOG_INFO, "Records freed: %i\n", freed);
         return 1;
     }
     return 0;
@@ -141,9 +140,8 @@ int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
 
 ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
     ol_bucket *tmp_bucket = bucket;
-    while (tmp_bucket->next != NULL) {
+    while (tmp_bucket->next != NULL)
         tmp_bucket = tmp_bucket->next;
-    }
     return tmp_bucket;
 }
 
@@ -156,9 +154,8 @@ ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char
         } else if (tmp_bucket->next != NULL) {
             do {
                 tmp_bucket = tmp_bucket->next;
-                if (strncmp(tmp_bucket->key, key, KEY_SIZE) == 0) {
+                if (strncmp(tmp_bucket->key, key, KEY_SIZE) == 0)
                     return tmp_bucket;
-                }
             } while (tmp_bucket->next != NULL);
         }
     }
@@ -189,6 +186,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     size_t to_alloc = db->cur_ht_size * 2;
     debug("Growing DB to %zu bytes.", to_alloc);
     tmp_hashes = calloc(1, to_alloc);
+    check_mem(tmp_hashes);
     for (i = 0; i < ol_ht_bucket_max(db->cur_ht_size); i++) {
         bucket = db->hashes[i];
         if (bucket != NULL) {
@@ -207,6 +205,9 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     db->cur_ht_size = to_alloc;
     debug("Current hash table size is now: %zu bytes.", to_alloc);
     return 0;
+
+error:
+    return -1;
 }
 
 ol_val ol_unjar(ol_database *db, const char *key) {
@@ -214,9 +215,8 @@ ol_val ol_unjar(ol_database *db, const char *key) {
     MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
-    if (bucket != NULL) {
+    if (bucket != NULL)
         return bucket->data_ptr;
-    }
 
     return NULL;
 }
@@ -231,14 +231,12 @@ int _ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize,
     /* Check to see if we have an existing entry with that key */
     if (bucket != NULL && strncmp(bucket->key, key, KEY_SIZE) == 0) {
         unsigned char *data = realloc(bucket->data_ptr, vsize);
-        if (memcpy(data, value, vsize) != data) {
+        if (memcpy(data, value, vsize) != data)
             return 4;
-        }
 
         char *ct_real = realloc(bucket->content_type, ctsize);
-        if (memcpy(ct_real, ct, ctsize) != ct_real) {
+        if (memcpy(ct_real, ct, ctsize) != ct_real)
             return 5;
-        }
 
         bucket->ctype_size = ctsize;
         bucket->content_type = ct_real;
@@ -249,30 +247,26 @@ int _ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize,
 
     /* Looks like we don't have an old hash */
     ol_bucket *new_bucket = malloc(sizeof(ol_bucket));
-    if (new_bucket == NULL) {
+    if (new_bucket == NULL)
         return 1;
-    }
 
     new_bucket->next = NULL;
 
     /* Silently truncate because #yolo */
-    if (strncpy(new_bucket->key, key, KEY_SIZE) != new_bucket->key) {
+    if (strncpy(new_bucket->key, key, KEY_SIZE) != new_bucket->key)
         return 2;
-    }
 
     new_bucket->data_size = vsize;
     unsigned char *data = calloc(1, vsize);
-    if (memcpy(data, value, vsize) != data) {
+    if (memcpy(data, value, vsize) != data)
         return 3;
-    }
     new_bucket->data_ptr = data;
     new_bucket->hash = hash;
 
     new_bucket->ctype_size = ctsize;
     char *ct_real = calloc(1, ctsize);
-    if (memcpy(ct_real, ct, ctsize) != ct_real) {
+    if (memcpy(ct_real, ct, ctsize) != ct_real)
         return 7;
-    }
     new_bucket->content_type = ct_real;
 
     int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
@@ -281,21 +275,20 @@ int _ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize,
         debug("Record count is now %i; growing hash table.", db->rcrd_cnt);
         ret = _ol_grow_and_rehash_db(db);
         if (ret > 0) {
-            printf("Error: Problem rehashing DB. Error code: %i\n", ret);
+            ol_log_msg(LOG_ERR, "Problem rehashing DB. Error code: %i", ret);
             return 4;
         }
     }
 
     ret = _ol_set_bucket(db, new_bucket);
 
-    if(ret > 0) {
-        printf("Error: Problem inserting bucket into slot: Error code:%i\n", ret);
-    }
+    if(ret > 0)
+        ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);
 
     return 0;
 }
 
-int ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize) {
+int ol_jar(ol_database *db,const char *key,unsigned char *value,size_t vsize) {
     return _ol_jar(db, key, value, vsize, "application/octet-stream", 24);
 }
 
@@ -310,9 +303,8 @@ int ol_scoop(ol_database *db, const char *key) {
     MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
     int index = _ol_calc_idx(db->cur_ht_size, hash);
 
-    if (index < 0) {
+    if (index < 0)
         return 1;
-    }
 
     if (db->hashes[index] != NULL) {
         ol_bucket *bucket = db->hashes[index];
@@ -333,9 +325,8 @@ int ol_scoop(ol_database *db, const char *key) {
                 last = bucket;
                 bucket = bucket->next;
                 if (strncmp(bucket->key, key, KEY_SIZE) == 0) {
-                    if (bucket->next != NULL) {
+                    if (bucket->next != NULL)
                         last->next = bucket->next;
-                    }
                     free(bucket->content_type);
                     free(bucket->data_ptr);
                     free(bucket);
@@ -353,9 +344,8 @@ char *ol_content_type(ol_database *db, const char *key) {
     MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
-    if (bucket != NULL) {
+    if (bucket != NULL)
         return bucket->content_type;
-    }
 
     return NULL;
 }

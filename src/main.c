@@ -26,6 +26,7 @@
 #include <signal.h>
 #include "test.h"
 #include "oleg.h"
+#include "logging.h"
 
 /* I'm sorry Vishnu
 * OMG WHY
@@ -34,7 +35,7 @@ ol_database *db;
 
 void clean_up(int signum) {
     ol_close(db);
-    printf("[-] Exiting cleanly.\n");
+    ol_log_msg(LOG_INFO, "Exiting cleanly.");
     exit(0);
 }
 
@@ -49,10 +50,10 @@ int main(int argc, char *argv[]) {
         signal(SIGINT, clean_up);
         signal(SIGCHLD, SIG_IGN);
         if (strcmp(argv[1], "test") == 0) {
-            printf("Running tests.\n");
+            ol_log_msg(LOG_INFO, "Running tests.");
             int results[2];
             run_tests(results);
-            printf("\n-----\nTests passed: %i.\n\n", results[0]);
+            ol_log_msg(LOG_INFO, "Tests passed: %i.\n", results[0]);
         }
         else if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
             usage(argv[0]);
