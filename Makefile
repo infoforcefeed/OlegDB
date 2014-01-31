@@ -23,18 +23,12 @@ liboleg:
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/oleg.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/dump.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/logging.c
-	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/port_driver.c -lei -lerl_interface
-	$(cc) $(CFLAGS) -rdynamic -shared -fPIC -Wl,-soname,$(SONAME) \
-		-o $(LIB_DIR)liboleg.so.$(VERSION) \
-		murmur3.o logging.o dump.o oleg.o port_driver.o \
-		$(MATH_LINKER) 
-	if ! [ -L $(LIB_DIR)$(SONAME) ]; then ln -s $(LIB_DIR)liboleg.so.$(VERSION) $(LIB_DIR)$(SONAME); fi
-	if ! [ -L $(LIB_DIR)liboleg.so ]; then ln -s $(LIB_DIR)liboleg.so.$(VERSION) $(LIB_DIR)liboleg.so; fi
+	$(cc) $(CFLAGS) $(INCLUDES) -c -shared -fpic ./src/port_driver.c
+	$(cc) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)libolegserver.so murmur3.o logging.o dump.o oleg.o port_driver.o -shared -fpic $(MATH_LINKER)
+	$(cc) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o oleg.o -fpic -shared $(MATH_LINKER)
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/test.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/main.c
-	$(cc) $(CFLAGS) $(INCLUDES) -L /usr/lib/erlang/ -L$(LIB_DIR) \
-		-o $(BIN_DIR)oleg_test test.o main.o port_driver.o \
-		$(MATH_LINKER) -loleg 
+	$(cc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
 erlang:
 	erlc $(ERLFLAGS) ./src/ol_database.erl

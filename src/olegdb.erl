@@ -61,10 +61,13 @@ request_handler(Accepted) ->
 route(Bits) -> 
     case Bits of
         <<"GET", _/binary>> ->
-            io:format("[-] Header: ~p~n", [ol_parse:parse_get(Bits)]),
+            Header = ol_parse:parse_get(Bits),
+            io:format("[-] Header: ~p~n", [Header]),
             ol_http:not_found_response();
         <<"POST", _/binary>> ->
-            io:format("[-] Header: ~p~n", [ol_parse:parse_post(Bits)]),
+            Header = ol_parse:parse_post(Bits),
+            io:format("[-] Header: ~p~n", [Header]),
+            ol_database:ol_jar(Header),
             ol_http:not_found_response();
         _ ->
             ol_http:not_found_response()
@@ -72,4 +75,5 @@ route(Bits) ->
 
 main() ->
     io:format("[-] Starting server.~n"),
+    ol_database:start(),
     server_manager(?LISTEN_PORT).
