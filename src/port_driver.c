@@ -26,6 +26,11 @@
 #include "logging.h"
 #include "oleg.h"
 
+/* Needed for R14B or earlier */
+#if (ERL_DRV_EXTENDED_MAJOR_VERSION < 2)
+#define ErlDrvSizeT int
+#endif
+
 /* This is used to store and manipulate state. */
 typedef struct {
     ErlDrvPort port;
