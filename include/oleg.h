@@ -117,13 +117,14 @@ typedef struct ol_bucket {
 * xXx **hashes=The actual hashtable. Stores ol_bucket instances. xXx
 */
 typedef struct ol_database {
-    void      (*get_db_name)(struct ol_database *db,char*);
+    void      (*get_db_file_name)(struct ol_database *db,const char *p,char*);
     void      (*enable)(int, int*);
     void      (*disable)(int, int*);
     bool      (*is_enabled)(int, int*);
     char      name[64];
     char      path[PATH_LENGTH];
     char      *dump_file;
+    char      *aol_file;
     int       feature_set;
     int       rcrd_cnt;
     int       key_collisions;

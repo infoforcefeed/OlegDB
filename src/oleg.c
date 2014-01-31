@@ -38,8 +38,8 @@ inline int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
 }
 
-void _ol_get_dump_name(ol_database *db, char *dump_file) {
-    sprintf(dump_file, "%s/%s.dump", db->path, db->name);
+void _ol_get_file_name(ol_database *db, const char *p, char *o_file) {
+    sprintf(o_file, "%s/%s.%s", db->path, db->name, p);
 }
 
 void _ol_enable(int feature, int *feature_set) {
@@ -78,6 +78,9 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     new_db->disable = &_ol_disable;
     new_db->is_enabled = &_ol_is_enabled;
 
+    /* Function pointer building file paths based on db name */
+    new_db->get_db_file_name = &_ol_get_file_name;
+
     strncpy(new_db->name, name, strlen(name));
     strncpy(new_db->path, path, PATH_LENGTH);
 
@@ -86,13 +89,23 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
         mkdir(path, 0755);
 
     char dump_file[512];
-    new_db->get_db_name = &_ol_get_dump_name;
-    new_db->get_db_name(new_db, dump_file);
+    new_db->get_db_file_name(new_db, "dump", dump_file);
+
+    char aol_file[512];
+    new_db->get_db_file_name(new_db, "aol", aol_file);
 
     new_db->dump_file = calloc(1, strlen(dump_file));
+    check_mem(new_db->dump_file);
     memcpy(new_db->dump_file, dump_file, strlen(dump_file));
 
+    new_db->aol_file = calloc(1, strlen(aol_file));
+    check_mem(new_db->aol_file);
+    memcpy(new_db->aol_file, aol_file, strlen(aol_file));
+
     return new_db;
+
+error:
+    return NULL;
 }
 
 int _ol_close(ol_database *db){

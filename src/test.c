@@ -270,7 +270,7 @@ int test_dump_forking() {
     db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
 
     char tmp_path[512];
-    db->get_db_name(db, tmp_path);
+    db->get_db_file_name(db, "dump", tmp_path);
 
     ol_log_msg(LOG_INFO, "Loading DB from disk");
     if (ol_load_db(db, tmp_path) == -1) {
@@ -342,7 +342,7 @@ int test_dump() {
     db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
 
     char tmp_path[512];
-    db->get_db_name(db, tmp_path);
+    db->get_db_file_name(db, "dump", tmp_path);
 
     ol_log_msg(LOG_INFO, "Loading DB from disk.");
     ol_load_db(db, tmp_path);
