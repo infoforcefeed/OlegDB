@@ -7,7 +7,8 @@ LIB_DIR=$(BUILD_DIR)lib/
 BIN_DIR=$(BUILD_DIR)bin/
 SONAME=liboleg.so.1
 ERLFLAGS=-smp -W1 -Werror -b beam -I./include -o $(BIN_DIR)
-INCLUDES=-I./include -I/usr/lib/erlang/usr/include/
+ERLINCLUDES = $(shell echo 'io:format("~s~n",[code:root_dir()]),init:stop().' | erl | sed -n '/^1>/s/^1> //p')/usr/include/
+INCLUDES=-I./include -I$(ERLINCLUDES)
 
 MATH_LINKER=
 ifeq ($(uname_S),Darwin)
