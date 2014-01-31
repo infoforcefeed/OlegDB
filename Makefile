@@ -35,6 +35,9 @@ erlang:
 	erlc $(ERLFLAGS) ./src/ol_parse.erl
 	erlc $(ERLFLAGS) ./src/olegdb.erl
 
+test:
+	./run_tests.sh
+
 clean:
 	rm $(BIN_DIR)*
 	rm $(LIB_DIR)*
