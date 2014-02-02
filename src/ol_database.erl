@@ -23,7 +23,7 @@
 -export([start/0, init/0, ol_jar/1, ol_unjar/1]).
 
 -include("olegdb.hrl").
--define(SHAREDLIB, "liboleg").
+-define(SHAREDLIB, "libolegserver").
 
 start() ->
     case erl_ddll:load_driver("./build/lib/", ?SHAREDLIB) of

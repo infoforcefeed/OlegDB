@@ -55,7 +55,8 @@ static void oleg_stop(ErlDrvData data) {
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     ol_log_msg(LOG_INFO, "[-] Call from Erlang with data: %s\n", cmd);
     oleg_data *d = (oleg_data*)data;
-    driver_output(d->port, 0, 1);
+    printf("Port: %p\n", d->port);
+    driver_output(d->port, NULL, 1);
 }
 
 /* Various callbacks */
@@ -66,7 +67,7 @@ ErlDrvEntry ol_driver_entry = {
     oleg_output,
     NULL,
     NULL,
-    "liboleg",
+    "libolegserver",
     NULL,
     NULL,
     NULL,
@@ -85,6 +86,6 @@ ErlDrvEntry ol_driver_entry = {
     NULL
 };
 
-DRIVER_INIT(liboleg) {
+DRIVER_INIT(libolegserver) {
     return &ol_driver_entry;
 }
