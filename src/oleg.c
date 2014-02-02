@@ -115,7 +115,7 @@ int _ol_close(ol_database *db){
     int freed = 0;
     debug("Freeing %d records.", rcrd_cnt);
     debug("Hash table iterations: %d.", iterations);
-    for (i = 0; i <= iterations; i++) { /* 8=======D */
+    for (i = 0; i < iterations; i++) { /* 8=======D */
         if (db->hashes[i] != NULL) {
             ol_bucket *ptr;
             ol_bucket *next;
@@ -310,6 +310,10 @@ int _ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize,
     }
 
     ret = _ol_set_bucket(db, new_bucket);
+
+    if(db->enabled(OL_F_APPENDONLY)) {
+        ol_
+    }
 
     if(ret > 0)
         ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);

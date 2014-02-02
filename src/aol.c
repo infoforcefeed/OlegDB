@@ -21,7 +21,20 @@
 * THE SOFTWARE.
 */
 #include "aol.h"
+#include "errhandle.h"
 
-int ol_init_aol(ol_database *db) {
-    db->aolfd = open(db->get
+int ol_aol_init(ol_database *db) {
+    debug("Opening append only log");
+    db->aolfd = open(db->aol_file, O_CREAT | O_APPEND | O_WRONLY, 0755);
+    check(db->aolfd == 0, "Error opening append only file");
+
+    return 0;
+error:
+    return -1;
+}
+
+int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bucket) {
+    
+error:
+    return -1;
 }

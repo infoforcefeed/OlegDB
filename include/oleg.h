@@ -110,6 +110,8 @@ typedef struct ol_bucket {
 * xXx name=The name of the database. xXx
 * xXx path[PATH_LENGTH]=Path to the database's working directory. xXx
 * xXx dump_file=Path and filename of db dump. xXx
+* xXx aol_file=Path and filename of the append only log. xXx
+* xXx aolfd=Pointer of FILE type to append only log. xXx
 * xXx rcrd_cnt=Number of records in the database. xXx
 * xXx key_collisions=Number of key collisions this database has had since initialization. xXx
 * xXx created=Timestamp of when the database was initialized. xXx
@@ -125,6 +127,7 @@ typedef struct ol_database {
     char      path[PATH_LENGTH];
     char      *dump_file;
     char      *aol_file;
+    FILE      *aolfd;
     int       feature_set;
     int       rcrd_cnt;
     int       key_collisions;
