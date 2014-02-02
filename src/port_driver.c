@@ -22,6 +22,7 @@
 *
 * This is where the magic happens.
 */
+#include "ei.h"
 #include "erl_driver.h"
 #include "logging.h"
 #include "oleg.h"
@@ -36,6 +37,17 @@ typedef struct {
     ErlDrvPort port;
     ol_database *db;
 } oleg_data;
+
+/* This should match the object in olegdb.htl */
+typedef struct {
+    char database_name[DB_NAME_SIZE];
+    char key[KEY_SIZE];
+    char *content_type;
+    int ct_len;
+    unsigned char *data;
+    int data_len;
+    int version;
+} ol_record;
 
 static ErlDrvData oleg_start(ErlDrvPort port, char *buff) {
     oleg_data *d = (oleg_data*)driver_alloc(sizeof(oleg_data));
@@ -52,19 +64,43 @@ static void oleg_stop(ErlDrvData data) {
     driver_free(data);
 }
 
+/* Converts a string of binary data from erlang into something we can use */
+/* Buf is what we're reading from, index is where to start. */
+static ol_record *read_record(char *buf, int index) {
+    ol_record *new_obj = driver_alloc(sizeof(ol_record));
+    int arity = 0;
+
+    /* TODO: Error checking in here somewhere. */
+    ei_decode_version(buf, &index, &new_obj->version);
+    /* Gives us how many items are in the tuple */
+    ei_decode_tuple_header(buf, &index, &arity);
+
+    if (arity != 5) {
+        ol_log_msg(LOG_WARN, "Arity was not as expected.\n");
+    }
+    ei_decode_string(buf, &index, new_obj->database_name);
+    ei_decode_string(buf, &index, new_obj->key);
+    ei_decode_string(buf, &index, new_obj->content_type);
+    ei_decode_version(buf, &index, &new_obj->ct_len);
+
+    return new_obj;
+}
+
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
-    ol_log_msg(LOG_INFO, "Call from Erlang with data: %s\n", cmd);
-    ol_log_msg(LOG_INFO, "Length of data: %i\n", clen);
     oleg_data *d = (oleg_data*)data;
 
-    //char fn = cmd[0], arg = cmd[1], res;
     char fn = cmd[0], res = NULL;
+    ol_record *obj = NULL;
     if (fn == 1) {
         /* ol_jar */
+        obj = read_record(cmd, 1);
     } else if (fn == 2) {
         /* ol_unjar */
+        obj = read_record(cmd, 1);
     }
     driver_output(d->port, &res, 1);
+    if (obj)
+        driver_free(obj);
 }
 
 /* Various callbacks */

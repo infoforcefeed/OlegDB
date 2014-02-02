@@ -47,6 +47,11 @@
 */
 #define PATH_LENGTH 256
 
+/* xXx DEFINE=DB_NAME_SIZE xXx
+* xXx DESCRIPTION=Database maximum name length. xXx
+*/
+#define DB_NAME_SIZE 64
+
 /* xXx DEFINE=DEVILS_SEED xXx
 * xXx DESCRIPTION=The seed to feed into the murmur3 algorithm. xXx
 */
@@ -105,7 +110,7 @@ typedef struct ol_bucket {
 */
 typedef struct ol_database {
     void      (*get_db_name)(struct ol_database *db,char*);
-    char      name[64];
+    char      name[DB_NAME_SIZE];
     char      path[PATH_LENGTH];
     char      *dump_file;
     int       rcrd_cnt;
