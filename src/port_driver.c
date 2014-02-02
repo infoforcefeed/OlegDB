@@ -53,10 +53,18 @@ static void oleg_stop(ErlDrvData data) {
 }
 
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
-    ol_log_msg(LOG_INFO, "[-] Call from Erlang with data: %s\n", cmd);
+    ol_log_msg(LOG_INFO, "Call from Erlang with data: %s\n", cmd);
+    ol_log_msg(LOG_INFO, "Length of data: %i\n", clen);
     oleg_data *d = (oleg_data*)data;
-    printf("Port: %p\n", d->port);
-    driver_output(d->port, NULL, 1);
+
+    //char fn = cmd[0], arg = cmd[1], res;
+    char fn = cmd[0], res = NULL;
+    if (fn == 1) {
+        /* ol_jar */
+    } else if (fn == 2) {
+        /* ol_unjar */
+    }
+    driver_output(d->port, &res, 1);
 }
 
 /* Various callbacks */

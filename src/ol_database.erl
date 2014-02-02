@@ -39,7 +39,11 @@ init() ->
     loop(Port).
 
 encode({ol_jar, X}) -> [1, X];
-encode({ol_unjar, X}) -> [2, X].
+encode({ol_unjar, Y}) -> [2, Y];
+encode(_) ->
+    io:format("Don't know how to decode that.~n"),
+    exit(unknown_call).
+
 
 decode([Int]) -> Int.
 
@@ -49,12 +53,25 @@ loop(Port) ->
         {call, Caller, Msg} ->
             %% Send that to liboleg
             Port ! {self(), {command, encode(Msg)}},
+            io:format("Sent command to port~n"),
             receive
                 %% Give the caller our result
                 {Port, {data, Data}} ->
-                    Caller ! {complex, decode(Data)}
+                    Caller ! {complex, decode(Data)};
+                badarg ->
+                    io:format("Badarg ~n"),
+                        exit(port_terminated)
             end,
-            loop(Port)
+            loop(Port);
+        stop ->
+            Port ! {self(), close},
+            receive
+                {Port, closed} ->
+                    exit(normal)
+            end;
+        {'EXIT', Port, Reason} ->
+            io:format("~p ~n", [Reason]),
+                exit(port_terminated)
     end.
 
 call_port(Msg) ->
@@ -65,7 +82,7 @@ call_port(Msg) ->
     end.
 
 ol_jar(OlRecord) ->
-    call_port({ol_jar, OlRecord}).
+    call_port({ol_jar, term_to_binary(OlRecord)}).
 
 ol_unjar(OlRecord) ->
-    call_port({ol_unjar, OlRecord}).
+    call_port({ol_unjar, term_to_binary(OlRecord)}).
