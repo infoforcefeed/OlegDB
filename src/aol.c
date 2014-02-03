@@ -20,13 +20,22 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
+#define DEBUG
 #include "aol.h"
+#include "oleg.h"
 #include "errhandle.h"
 
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 int ol_aol_init(ol_database *db) {
-    debug("Opening append only log");
-    db->aolfd = open(db->aol_file, O_CREAT | O_APPEND | O_WRONLY, 0755);
-    check(db->aolfd == 0, "Error opening append only file");
+    if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+        debug("Opening append only log");
+        debug("Append only log: %s", db->aol_file);
+        db->aolfd = fopen(db->aol_file, "a+");
+        check(db->aolfd != NULL, "Error opening append only file");
+    }
 
     return 0;
 error:
@@ -34,7 +43,7 @@ error:
 }
 
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bucket) {
-    
-error:
-    return -1;
+
+    fprintf(db->aolfd, ":%d:%s:%zu:%s:%zu:%s\n", 3, cmd, strlen(bucket->key), bucket->key, bucket->data_size, bucket->data_ptr);
+    return 0;
 }

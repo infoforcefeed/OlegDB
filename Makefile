@@ -24,8 +24,9 @@ liboleg:
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/oleg.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/dump.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/logging.c
+	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/aol.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c -shared -fpic ./src/port_driver.c
-	$(cc) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o oleg.o -fpic -shared $(MATH_LINKER)
+	$(cc) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o aol.o oleg.o -fpic -shared $(MATH_LINKER)
 	$(cc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/test.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/main.c

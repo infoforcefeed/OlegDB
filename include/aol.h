@@ -22,5 +22,7 @@
 * THE SOFTWARE.
 */
 
+#include "oleg.h"
+
 int ol_aol_init(ol_database *db);
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bucket);

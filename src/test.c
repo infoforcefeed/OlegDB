@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include "test.h"
+#include "aol.h"
 #include "logging.h"
 
 int test_open_close() {
@@ -395,6 +396,39 @@ int test_feature_flags() {
     return 0;
 }
 
+int test_aol() {
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    db->enable(OL_F_APPENDONLY, &db->feature_set);
+
+    ol_aol_init(db);
+    int i;
+    int max_records = 10;
+    unsigned char to_insert[] = "123456789";
+    for (i = 0; i < max_records; i++) { /* 8======D */
+        char key[] = "crazy hash";
+        char append[10] = "";
+
+        sprintf(append, "%i", i);
+        strcat(key, append);
+
+        size_t len = strlen((char *)to_insert);
+        int insert_result = ol_jar(db, key, to_insert, len);
+
+        if (insert_result > 0) {
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 2;
+        }
+
+        if (db->rcrd_cnt != i+1) {
+            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 3;
+        }
+    }
+    return 0;
+}
+
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
@@ -411,6 +445,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_dump_forking);
     ol_run_test(test_feature_flags);
     ol_run_test(test_uptime);
+    ol_run_test(test_aol);
 
     results[0] = tests_run;
     results[1] = tests_failed;

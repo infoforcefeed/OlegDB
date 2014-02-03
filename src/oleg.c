@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include "oleg.h"
+#include "aol.h"
 #include "logging.h"
 #include "dump.h"
 #include "murmur3.h"
@@ -311,8 +312,8 @@ int _ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize,
 
     ret = _ol_set_bucket(db, new_bucket);
 
-    if(db->enabled(OL_F_APPENDONLY)) {
-        ol_
+    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+        ol_aol_write_cmd(db, "JAR", new_bucket);
     }
 
     if(ret > 0)
