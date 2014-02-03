@@ -89,7 +89,7 @@ static ol_record *read_record(char *buf, int index) {
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     oleg_data *d = (oleg_data*)data;
 
-    char fn = cmd[0], res = NULL;
+    char fn = cmd[0], *res = NULL;
     ol_record *obj = NULL;
     if (fn == 1) {
         /* ol_jar */
@@ -98,7 +98,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         /* ol_unjar */
         obj = read_record(cmd, 1);
     }
-    driver_output(d->port, &res, 1);
+    driver_output(d->port, res, 1);
     if (obj)
         driver_free(obj);
 }

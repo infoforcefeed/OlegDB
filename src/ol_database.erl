@@ -29,7 +29,9 @@ start() ->
     case erl_ddll:load_driver("./build/lib/", ?SHAREDLIB) of
         ok -> ok;
         {error, already_loaded} -> ok;
-        _ -> exit({error, could_not_load_driver})
+        {error, ErrorDesc} ->
+            io:format("[X] Could not load driver: ~p~n", [ErrorDesc]),
+            exit({error, ErrorDesc})
     end,
     spawn(fun() -> ?MODULE:init() end).
 
