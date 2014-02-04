@@ -20,7 +20,6 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
-#define DEBUG
 #include "aol.h"
 #include "oleg.h"
 #include "errhandle.h"
@@ -42,16 +41,22 @@ error:
     return -1;
 }
 
+int ol_aol_fsync(int fd) {
+    int ret;
+    ret = fsync(fd);
+    return ret;
+}
+
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
 
     int ret;
     ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%s\n", strlen(cmd), cmd,
             strlen(bct->key), bct->key, bct->data_size, bct->data_ptr);
 
-    debug("Wrote %d bytes to file", ret);
+    check(ret > -1, "Error writing to file.");
 
     /* Force the OS to flush write to hardware */
-    check(fsync(fileno(db->aolfd)) == 0, "Could not fsync. Panic!");
+    check(ol_aol_fsync(fileno(db->aolfd)) == 0, "Could not fsync. Panic!");
     return 0;
 error:
     return -1;

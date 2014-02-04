@@ -399,10 +399,10 @@ int test_feature_flags() {
 int test_aol() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     db->enable(OL_F_APPENDONLY, &db->feature_set);
-
     ol_aol_init(db);
+
     int i;
-    int max_records = 10;
+    int max_records = 100000;
     unsigned char to_insert[] = "123456789";
     for (i = 0; i < max_records; i++) { /* 8======D */
         char key[] = "crazy hash";
@@ -427,14 +427,21 @@ int test_aol() {
         }
     }
 
-    if (ol_scoop(db, "crazy hash3") == 0) {
+    if (ol_scoop(db, "crazy hash9988") == 0) {
         ol_log_msg(LOG_INFO, "Deleted record.");
     } else {
-        ol_log_msg(LOG_ERR, "Could not delete record.\n");
+        ol_log_msg(LOG_ERR, "Could not delete record.");
         ol_close(db);
         return 1;
     }
 
+    if (db->rcrd_cnt != max_records - 1) {
+        ol_log_msg(LOG_ERR, "Record could was off: %d", db->rcrd_cnt);
+        ol_close(db);
+        return 4;
+    }
+
+    ol_close(db);
 
     return 0;
 }
