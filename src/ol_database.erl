@@ -26,12 +26,11 @@
 -define(SHAREDLIB, "libolegserver").
 
 start() ->
+    code:add_path("./build/lib/"),
     case erl_ddll:load_driver("./build/lib/", ?SHAREDLIB) of
         ok -> ok;
         {error, already_loaded} -> ok;
-        {error, ErrorDesc} ->
-            io:format("[X] Could not load driver: ~p~n", [ErrorDesc]),
-            exit({error, ErrorDesc})
+        {error, ErrorDesc} -> exit(erl_ddll:format_error(ErrorDesc))
     end,
     spawn(fun() -> ?MODULE:init() end).
 
