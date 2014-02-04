@@ -1,6 +1,6 @@
 CFLAGS=-Wall -Werror -g3
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
-cc=gcc -std=c99
+cc=gcc -std=gnu99
 VERSION=0.1
 BUILD_DIR=$(shell pwd)/build/
 LIB_DIR=$(BUILD_DIR)lib/
