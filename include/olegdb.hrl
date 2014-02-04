@@ -19,8 +19,8 @@
 %%% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %%% THE SOFTWARE.
--record(ol_record, {database,
+-record(ol_record, {database="oleg_db",
                     key="test",
                     content_type="application/octet-stream",
-                    content_length=nil,
-                    value}).
+                    content_length=0,
+                    value=""}).

@@ -42,11 +42,11 @@ typedef struct {
 typedef struct {
     char database_name[DB_NAME_SIZE];
     char key[KEY_SIZE];
-    char *content_type;
     int ct_len;
-    unsigned char *data;
     int data_len;
     int version;
+    char content_type[255];
+    unsigned char *data;
 } ol_record;
 
 static ErlDrvData oleg_start(ErlDrvPort port, char *buff) {
@@ -69,19 +69,28 @@ static void oleg_stop(ErlDrvData data) {
 static ol_record *read_record(char *buf, int index) {
     ol_record *new_obj = driver_alloc(sizeof(ol_record));
     int arity = 0;
+    char atom[64];
 
     /* TODO: Error checking in here somewhere. */
-    ei_decode_version(buf, &index, &new_obj->version);
+    if (ei_decode_version(buf, &index, &new_obj->version))
+        ol_log_msg(LOG_WARN, "Could not decode version.\n");
     /* Gives us how many items are in the tuple */
-    ei_decode_tuple_header(buf, &index, &arity);
+    if (ei_decode_tuple_header(buf, &index, &arity))
+        ol_log_msg(LOG_WARN, "Could not decode tuple header.\n");
 
-    if (arity != 5) {
+    if (arity != 6)
         ol_log_msg(LOG_WARN, "Arity was not as expected.\n");
-    }
-    ei_decode_string(buf, &index, new_obj->database_name);
-    ei_decode_string(buf, &index, new_obj->key);
-    ei_decode_string(buf, &index, new_obj->content_type);
-    ei_decode_long(buf, &index, (long*)&new_obj->ct_len);
+
+    if (ei_decode_atom(buf, &index, atom))
+        ol_log_msg(LOG_WARN, "Could not decode ol_record atom\n");
+    if (ei_decode_string(buf, &index, new_obj->database_name))
+        ol_log_msg(LOG_WARN, "Could not get database name.\n");
+    if (ei_decode_string(buf, &index, new_obj->key))
+        ol_log_msg(LOG_WARN, "Could not get key.\n");
+    if (ei_decode_string(buf, &index, new_obj->content_type))
+        ol_log_msg(LOG_WARN, "Could not get content-type.");
+    if (ei_decode_long(buf, &index, (long*)&new_obj->ct_len))
+        ol_log_msg(LOG_WARN, "Could not get ct_len.\n");
 
     return new_obj;
 }
