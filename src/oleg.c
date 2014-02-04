@@ -343,6 +343,10 @@ int ol_scoop(ol_database *db, const char *key) {
     if (db->hashes[index] != NULL) {
         ol_bucket *bucket = db->hashes[index];
 
+        if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+            ol_aol_write_cmd(db, "SCOOP", bucket);
+        }
+
         if (strncmp(bucket->key, key, KEY_SIZE) == 0){
             if (bucket->next != NULL) {
                 db->hashes[index] = bucket->next;

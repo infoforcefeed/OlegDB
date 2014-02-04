@@ -426,6 +426,16 @@ int test_aol() {
             return 3;
         }
     }
+
+    if (ol_scoop(db, "crazy hash3") == 0) {
+        ol_log_msg(LOG_INFO, "Deleted record.");
+    } else {
+        ol_log_msg(LOG_ERR, "Could not delete record.\n");
+        ol_close(db);
+        return 1;
+    }
+
+
     return 0;
 }
 

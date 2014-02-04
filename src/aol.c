@@ -42,8 +42,21 @@ error:
     return -1;
 }
 
-int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bucket) {
+int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
 
-    fprintf(db->aolfd, ":%d:%s:%zu:%s:%zu:%s\n", 3, cmd, strlen(bucket->key), bucket->key, bucket->data_size, bucket->data_ptr);
+    int ret;
+    ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%s\n", strlen(cmd), cmd,
+            strlen(bct->key), bct->key, bct->data_size, bct->data_ptr);
+
+    debug("Wrote %d bytes to file", ret);
+
+    /* Force the OS to flush write to hardware */
+    check(fsync(fileno(db->aolfd)) == 0, "Could not fsync. Panic!");
+    return 0;
+error:
+    return -1;
+}
+
+int ol_aol_restore(ol_database *db) {
     return 0;
 }
