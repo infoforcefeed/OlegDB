@@ -81,7 +81,7 @@ static ol_record *read_record(char *buf, int index) {
     ei_decode_string(buf, &index, new_obj->database_name);
     ei_decode_string(buf, &index, new_obj->key);
     ei_decode_string(buf, &index, new_obj->content_type);
-    ei_decode_version(buf, &index, &new_obj->ct_len);
+    ei_decode_long(buf, &index, (long*)&new_obj->ct_len);
 
     return new_obj;
 }
