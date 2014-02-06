@@ -70,6 +70,7 @@ static ol_record *read_record(char *buf, int index) {
     ol_record *new_obj = driver_alloc(sizeof(ol_record));
     int arity = 0;
     char atom[64];
+    long len = 0; /* Not really used, but ei_decode_binary wants it */
 
     /* TODO: Error checking in here somewhere. */
     if (ei_decode_version(buf, &index, &new_obj->version))
@@ -83,9 +84,9 @@ static ol_record *read_record(char *buf, int index) {
 
     if (ei_decode_atom(buf, &index, atom))
         ol_log_msg(LOG_WARN, "Could not decode ol_record atom\n");
-    if (ei_decode_string(buf, &index, new_obj->database_name))
+    if (ei_decode_binary(buf, &index, new_obj->database_name, &len))
         ol_log_msg(LOG_WARN, "Could not get database name.\n");
-    if (ei_decode_string(buf, &index, new_obj->key))
+    if (ei_decode_binary(buf, &index, new_obj->key, &len))
         ol_log_msg(LOG_WARN, "Could not get key.\n");
     if (ei_decode_string(buf, &index, new_obj->content_type))
         ol_log_msg(LOG_WARN, "Could not get content-type.");
