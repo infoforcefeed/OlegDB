@@ -54,7 +54,6 @@ loop(Port) ->
         {call, Caller, Msg} ->
             %% Send that to liboleg
             Port ! {self(), {command, encode(Msg)}},
-            io:format("Sent command to port~n"),
             receive
                 %% Give the caller our result
                 {Port, {data, Data}} ->
