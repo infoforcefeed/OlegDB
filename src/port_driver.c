@@ -98,6 +98,7 @@ static ol_record *read_record(char *buf, int index) {
 
     /* This stuff is all to get the data. */
     ei_get_type(buf, &index, &type, &data_size);
+    new_obj->data = NULL;
     if (data_size > 0) {
         new_obj->data = driver_alloc(data_size);
         if (ei_decode_binary(buf, &index, new_obj->data, &len))
@@ -112,23 +113,34 @@ static ol_record *read_record(char *buf, int index) {
 
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     oleg_data *d = (oleg_data*)data;
-
     char fn = cmd[0];
     int res = 0;
     ol_record *obj = NULL;
+
+    /* Turn Erlang into Oleg */
+    obj = read_record(cmd, 1);
+
+    /* Open up a db if we don't have on already */
+    if (d->db == NULL)
+        d->db = ol_open("/tmp", obj->database_name, OL_CONSUME_DIR);
+
     if (fn == 1) {
         /* ol_jar */
-        obj = read_record(cmd, 1);
-        if (d->db == NULL)
-            d->db = ol_open("/tmp", obj->database_name, OL_CONSUME_DIR);
-
         res = ol_jar_ct(d->db, obj->key, obj->data, strlen((char*)obj->data),
                obj->content_type, strlen((char*)obj->content_type));
     } else if (fn == 2) {
         /* ol_unjar */
-        obj = read_record(cmd, 1);
+        /* TODO: Refactor when we know how big out data is. */
+        /* Good enough for demo. */
+        unsigned char *to_send = (unsigned char *)driver_alloc_binary(1024);
+        unsigned char *data = ol_unjar(d->db, obj->key);
+        memcpy(to_send, data, 1024);
+        driver_output_binary(d->port, NULL, 0,
+            (ErlDrvBinary*)to_send, 0, strlen((char *)to_send));
     }
+    /* Send that shit back */
     driver_output(d->port, (char *)&res, 1);
+
     if (obj) {
         if (obj->data) driver_free(obj->data);
         driver_free(obj);

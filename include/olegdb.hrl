@@ -23,4 +23,4 @@
                     key, % Binary
                     content_type="application/octet-stream",
                     content_length=0,
-                    value=""}).
+                    value = <<>>}).
