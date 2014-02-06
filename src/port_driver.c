@@ -22,6 +22,7 @@
 *
 * This is where the magic happens.
 */
+#include <string.h>
 #include "ei.h"
 #include "erl_driver.h"
 #include "logging.h"
@@ -71,6 +72,8 @@ static ol_record *read_record(char *buf, int index) {
     int arity = 0;
     char atom[64];
     long len = 0; /* Not really used, but ei_decode_binary wants it */
+    int type = 0; /* Also not used. */
+    int data_size = 0; /* Used to get the length of the data we'll be storing. */
 
     /* TODO: Error checking in here somewhere. */
     if (ei_decode_version(buf, &index, &new_obj->version))
@@ -93,24 +96,43 @@ static ol_record *read_record(char *buf, int index) {
     if (ei_decode_long(buf, &index, (long*)&new_obj->ct_len))
         ol_log_msg(LOG_WARN, "Could not get ct_len.\n");
 
+    /* This stuff is all to get the data. */
+    ei_get_type(buf, &index, &type, &data_size);
+    if (data_size > 0) {
+        new_obj->data = driver_alloc(data_size);
+        if (ei_decode_binary(buf, &index, new_obj->data, &len))
+            ol_log_msg(LOG_WARN, "Could not get data.\n");
+
+    } else {
+        ol_log_msg(LOG_WARN, "Could not get data.\n");
+    }
+
     return new_obj;
 }
 
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     oleg_data *d = (oleg_data*)data;
 
-    char fn = cmd[0], *res = NULL;
+    char fn = cmd[0];
+    int res = 0;
     ol_record *obj = NULL;
     if (fn == 1) {
         /* ol_jar */
         obj = read_record(cmd, 1);
+        if (d->db == NULL)
+            d->db = ol_open("/tmp", obj->database_name, OL_CONSUME_DIR);
+
+        res = ol_jar_ct(d->db, obj->key, obj->data, strlen((char*)obj->data),
+               obj->content_type, strlen((char*)obj->content_type));
     } else if (fn == 2) {
         /* ol_unjar */
         obj = read_record(cmd, 1);
     }
-    driver_output(d->port, res, 1);
-    if (obj)
+    driver_output(d->port, (char *)&res, 1);
+    if (obj) {
+        if (obj->data) driver_free(obj->data);
         driver_free(obj);
+    }
 }
 
 /* Various callbacks */

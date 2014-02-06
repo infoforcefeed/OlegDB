@@ -65,8 +65,10 @@ parse_http(Data) ->
     end.
 
 parse_header(Data, Record) ->
-    case binary:split(Data, [<<"\r\n\r\n">>]) of
-        [Header|PostedData] ->
+    Split = binary:split(Data, [<<"\r\n\r\n">>]),
+    io:format("Split: ~p~n", [Split]),
+    case Split of
+        [Header,PostedData|_] ->
             parse_header1(binary:split(Header, [<<"\r\n">>], [global]),
                           Record#ol_record{value=PostedData});
         X -> X
