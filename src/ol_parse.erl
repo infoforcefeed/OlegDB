@@ -22,6 +22,7 @@
 -module(ol_parse).
 -include("olegdb.hrl").
 -export([parse_http/1]).
+-define(KEY_SIZE, 32). % Should match the one in include/oleg.h
 
 parse_db_name_and_key(Data) ->
     case binary:split(Data, [<<"\r\n">>]) of
@@ -31,6 +32,16 @@ parse_db_name_and_key(Data) ->
         Chunk -> {error, "Didn't understand your verb.", Chunk}
     end.
 
+%% Truncating the key here saves some memory management in The
+%% C backend.
+truncate_key(Key) ->
+    if
+        byte_size(Key) > ?KEY_SIZE ->
+            binary:part(Key, 0, ?KEY_SIZE);
+        true ->
+            Key
+    end.
+
 parse_url(FirstLine) ->
     [URL|_] = binary:split(FirstLine, [<<" ">>]),
     Split = binary:split(URL, [<<"/">>], [global]),
@@ -38,9 +49,9 @@ parse_url(FirstLine) ->
     case Split of
         [<<>>, <<>> |_] -> {error, "No database or key specified."};
         % Url was like /users/1 or /pictures/thing
-        [_, DB_Name, Key |_] -> {ok, DB_Name, Key};
+        [_, DB_Name, Key |_] -> {ok, DB_Name, truncate_key(Key)};
         % The url was like /test or /what, so just assume the default DB.
-        [_, Key |_] -> {ok, Key}
+        [_, Key |_] -> {ok, truncate_key(Key)}
     end.
 
 parse_http(Data) ->
