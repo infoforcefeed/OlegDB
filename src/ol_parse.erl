@@ -21,25 +21,45 @@
 %%% THE SOFTWARE.
 -module(ol_parse).
 -include("olegdb.hrl").
--export([parse_get/1, parse_post/1]).
+-export([parse_http/1]).
 
-parse_get(Data) ->
-    case binary:split(Data, [<<"\r\n\r\n">>]) of
-        [Header|_ ] -> parse_header(Header);
-        X -> X
+parse_db_name_and_key(Data) ->
+    case binary:split(Data, [<<"\r\n">>]) of
+        [<<"GET ", Rest/binary>>|_] -> parse_url(Rest);
+        [<<"POST ", Rest/binary>>|_] -> parse_url(Rest);
+        [<<"DELETE ", Rest/binary>>|_]-> parse_url(Rest);
+        Chunk -> {error, "Didn't understand your verb.", Chunk}
     end.
 
-parse_post(Data) ->
+parse_url(FirstLine) ->
+    [URL|_] = binary:split(FirstLine, [<<" ">>]),
+    Split = binary:split(URL, [<<"/">>], [global]),
+    io:format("S: ~p~n", [Split]),
+    case Split of
+        [<<>>, <<>> |_] -> {error, "No database or key specified."};
+        % Url was like /users/1 or /pictures/thing
+        [_, DB_Name, Key |_] -> {ok, DB_Name, Key};
+        % The url was like /test or /what, so just assume the default DB.
+        [_, Key |_] -> {ok, Key}
+    end.
+
+parse_http(Data) ->
+    case parse_db_name_and_key(Data) of
+        {ok, DB_Name, Key} ->
+            parse_header(Data, #ol_record{database=DB_Name,
+                                          key=Key});
+        {ok, Key} ->
+            parse_header(Data, #ol_record{key=Key});
+        {error, ErrMsg} -> {error, ErrMsg}
+    end.
+
+parse_header(Data, Record) ->
     case binary:split(Data, [<<"\r\n\r\n">>]) of
         [Header|PostedData] ->
-            parse_header(Header, #ol_record{value=PostedData});
+            parse_header1(binary:split(Header, [<<"\r\n">>], [global]),
+                          Record#ol_record{value=PostedData});
         X -> X
     end.
-
-%% Same as parse_header/2, but with a default record.
-parse_header(Header) -> parse_header(Header, #ol_record{}).
-parse_header(Header, Record) ->
-    parse_header1(binary:split(Header, [<<"\r\n">>], [global]), Record).
 
 %% Tail recursive function that maps over the lines in a header to fill out
 %% an ol_record to later.
