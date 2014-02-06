@@ -45,7 +45,7 @@ truncate_key(Key) ->
 parse_url(FirstLine) ->
     [URL|_] = binary:split(FirstLine, [<<" ">>]),
     Split = binary:split(URL, [<<"/">>], [global]),
-    io:format("S: ~p~n", [Split]),
+    %io:format("S: ~p~n", [Split]),
     case Split of
         [<<>>, <<>> |_] -> {error, "No database or key specified."};
         % Url was like /users/1 or /pictures/thing

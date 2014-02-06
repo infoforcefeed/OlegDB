@@ -46,7 +46,7 @@ encode(_) ->
     exit(unknown_call).
 
 
-decode([Int]) -> Int.
+%decode([Int]) -> Int.
 
 loop(Port) ->
     %% Wait for someone to call for something
@@ -57,7 +57,7 @@ loop(Port) ->
             receive
                 %% Give the caller our result
                 {Port, {data, Data}} ->
-                    Caller ! {complex, decode(Data)};
+                    Caller ! {complex, Data};
                 badarg ->
                     io:format("Badarg ~n"),
                         exit(port_terminated)

@@ -104,8 +104,6 @@ static ol_record *read_record(char *buf, int index) {
         if (ei_decode_binary(buf, &index, new_obj->data, &len))
             ol_log_msg(LOG_WARN, "Could not get data.\n");
 
-    } else {
-        ol_log_msg(LOG_WARN, "Could not get data.\n");
     }
 
     return new_obj;
@@ -128,18 +126,27 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         /* ol_jar */
         res = ol_jar_ct(d->db, obj->key, obj->data, strlen((char*)obj->data),
                obj->content_type, strlen((char*)obj->content_type));
+        /* TODO: Actually return useful info here. */
+        driver_output(d->port, (char *)&res, 1);
     } else if (fn == 2) {
         /* ol_unjar */
         /* TODO: Refactor when we know how big out data is. */
         /* Good enough for demo. */
-        unsigned char *to_send = (unsigned char *)driver_alloc_binary(1024);
         unsigned char *data = ol_unjar(d->db, obj->key);
-        memcpy(to_send, data, 1024);
-        driver_output_binary(d->port, NULL, 0,
-            (ErlDrvBinary*)to_send, 0, strlen((char *)to_send));
+        if (data != NULL) {
+            unsigned char *to_send = (unsigned char *)driver_alloc_binary(1024);
+            /* Send that shit back */
+            memcpy(to_send, data, 1024);
+            driver_output_binary(d->port, NULL, 0,
+                (ErlDrvBinary*)to_send, 0, strlen((char *)to_send));
+        } else {
+            /* TODO: Send a 'null' atom back here or something. */
+            driver_output(d->port, (char *)&res, 1);
+        }
+    } else {
+        /* Send something back so we're not blocking. */
+        driver_output(d->port, (char *)&res, 1);
     }
-    /* Send that shit back */
-    driver_output(d->port, (char *)&res, 1);
 
     if (obj) {
         if (obj->data) driver_free(obj->data);
