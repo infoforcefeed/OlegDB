@@ -7,7 +7,9 @@ LIB_DIR=$(BUILD_DIR)lib/
 BIN_DIR=$(BUILD_DIR)bin/
 SONAME=liboleg.so.1
 ERLFLAGS=-smp -W1 -Werror -b beam -I./include -o $(BIN_DIR)
-ERLINCLUDES = $(shell echo 'io:format("~s~n",[code:root_dir()]),init:stop().' | erl | sed -n '/^1>/s/^1> //p')/usr/include/
+ERL_DIR=$(shell echo 'io:format("~s~n",[code:root_dir()]),init:stop().' | erl | sed -n '/^1>/s/^1> //p')
+ERLINCLUDES=$(ERL_DIR)/usr/include/
+ERLLIBS=$(ERL_DIR)/usr/lib/
 INCLUDES=-I./include -I$(ERLINCLUDES)
 
 MATH_LINKER=
@@ -26,7 +28,7 @@ liboleg:
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/logging.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c -shared -fpic ./src/port_driver.c
 	$(cc) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o oleg.o -fpic -shared $(MATH_LINKER)
-	$(cc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
+	$(cc) $(CFLAGS) $(INCLUDES) -L$(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/test.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/main.c
 	$(cc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
