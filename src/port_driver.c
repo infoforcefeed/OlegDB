@@ -130,15 +130,17 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         driver_output(d->port, (char *)&res, 1);
     } else if (fn == 2) {
         /* ol_unjar */
-        /* TODO: Refactor when we know how big out data is. */
-        /* Good enough for demo. */
         unsigned char *data = ol_unjar(d->db, obj->key);
         if (data != NULL) {
-            unsigned char *to_send = (unsigned char *)driver_alloc_binary(1024);
-            /* Send that shit back */
-            memcpy(to_send, data, 1024);
-            driver_output_binary(d->port, NULL, 0,
-                (ErlDrvBinary*)to_send, 0, strlen((char *)to_send));
+            /* TODO: Refactor when we know how big out data is. */
+            /* Good enough for demo. */
+
+            ei_x_buff to_send;
+            ei_x_new_with_version(&to_send);
+            ei_x_encode_binary(&to_send, data, strlen((char*)data));
+            driver_output(d->port, to_send.buff, to_send.index);
+            ei_x_free(&to_send);
+
         } else {
             /* TODO: Send a 'null' atom back here or something. */
             driver_output(d->port, (char *)&res, 1);

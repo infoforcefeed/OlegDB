@@ -45,8 +45,15 @@ encode(_) ->
     io:format("Don't know how to decode that.~n"),
     exit(unknown_call).
 
-
-%decode([Int]) -> Int.
+decode([Data]) -> 
+    case is_binary(Data) of
+        true ->
+            io:format("Data is binary (probably)!~n"),
+            binary_to_term(Data);
+        _ -> Data
+    end;
+decode(<<Data>>) -> binary_to_term(Data);
+decode(Data) -> binary_to_term(Data).
 
 loop(Port) ->
     %% Wait for someone to call for something
@@ -57,7 +64,7 @@ loop(Port) ->
             receive
                 %% Give the caller our result
                 {Port, {data, Data}} ->
-                    Caller ! {complex, Data};
+                    Caller ! {complex, decode(Data)};
                 badarg ->
                     io:format("Badarg ~n"),
                         exit(port_terminated)
