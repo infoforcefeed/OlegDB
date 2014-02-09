@@ -36,7 +36,7 @@ start() ->
 
 init() ->
     register(complex, self()),
-    Port = open_port({spawn, ?SHAREDLIB}, []),
+    Port = open_port({spawn, ?SHAREDLIB}, [binary]),
     loop(Port).
 
 encode({ol_jar, X}) -> [1, X];
@@ -45,15 +45,13 @@ encode(_) ->
     io:format("Don't know how to decode that.~n"),
     exit(unknown_call).
 
-decode([Data]) -> 
+decode(Data) ->
     case is_binary(Data) of
         true ->
             io:format("Data is binary (probably)!~n"),
-            binary_to_term(Data);
+            Data;
         _ -> Data
-    end;
-decode(<<Data>>) -> binary_to_term(Data);
-decode(Data) -> binary_to_term(Data).
+    end.
 
 loop(Port) ->
     %% Wait for someone to call for something
