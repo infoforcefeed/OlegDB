@@ -62,14 +62,17 @@ route(Bits) ->
     case Bits of
         <<"GET", _/binary>> ->
             Header = ol_parse:parse_http(Bits),
-            %io:format("[-] Header: ~p~n", [Header]),
-            io:format("[-] And your data: ~p~n", [ol_database:ol_unjar(Header)]),
-            ol_http:not_found_response();
+            case ol_database:ol_unjar(Header) of
+                {ok, Data} -> ol_http:get_response(Data);
+                _ -> ol_http:not_found_response()
+            end;
         <<"POST", _/binary>> ->
             Header = ol_parse:parse_http(Bits),
             %io:format("[-] Header: ~p~n", [Header]),
-            ol_database:ol_jar(Header),
-            ol_http:not_found_response();
+            case ol_database:ol_jar(Header) of
+                ok -> ol_http:post_response();
+                _ -> ol_http:not_found_response()
+            end;
         _ ->
             ol_http:not_found_response()
     end.

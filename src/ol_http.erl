@@ -20,15 +20,16 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %%% THE SOFTWARE.
 -module(ol_http).
--export([get_response/0, not_found_response/0, post_response/0, deleted_response/0]).
+-export([get_response/1, not_found_response/0, post_response/0, deleted_response/0]).
 
-get_response() ->
-    "HTTP/1.1 200 OK\r\n"
-    "Server: OlegDB/fresh_cuts_n_jams\r\n"
-    "Content-Type: application/json\r\n"
-    "Content-Length: %zu\r\n"
-    "Connection: close\r\n"
-    "\r\n%s".
+get_response(Data) ->
+    io_lib:format(
+        "HTTP/1.1 200 OK\r\n"
+        "Server: OlegDB/fresh_cuts_n_jams\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: ~p\r\n"
+        "Connection: close\r\n"
+        "\r\n~s", [byte_size(Data), Data]).
 
 not_found_response() ->
     "HTTP/1.1 404 Not Found\r\n"

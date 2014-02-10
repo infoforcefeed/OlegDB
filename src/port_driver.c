@@ -127,27 +127,45 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         res = ol_jar_ct(d->db, obj->key, obj->data, strlen((char*)obj->data),
                obj->content_type, strlen((char*)obj->content_type));
         /* TODO: Actually return useful info here. */
-        driver_output(d->port, (char *)&res, 1);
+        ei_x_buff to_send;
+        ei_x_new_with_version(&to_send);
+
+        if (res != 0)
+            ei_x_encode_atom(&to_send, "error");
+        else
+            ei_x_encode_atom(&to_send, "ok");
+
+        driver_output(d->port, to_send.buff, to_send.index);
+        ei_x_free(&to_send);
     } else if (fn == 2) {
         /* ol_unjar */
         unsigned char *data = ol_unjar(d->db, obj->key);
         if (data != NULL) {
             /* TODO: Refactor when we know how big out data is. */
             /* Good enough for demo. */
-
             ei_x_buff to_send;
             ei_x_new_with_version(&to_send);
+            ei_x_encode_tuple_header(&to_send, 2);
+            ei_x_encode_atom(&to_send, "ok");
             ei_x_encode_binary(&to_send, data, strlen((char*)data));
             driver_output(d->port, to_send.buff, to_send.index);
             ei_x_free(&to_send);
 
         } else {
             /* TODO: Send a 'null' atom back here or something. */
-            driver_output(d->port, (char *)&res, 1);
+            ei_x_buff to_send;
+            ei_x_new_with_version(&to_send);
+            ei_x_encode_atom(&to_send, "not_found");
+            driver_output(d->port, to_send.buff, to_send.index);
+            ei_x_free(&to_send);
         }
     } else {
         /* Send something back so we're not blocking. */
-        driver_output(d->port, (char *)&res, 1);
+        ei_x_buff to_send;
+        ei_x_new_with_version(&to_send);
+        ei_x_encode_atom(&to_send, "not_found");
+        driver_output(d->port, to_send.buff, to_send.index);
+        ei_x_free(&to_send);
     }
 
     if (obj) {
