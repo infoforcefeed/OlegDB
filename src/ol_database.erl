@@ -45,8 +45,6 @@ encode(_) ->
     io:format("Don't know how to decode that.~n"),
     exit(unknown_call).
 
-%decode(Data) -> Data;
-
 loop(Port) ->
     %% Wait for someone to call for something
     receive
@@ -81,7 +79,11 @@ call_port(Msg) ->
     end.
 
 ol_jar(OlRecord) ->
-    call_port({ol_jar, term_to_binary(OlRecord)}).
+    if
+        byte_size(OlRecord#ol_record.value) > 0 ->
+            call_port({ol_jar, term_to_binary(OlRecord)});
+        true -> {error, no_data_posted}
+    end.
 
 ol_unjar(OlRecord) ->
     call_port({ol_unjar, term_to_binary(OlRecord)}).

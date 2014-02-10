@@ -68,7 +68,6 @@ route(Bits) ->
             end;
         <<"POST", _/binary>> ->
             Header = ol_parse:parse_http(Bits),
-            %io:format("[-] Header: ~p~n", [Header]),
             case ol_database:ol_jar(Header) of
                 ok -> ol_http:post_response();
                 _ -> ol_http:not_found_response()
