@@ -49,13 +49,13 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
     tmp_key = malloc(KEY_SIZE);
     check_mem(tmp_key);
 
-    fread(tmp_key, sizeof(char), KEY_SIZE, fd);
-    fread(&value_size, sizeof(size_t), 1, fd);
+    check(fread(tmp_key, sizeof(char), KEY_SIZE, fd) > 0, "Error reading");
+    check(fread(&value_size, sizeof(size_t), 1, fd) > 0, "Error reading");
 
     tmp_value = calloc(1, value_size);
     check_mem(tmp_value);
 
-    fread(tmp_value, sizeof(char), value_size, fd);
+    check(fread(tmp_value, sizeof(char), value_size, fd) > 0, "Error reading");
     ol_jar(db, tmp_key, tmp_value, value_size);
 
     free(tmp_key);
@@ -140,7 +140,7 @@ int ol_load_db(ol_database *db, char *filename) {
     fd = fopen(filename, "r");
     check(fd, "Failed to open file: %s", filename);
 
-    fread(&header, sizeof(header), 1, fd);
+    check(fread(&header, sizeof(header), 1, fd) > 0, "Error reading.");
     if (memcmp(header.sig, DUMP_SIG, 4) != 0) {
         fclose(fd);
         printf("Error: Not a valid oleg dump\n");
