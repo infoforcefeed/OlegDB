@@ -49,8 +49,11 @@ request_handler(Accepted) ->
     % Read in all data, timeout after 60 seconds
     case gen_tcp:recv(Accepted, 0, 60000) of
         {ok, Data} ->
-            gen_tcp:send(Accepted, route(Data)),
-            request_handler(Accepted);
+            case gen_tcp:send(Accepted, route(Data)) of
+                ok -> request_handler(Accepted);
+                {error, Reason} ->
+                    io:format("[-] Could not send to socket: ~p~n", [Reason])
+            end;
         {error, closed} ->
             ok;
         {error, timeout} ->
@@ -58,7 +61,7 @@ request_handler(Accepted) ->
             ok
     end.
 
-route(Bits) -> 
+route(Bits) ->
     case Bits of
         <<"GET", _/binary>> ->
             Header = ol_parse:parse_http(Bits),
