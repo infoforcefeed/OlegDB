@@ -75,6 +75,10 @@ Roadmap
 * pub/sub (events)
 * Speak Redis/Memcached protocol subsets
 
+0.3
+---
+* SPDY Protocol
+
 1.0
 ---
 
