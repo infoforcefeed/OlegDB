@@ -41,8 +41,8 @@ do_accept(Sock) ->
             io:format("[-] Connection accepted!~n"),
             spawn(fun() -> request_handler(Accepted) end),
             do_accept(Sock);
-        {error, _} ->
-            io:format("[X] Could not accept a connection.~n")
+        {error, Error} ->
+            io:format("[X] Could not accept a connection. Error: ~p~n", [Error])
     end.
 
 request_handler(Accepted) ->
