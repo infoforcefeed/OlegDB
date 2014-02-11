@@ -10,9 +10,10 @@ $ pgrep olegdb | xargs kill
 olegdb: No.
 ````
 
-OlegDB is a single-threaded, non-concurrent, transactionless NoSQL database
+OlegDB is a ~~single-threaded, non-concurrent~~, transactionless NoSQL database
 written by bitter SQL-lovers in a futile attempt to hop on the schemaless trend
-before everyone realizes it was a bad move.
+before everyone realizes it was a bad move. It is primarily a C library with an
+Erlang frontend for communication.
 
 Dependencies
 ============
