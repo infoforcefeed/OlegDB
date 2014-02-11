@@ -54,8 +54,8 @@ deleted_response() ->
     "HTTP/1.1 200 OK\r\n"
     "Server: OlegDB/fresh_cuts_n_jams\r\n"
     "Content-Type: text/plain\r\n"
-    "Content-Length: 23\r\n"
+    "Content-Length: 44\r\n"
     "Connection: close\r\n"
     "\r\n"
-    "That key is GONE, man.\n".
+    "The wind whispers through your empty forest.\n".
 

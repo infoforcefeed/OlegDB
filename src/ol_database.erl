@@ -20,7 +20,7 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %%% THE SOFTWARE.
 -module(ol_database).
--export([start/0, init/0, ol_jar/1, ol_unjar/1]).
+-export([start/0, init/0, ol_jar/1, ol_unjar/1, ol_scoop/1]).
 
 -include("olegdb.hrl").
 -define(SHAREDLIB, "libolegserver").
@@ -41,6 +41,7 @@ init() ->
 
 encode({ol_jar, X}) -> [1, X];
 encode({ol_unjar, Y}) -> [2, Y];
+encode({ol_scoop, Z}) -> [3, Z];
 encode(_) ->
     io:format("Don't know how to decode that.~n"),
     exit(unknown_call).
@@ -87,3 +88,6 @@ ol_jar(OlRecord) ->
 
 ol_unjar(OlRecord) ->
     call_port({ol_unjar, term_to_binary(OlRecord)}).
+
+ol_scoop(OlRecord) ->
+    call_port({ol_scoop, term_to_binary(OlRecord)}).

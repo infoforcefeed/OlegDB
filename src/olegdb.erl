@@ -72,6 +72,12 @@ route(Bits) ->
                 ok -> ol_http:post_response();
                 _ -> ol_http:not_found_response()
             end;
+        <<"DELETE", _/binary>> ->
+            Header = ol_parse:parse_http(Bits),
+            case ol_database:ol_scoop(Header) of
+                ok -> ol_http:deleted_response();
+                _ -> ol_http:not_found_response()
+            end;
         _ ->
             ol_http:not_found_response()
     end.
