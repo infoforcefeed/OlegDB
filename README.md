@@ -73,6 +73,7 @@ Roadmap
 * Non-guaranteed record expiry
 * Lists/Queues
 * pub/sub (events)
+* Speak Redis/Memcached protocol subsets
 
 1.0
 ---
