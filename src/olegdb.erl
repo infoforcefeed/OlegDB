@@ -59,7 +59,8 @@ request_handler(Accepted) ->
         {error, timeout} ->
             io:format("[-] Client timed out.~n"),
             ok
-    end.
+    end,
+    ok = gen_tcp:close(Accepted).
 
 route(Bits) ->
     case Bits of
