@@ -20,28 +20,31 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %%% THE SOFTWARE.
 -module(ol_database).
--export([start/0, init/0, ol_jar/1, ol_unjar/1]).
+-export([start/0, init/0, ol_jar/1, ol_unjar/1, ol_scoop/1]).
 
 -include("olegdb.hrl").
 -define(SHAREDLIB, "libolegserver").
 
 start() ->
+    code:add_path("./build/lib/"),
     case erl_ddll:load_driver("./build/lib/", ?SHAREDLIB) of
         ok -> ok;
         {error, already_loaded} -> ok;
-        _ -> exit({error, could_not_load_driver})
+        {error, ErrorDesc} -> exit(erl_ddll:format_error(ErrorDesc))
     end,
     spawn(fun() -> ?MODULE:init() end).
 
 init() ->
     register(complex, self()),
-    Port = open_port({spawn, ?SHAREDLIB}, []),
+    Port = open_port({spawn, ?SHAREDLIB}, [binary]),
     loop(Port).
 
 encode({ol_jar, X}) -> [1, X];
-encode({ol_unjar, X}) -> [2, X].
-
-decode([Int]) -> Int.
+encode({ol_unjar, Y}) -> [2, Y];
+encode({ol_scoop, Z}) -> [3, Z];
+encode(_) ->
+    io:format("Don't know how to decode that.~n"),
+    exit(unknown_call).
 
 loop(Port) ->
     %% Wait for someone to call for something
@@ -52,9 +55,21 @@ loop(Port) ->
             receive
                 %% Give the caller our result
                 {Port, {data, Data}} ->
-                    Caller ! {complex, decode(Data)}
+                    Caller ! {complex, binary_to_term(Data)};
+                badarg ->
+                    io:format("Badarg ~n"),
+                        exit(port_terminated)
             end,
-            loop(Port)
+            loop(Port);
+        stop ->
+            Port ! {self(), close},
+            receive
+                {Port, closed} ->
+                    exit(normal)
+            end;
+        {'EXIT', Port, Reason} ->
+            io:format("~p ~n", [Reason]),
+                exit(port_terminated)
     end.
 
 call_port(Msg) ->
@@ -65,7 +80,14 @@ call_port(Msg) ->
     end.
 
 ol_jar(OlRecord) ->
-    call_port({ol_jar, OlRecord}).
+    if
+        byte_size(OlRecord#ol_record.value) > 0 ->
+            call_port({ol_jar, term_to_binary(OlRecord)});
+        true -> {error, no_data_posted}
+    end.
 
 ol_unjar(OlRecord) ->
-    call_port({ol_unjar, OlRecord}).
+    call_port({ol_unjar, term_to_binary(OlRecord)}).
+
+ol_scoop(OlRecord) ->
+    call_port({ol_scoop, term_to_binary(OlRecord)}).

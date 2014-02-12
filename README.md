@@ -10,14 +10,16 @@ $ pgrep olegdb | xargs kill
 olegdb: No.
 ````
 
-OlegDB is a single-threaded, non-concurrent, transactionless NoSQL database
+OlegDB is a ~~single-threaded, non-concurrent~~, transactionless NoSQL database
 written by bitter SQL-lovers in a futile attempt to hop on the schemaless trend
-before everyone realizes it was a bad move.
+before everyone realizes it was a bad move. It is primarily a C library with an
+Erlang frontend for communication.
 
 Dependencies
 ============
 
 * A healthy fear of the end
+* Erlang
 
 Installation
 ============
@@ -49,23 +51,11 @@ To run the erlang server:
 
 curl2sudo® install script coming soon.
 
-Dumps
-=====
+Documentation
+=============
 
-Olegdb dumps are binary.
-
-There is a header struct in [dump.h](./include/dump.h) that is written to the
-beginning of the file.
-
-10 bytes -> OLEGDBDUMP  
-3 bytes   -> Version number ascii  
-4 bytes   -> Record count  
-n bytes   -> data (keys and values)
-
-Keys are always 16 bytes, so you read 16 bytes after reading the number of keys
-to get the first bucket key. Following that is a size_t (8 bytes) value that is
-the size of the data. We will call this data_size. Read data_size. This is the
-key's data. Continue the process until Record count is exhausted.
+Documentation exists primarily on the [the website](https://olegdb.org/documentation.html),
+but also in the [./docs](./docs/) directory.
 
 Roadmap
 =======
@@ -73,24 +63,26 @@ Roadmap
 0.1
 ---
 
-* Volatile in memory
+* Persistence
 * Speaks HTTP with a heavy accent
-* ACID Compliance
-* 16 byte hard keysize limit
-* Single-digit concurrency
-* Discardable soft mutexes
-* Non-guaranteed record expiry
-* Silent sharding
-* Pre-computed hashes
+* 32 byte hard keysize limit
+* Working database
 
 0.2
 ---
-* RAR storage for minimal storage
+* Non-guaranteed record expiry
+* Lists/Queues
+* pub/sub (events)
+* Speak Redis/Memcached protocol subsets
+
+0.3
+---
+* SPDY Protocol
 
 1.0
 ---
 
-* WINRAR and WINE
+* Distributed fault-tolerant store
 
 2.0
 ---

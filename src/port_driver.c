@@ -22,6 +22,8 @@
 *
 * This is where the magic happens.
 */
+#include <string.h>
+#include "ei.h"
 #include "erl_driver.h"
 #include "logging.h"
 #include "oleg.h"
@@ -36,6 +38,17 @@ typedef struct {
     ErlDrvPort port;
     ol_database *db;
 } oleg_data;
+
+/* This should match the object in olegdb.htl */
+typedef struct {
+    char database_name[DB_NAME_SIZE];
+    char key[KEY_SIZE];
+    int ct_len;
+    int data_len;
+    int version;
+    char content_type[255];
+    unsigned char *data;
+} ol_record;
 
 static ErlDrvData oleg_start(ErlDrvPort port, char *buff) {
     oleg_data *d = (oleg_data*)driver_alloc(sizeof(oleg_data));
@@ -52,11 +65,117 @@ static void oleg_stop(ErlDrvData data) {
     driver_free(data);
 }
 
+/* Converts a string of binary data from erlang into something we can use */
+/* Buf is what we're reading from, index is where to start. */
+static ol_record *read_record(char *buf, int index) {
+    ol_record *new_obj = driver_alloc(sizeof(ol_record));
+    int arity = 0;
+    char atom[64];
+    long len = 0; /* Not really used, but ei_decode_binary wants it */
+    int type = 0; /* Also not used. */
+    int data_size = 0; /* Used to get the length of the data we'll be storing. */
+
+    /* TODO: Error checking in here somewhere. */
+    if (ei_decode_version(buf, &index, &new_obj->version))
+        ol_log_msg(LOG_WARN, "Could not decode version.\n");
+    /* Gives us how many items are in the tuple */
+    if (ei_decode_tuple_header(buf, &index, &arity))
+        ol_log_msg(LOG_WARN, "Could not decode tuple header.\n");
+
+    if (arity != 6)
+        ol_log_msg(LOG_WARN, "Arity was not as expected.\n");
+
+    if (ei_decode_atom(buf, &index, atom))
+        ol_log_msg(LOG_WARN, "Could not decode ol_record atom\n");
+    if (ei_decode_binary(buf, &index, new_obj->database_name, &len))
+        ol_log_msg(LOG_WARN, "Could not get database name.\n");
+    if (ei_decode_binary(buf, &index, new_obj->key, &len))
+        ol_log_msg(LOG_WARN, "Could not get key.\n");
+    if (ei_decode_binary(buf, &index, new_obj->content_type, &len))
+        ol_log_msg(LOG_WARN, "Could not get content-type.");
+    if (ei_decode_long(buf, &index, (long*)&new_obj->ct_len))
+        ol_log_msg(LOG_WARN, "Could not get ct_len.\n");
+
+    /* This stuff is all to get the data. */
+    ei_get_type(buf, &index, &type, &data_size);
+    new_obj->data = NULL;
+    if (data_size > 0) {
+        new_obj->data = driver_alloc(data_size);
+        if (ei_decode_binary(buf, &index, new_obj->data, &len))
+            ol_log_msg(LOG_WARN, "Could not get data.\n");
+
+    }
+
+    return new_obj;
+}
+
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
-    ol_log_msg(LOG_INFO, "[-] Call from Erlang with data: %s\n", cmd);
     oleg_data *d = (oleg_data*)data;
-    printf("Port: %p\n", d->port);
-    driver_output(d->port, NULL, 1);
+    char fn = cmd[0];
+    int res = 0;
+    ol_record *obj = NULL;
+
+    /* Turn Erlang into Oleg */
+    obj = read_record(cmd, 1);
+
+    /* Open up a db if we don't have on already */
+    if (d->db == NULL)
+        d->db = ol_open("/tmp", obj->database_name, OL_CONSUME_DIR);
+
+    if (fn == 1) {
+        /* ol_jar */
+        res = ol_jar_ct(d->db, obj->key, obj->data, strlen((char*)obj->data),
+               obj->content_type, strlen((char*)obj->content_type));
+        /* TODO: Actually return useful info here. */
+        ei_x_buff to_send;
+        ei_x_new_with_version(&to_send);
+
+        if (res != 0)
+            ei_x_encode_atom(&to_send, "error");
+        else
+            ei_x_encode_atom(&to_send, "ok");
+
+        driver_output(d->port, to_send.buff, to_send.index);
+        ei_x_free(&to_send);
+    } else if (fn == 2) {
+        /* ol_unjar */
+        unsigned char *data = ol_unjar(d->db, obj->key);
+        ei_x_buff to_send;
+        ei_x_new_with_version(&to_send);
+        if (data != NULL) {
+            ei_x_encode_tuple_header(&to_send, 2);
+            ei_x_encode_atom(&to_send, "ok");
+            ei_x_encode_binary(&to_send, data, strlen((char*)data));
+        } else {
+            ei_x_encode_atom(&to_send, "not_found");
+        }
+        driver_output(d->port, to_send.buff, to_send.index);
+        ei_x_free(&to_send);
+    } else if (fn == 3) {
+        /* ol_scoop */
+        int ret = ol_scoop(d->db, obj->key);
+        ei_x_buff to_send;
+        ei_x_new_with_version(&to_send);
+        if (ret == 0)
+            ei_x_encode_atom(&to_send, "ok");
+        else
+            ei_x_encode_atom(&to_send, "not_found");
+        driver_output(d->port, to_send.buff, to_send.index);
+        ei_x_free(&to_send);
+
+    } else {
+        /* Send something back so we're not blocking. */
+        ei_x_buff to_send;
+        ei_x_new_with_version(&to_send);
+        ei_x_encode_atom(&to_send, "not_found");
+        driver_output(d->port, to_send.buff, to_send.index);
+        ei_x_free(&to_send);
+    }
+
+    if (obj) {
+        if (obj->data) driver_free(obj->data);
+        driver_free(obj);
+    }
 }
 
 /* Various callbacks */

@@ -21,12 +21,12 @@
 %%% THE SOFTWARE.
 -module(olegdb).
 -include("olegdb.hrl").
--export([main/0]).
+-export([main/0, request_handler/1, route/1]).
 
 -define(LISTEN_PORT, 8080).
 
 server_manager(Port) ->
-    case gen_tcp:listen(Port, [binary, {active, false}, {reuseaddr, true}]) of
+    case gen_tcp:listen(Port, [binary, {active, false}, {reuseaddr, true}, {nodelay, true}]) of
         {ok, Sock} ->
             io:format("[-] Listening on port ~p~n", [?LISTEN_PORT]),
             do_accept(Sock);
@@ -38,37 +38,50 @@ server_manager(Port) ->
 do_accept(Sock) ->
     case gen_tcp:accept(Sock) of
         {ok, Accepted} ->
-            io:format("[-] Connection accepted!~n"),
-            spawn(fun() -> request_handler(Accepted) end),
+            %io:format("[-] Connection accepted!~n"),
+            spawn(?MODULE, request_handler, [Accepted]),
             do_accept(Sock);
-        {error, _} ->
-            io:format("[X] Could not accept a connection.~n")
+        {error, Error} ->
+            io:format("[X] Could not accept a connection. Error: ~p~n", [Error])
     end.
 
 request_handler(Accepted) ->
     % Read in all data, timeout after 60 seconds
     case gen_tcp:recv(Accepted, 0, 60000) of
         {ok, Data} ->
-            gen_tcp:send(Accepted, route(Data)),
-            request_handler(Accepted);
+            case gen_tcp:send(Accepted, route(Data)) of
+                ok -> request_handler(Accepted);
+                {error, Reason} ->
+                    io:format("[-] Could not send to socket: ~p~n", [Reason])
+            end;
         {error, closed} ->
             ok;
         {error, timeout} ->
             io:format("[-] Client timed out.~n"),
             ok
-    end.
+    end,
+    ok = gen_tcp:close(Accepted).
 
-route(Bits) -> 
+route(Bits) ->
     case Bits of
         <<"GET", _/binary>> ->
-            Header = ol_parse:parse_get(Bits),
-            io:format("[-] Header: ~p~n", [Header]),
-            ol_http:not_found_response();
+            Header = ol_parse:parse_http(Bits),
+            case ol_database:ol_unjar(Header) of
+                {ok, Data} -> ol_http:get_response(Data);
+                _ -> ol_http:not_found_response()
+            end;
         <<"POST", _/binary>> ->
-            Header = ol_parse:parse_post(Bits),
-            io:format("[-] Header: ~p~n", [Header]),
-            ol_database:ol_jar(Header),
-            ol_http:not_found_response();
+            Header = ol_parse:parse_http(Bits),
+            case ol_database:ol_jar(Header) of
+                ok -> ol_http:post_response();
+                _ -> ol_http:not_found_response()
+            end;
+        <<"DELETE", _/binary>> ->
+            Header = ol_parse:parse_http(Bits),
+            case ol_database:ol_scoop(Header) of
+                ok -> ol_http:deleted_response();
+                _ -> ol_http:not_found_response()
+            end;
         _ ->
             ol_http:not_found_response()
     end.
