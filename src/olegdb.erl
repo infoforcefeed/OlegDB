@@ -21,7 +21,7 @@
 %%% THE SOFTWARE.
 -module(olegdb).
 -include("olegdb.hrl").
--export([main/0]).
+-export([main/0, request_handler/1, route/1]).
 
 -define(LISTEN_PORT, 8080).
 
@@ -39,7 +39,7 @@ do_accept(Sock) ->
     case gen_tcp:accept(Sock) of
         {ok, Accepted} ->
             %io:format("[-] Connection accepted!~n"),
-            spawn(fun() -> request_handler(Accepted) end),
+            spawn(?MODULE, request_handler, [Accepted]),
             do_accept(Sock);
         {error, Error} ->
             io:format("[X] Could not accept a connection. Error: ~p~n", [Error])
