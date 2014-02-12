@@ -105,9 +105,20 @@ int ol_save_db(ol_database *db) {
     fd = fopen(tmpfile, "w+");
     check(fd, "Failed to open file: %s", tmpfile);
 
-    /* Write the header to the file */
-    snprintf(header.sig, sizeof(DUMP_SIG), "%s", DUMP_SIG);
-    snprintf(header.version, sizeof(header.version)+1, "%04i", DUMP_VERSION);
+    /* Write the header to the file 
+     * Why do we use a temporary buffer here? Because snprintf ALWAYS appends
+     * a null string, so you'll end up with the wrong output. Since theres no
+     * way to use snprintf and not get warnings (Fuck warnings!), we print to
+     * a temporary buffer and then copy that into our struct. -QP
+     */
+    char tmp_sig_buf[DUMP_SIG_LEN + 1];
+    snprintf(tmp_sig_buf, DUMP_SIG_LEN + 1, "%s", DUMP_SIG);
+    strncpy(header.sig, tmp_sig_buf, DUMP_SIG_LEN);
+
+    char tmp_ver_buf[DUMP_VERSION_LEN + 1];
+    snprintf(tmp_ver_buf, DUMP_VERSION_LEN + 1, "%04i", DUMP_VERSION);
+    strncpy(header.version, tmp_ver_buf, DUMP_SIG_LEN);
+
     header.rcrd_cnt = db->rcrd_cnt;
     check(fwrite(&header, sizeof(header), 1, fd) == 1, "Write failed.");
 
