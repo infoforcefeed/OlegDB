@@ -21,6 +21,6 @@
 %%% THE SOFTWARE.
 -record(ol_record, {database = <<"oleg">>,
                     key, % Binary
-                    content_type="application/octet-stream",
+                    content_type = <<"application/octet-stream">>,
                     content_length=0,
                     value = <<>>}).

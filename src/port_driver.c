@@ -91,7 +91,7 @@ static ol_record *read_record(char *buf, int index) {
         ol_log_msg(LOG_WARN, "Could not get database name.\n");
     if (ei_decode_binary(buf, &index, new_obj->key, &len))
         ol_log_msg(LOG_WARN, "Could not get key.\n");
-    if (ei_decode_string(buf, &index, new_obj->content_type))
+    if (ei_decode_binary(buf, &index, new_obj->content_type, &len))
         ol_log_msg(LOG_WARN, "Could not get content-type.");
     if (ei_decode_long(buf, &index, (long*)&new_obj->ct_len))
         ol_log_msg(LOG_WARN, "Could not get ct_len.\n");

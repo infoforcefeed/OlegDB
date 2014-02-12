@@ -83,7 +83,7 @@ parse_header1([Line|Header], Record) ->
             Len = list_to_integer(binary_to_list(CLength)),
             parse_header1(Header, Record#ol_record{content_length=Len});
         <<"Content-Type: ", CType/binary>> ->
-            parse_header1(Header, Record#ol_record{content_type=binary_to_list(CType)});
+            parse_header1(Header, Record#ol_record{content_type=CType});
         _ ->
             parse_header1(Header, Record)
     end.
