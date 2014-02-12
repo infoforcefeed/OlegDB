@@ -24,38 +24,38 @@
 
 get_response(Data) ->
     io_lib:format(
-        "HTTP/1.1 200 OK\r\n"
+        <<"HTTP/1.1 200 OK\r\n"
         "Server: OlegDB/fresh_cuts_n_jams\r\n"
         "Content-Type: application/json\r\n"
         "Content-Length: ~p\r\n"
         "Connection: close\r\n"
-        "\r\n~s", [byte_size(Data), Data]).
+        "\r\n~s">>, [byte_size(Data), Data]).
 
 not_found_response() ->
-    "HTTP/1.1 404 Not Found\r\n"
+    <<"HTTP/1.1 404 Not Found\r\n"
     "Status: 404 Not Found\r\n"
     "Server: OlegDB/fresh_cuts_n_jams\r\n"
     "Content-Length: 26\r\n"
     "Connection: close\r\n"
     "Content-Type: text/plain\r\n"
     "\r\n"
-    "These aren't your ghosts.\n".
+    "These aren't your ghosts.\n">>.
 
 post_response() ->
-    "HTTP/1.1 200 OK\r\n"
+    <<"HTTP/1.1 200 OK\r\n"
     "Server: OlegDB/fresh_cuts_n_jams\r\n"
     "Content-Type: text/plain\r\n"
     "Connection: close\r\n"
     "Content-Length: 7\r\n"
     "\r\n"
-    "MUDADA\n".
+    "MUDADA\n">>.
 
 deleted_response() ->
-    "HTTP/1.1 200 OK\r\n"
+    <<"HTTP/1.1 200 OK\r\n"
     "Server: OlegDB/fresh_cuts_n_jams\r\n"
     "Content-Type: text/plain\r\n"
     "Content-Length: 44\r\n"
     "Connection: close\r\n"
     "\r\n"
-    "The wind whispers through your empty forest.\n".
+    "The wind whispers through your empty forest.\n">>.
 
