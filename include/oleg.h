@@ -172,12 +172,21 @@ int ol_close(ol_database *database);
 int ol_close_save(ol_database *database);
 
 /* xXx FUNCTION=ol_unjar xXx
- * xXx DESCRIPTION=Unjar a value from the mayo. xXx
+ * xXx DESCRIPTION=Unjar a value from the mayo. Calls ol_unjar_ks with a dsize of null. xXx
  * xXx RETURNS=A pointer to an ol_val object, or NULL if the object was not found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  */
 ol_val ol_unjar(ol_database *db, const char *key);
+
+/* xXx FUNCTION=ol_unjar_ks xXx
+ * xXx DESCRIPTION=Unjar a value from the mayo. Makes ksize a reference to the size of the data returned. xXx
+ * xXx RETURNS=A pointer to an ol_val object, or NULL if the object was not found. xXx
+ * xXx *db=Database to retrieve value from. xXx
+ * xXx *key=The key to use. xXx
+ * xXx *dsize=The key to use. xXx
+ */
+ol_val ol_unjar_ds(ol_database *db, const char *key, size_t *dsize);
 
 /* xXx FUNCTION=ol_jar xXx
  * xXx DESCRIPTION=Put a value into the mayo. It's easy to piss in a bucket, it's not easy to piss in 19 jars. Uses default content type. xXx

@@ -93,6 +93,46 @@ int test_jar() {
     return 0;
 }
 
+int test_unjar_ds() {
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+
+    char key[] = "FANCY KEY IS YO MAMA";
+    unsigned char val[] = "invariable variables invariably trip up programmers";
+    size_t val_len = strlen((char*)val);
+    int inserted = ol_jar(db, key, val, val_len);
+
+    if (inserted > 0) {
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
+        ol_close(db);
+        return 1;
+    }
+
+    size_t to_test;
+    ol_val item = ol_unjar_ds(db, key, &to_test);
+    ol_log_msg(LOG_INFO, "Retrieved value.");
+    if (item == NULL) {
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        ol_close(db);
+        return 2;
+    }
+
+    if (memcmp(item, val, strlen((char*)val)) != 0) {
+        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        ol_close(db);
+        return 3;
+    }
+
+    if (to_test != val_len) {
+        ol_log_msg(LOG_ERR, "Sizes were not the same. %p (to_test) vs. %p (val_len)\n", to_test, val_len);
+        ol_close(db);
+        return 4;
+    }
+
+
+    ol_close(db);
+    return 0;
+}
 int test_unjar() {
     /* TODO: This test should actually make sure all of the data is consistent */
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
@@ -455,6 +495,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
     ol_run_test(test_unjar);
+    ol_run_test(test_unjar_ds);
     ol_run_test(test_scoop);
     ol_run_test(test_update);
     ol_run_test(test_ct);
