@@ -139,13 +139,14 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         ei_x_free(&to_send);
     } else if (fn == 2) {
         /* ol_unjar */
-        unsigned char *data = ol_unjar(d->db, obj->key);
+        size_t val_size;
+        unsigned char *data = ol_unjar_ds(d->db, obj->key, &val_size);
         ei_x_buff to_send;
         ei_x_new_with_version(&to_send);
         if (data != NULL) {
             ei_x_encode_tuple_header(&to_send, 2);
             ei_x_encode_atom(&to_send, "ok");
-            ei_x_encode_binary(&to_send, data, strlen((char*)data));
+            ei_x_encode_binary(&to_send, data, val_size);
         } else {
             ei_x_encode_atom(&to_send, "not_found");
         }

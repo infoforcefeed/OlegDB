@@ -211,12 +211,20 @@ error:
 }
 
 ol_val ol_unjar(ol_database *db, const char *key) {
+    return ol_unjar_ds(db, key, NULL);
+}
+
+ol_val ol_unjar_ds(ol_database *db, const char *key, size_t *dsize) {
     uint32_t hash;
     MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
-    if (bucket != NULL)
+
+    if (bucket != NULL) {
+        if (dsize != NULL)
+            memcpy(dsize, &bucket->data_size, sizeof(size_t));
         return bucket->data_ptr;
+    }
 
     return NULL;
 }
