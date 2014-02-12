@@ -476,7 +476,7 @@ int test_aol() {
     }
 
     if (db->rcrd_cnt != max_records - 1) {
-        ol_log_msg(LOG_ERR, "Record could was off: %d", db->rcrd_cnt);
+        ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
         ol_close(db);
         return 4;
     }

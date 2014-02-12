@@ -22,6 +22,7 @@
 */
 #include "aol.h"
 #include "oleg.h"
+#include "logging.h"
 #include "errhandle.h"
 
 #include <stdio.h>
@@ -48,10 +49,18 @@ int ol_aol_fsync(int fd) {
 }
 
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
-
     int ret;
-    ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%s\n", strlen(cmd), cmd,
-            strlen(bct->key), bct->key, bct->data_size, bct->data_ptr);
+
+    if (strcmp(cmd, "JAR") == 0) {
+        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%s\n", strlen(cmd), cmd,
+                strlen(bct->key), bct->key, bct->data_size, bct->data_ptr);
+    } else if (strcmp(cmd, "SCOOP") == 0) {
+        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s\n", strlen(cmd), cmd,
+                strlen(bct->key), bct->key);
+    } else {
+        ol_log_msg(LOG_ERR, "No such command '%s'", cmd);
+        return -1;
+    }
 
     check(ret > -1, "Error writing to file.");
 
@@ -63,5 +72,11 @@ error:
 }
 
 int ol_aol_restore(ol_database *db) {
+    ol_log_msg(LOG_INFO, "Restore DB from AOL file");
+    if (!db->aolfd)
+        db->aolfd = fopen(db->aol_file, "r");
+    while (!feof(db->aolfd)) {
+        fgetc();
+    }
     return 0;
 }
