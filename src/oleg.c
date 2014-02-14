@@ -130,6 +130,10 @@ int _ol_close(ol_database *db){
         }
     }
 
+    debug("Force flushing files");
+    if (db->aolfd)
+        fflush(db->aolfd);
+
     free(db->hashes);
     free(db->dump_file);
     db->feature_set = 0;

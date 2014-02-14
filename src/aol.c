@@ -102,7 +102,7 @@ error:
 }
 
 int ol_aol_restore(ol_database *db) {
-    char tmp_buf[1];
+    int c;
     struct ol_aol_data *command, *k, *v;
 
     ol_log_msg(LOG_INFO, "Restore DB from AOL file");
@@ -121,7 +121,8 @@ int ol_aol_restore(ol_database *db) {
         } else if (strncmp(command->data, "SCOOP", command->len) == 0) {
             check(ol_scoop(db, k->data) == 0, "Could not scoop!");
         }
-        check(fread(tmp_buf, 1, 1, db->aolfd) == 1, "Could not strip newline!");
+        c = fgetc(db->aolfd);
+        check(c == '\n', "Could not strip newline!");
         free(k);
         free(v);
         free(command);
