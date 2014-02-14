@@ -442,8 +442,8 @@ int test_aol() {
     ol_aol_init(db);
 
     int i;
-    int max_records = 100000;
-    unsigned char to_insert[] = "123456789";
+    int max_records = 10;
+    unsigned char to_insert[] = "123456789\nthis is a test!";
     for (i = 0; i < max_records; i++) { /* 8======D */
         char key[] = "crazy hash";
         char append[10] = "";
@@ -467,7 +467,7 @@ int test_aol() {
         }
     }
 
-    if (ol_scoop(db, "crazy hash9988") == 0) {
+    if (ol_scoop(db, "crazy hash2") == 0) {
         ol_log_msg(LOG_INFO, "Deleted record.");
     } else {
         ol_log_msg(LOG_ERR, "Could not delete record.");
@@ -488,6 +488,12 @@ int test_aol() {
     ol_aol_init(db);
 
     ol_aol_restore(db);
+
+    ol_log_msg(LOG_INFO, "Cleaning up files created...");
+    if (unlink(db->aol_file) != 0) {
+        ol_log_msg(LOG_ERR, "Could not remove file: %s", db->aol_file);
+        return 5;
+    }
 
     return 0;
 }

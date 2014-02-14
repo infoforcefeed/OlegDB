@@ -45,8 +45,7 @@ error:
 
 int ol_aol_fsync(int fd) {
     int ret;
-    //ret = fsync(fd);
-    ret = 0;
+    ret = fsync(fd);
     return ret;
 }
 
@@ -114,15 +113,15 @@ int ol_aol_restore(ol_database *db) {
         check(command != NULL, "Could not read command");
         k = _ol_read_data(db->aolfd);
         check(k != NULL, "Could not read key");
-        if (strncmp(command->data, "JAR", command->len)) {
+        if (strncmp(command->data, "JAR", command->len) == 0) {
             v = _ol_read_data(db->aolfd);
             check(v != NULL, "Could not read key");
             check(ol_jar(db, k->data, (unsigned char*)v->data, v->len) == 0,
                     "Could not jar!");
-        } else if (strncmp(command->data, "SCOOP", command->len)) {
+        } else if (strncmp(command->data, "SCOOP", command->len) == 0) {
             check(ol_scoop(db, k->data) == 0, "Could not scoop!");
         }
-        check(fread(tmp_buf, 1, 1, db->aolfd), "Could not strip newline!");
+        check(fread(tmp_buf, 1, 1, db->aolfd) == 1, "Could not strip newline!");
         free(k);
         free(v);
         free(command);
