@@ -134,7 +134,8 @@ error:
 
 int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
     int index;
-    index = hash % ol_ht_bucket_max(ht_size);
+    /* Powers of two, baby! */
+    index = hash & (ol_ht_bucket_max(ht_size) - 1);
     return index;
 }
 
