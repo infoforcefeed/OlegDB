@@ -103,6 +103,7 @@ static ol_record *read_record(char *buf, int index) {
         new_obj->data = driver_alloc(data_size);
         if (ei_decode_binary(buf, &index, new_obj->data, &len))
             ol_log_msg(LOG_WARN, "Could not get data.\n");
+        new_obj->data_len = len;
 
     }
 
@@ -124,8 +125,8 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
     if (fn == 1) {
         /* ol_jar */
-        res = ol_jar_ct(d->db, obj->key, obj->data, strlen((char*)obj->data),
-               obj->content_type, strlen((char*)obj->content_type));
+        res = ol_jar_ct(d->db, obj->key, obj->data, obj->data_len,
+               obj->content_type, obj->ct_len);
         /* TODO: Actually return useful info here. */
         ei_x_buff to_send;
         ei_x_new_with_version(&to_send);
