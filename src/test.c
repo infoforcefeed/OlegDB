@@ -61,7 +61,7 @@ int test_jar() {
     int max_records = RECORD_COUNT;
     unsigned char to_insert[] = "123456789";
     for (i = 0; i < max_records; i++) { /* 8======D */
-        char key[] = "crazy hash";
+        char key[64] = "crazy hash";
         char append[10] = "";
 
         sprintf(append, "%i", i);
@@ -96,7 +96,7 @@ int test_unjar_ds() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
-    char key[] = "FANCY KEY IS YO MAMA";
+    char key[64] = "FANCY KEY IS YO MAMA";
     unsigned char val[] = "invariable variables invariably trip up programmers";
     size_t val_len = strlen((char*)val);
     int inserted = ol_jar(db, key, val, val_len);
@@ -137,7 +137,7 @@ int test_unjar() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
-    char key[] = "muh_hash_tho";
+    char key[64] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
     int inserted = ol_jar(db, key, val, strlen((char*)val));
 
@@ -169,7 +169,7 @@ int test_scoop() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
-    char key[] = "muh_hash_tho";
+    char key[64] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
     int inserted = ol_jar(db, key, val, strlen((char*)val));
     if (db->rcrd_cnt != 1 || inserted > 0) {
@@ -219,7 +219,7 @@ int test_update() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
-    char key[] = "muh_hash_thoalk";
+    char key[64] = "muh_hash_thoalk";
     unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
     int inserted = ol_jar(db, key, val, strlen((char*)val));
 
@@ -327,7 +327,7 @@ int test_ct() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
-    char key[] = "alksjdflkjwef";
+    char key[64] = "alksjdflkjwef";
     unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
     char content_type[] = "application/json";
     size_t ct_size = sizeof(content_type);
