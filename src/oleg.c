@@ -21,6 +21,7 @@
 * THE SOFTWARE.
 */
 
+#include <assert.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -217,9 +218,15 @@ ol_val ol_unjar(ol_database *db, const char *key) {
 
 ol_val ol_unjar_ds(ol_database *db, const char *key, size_t *dsize) {
     uint32_t hash;
-    MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
-    ol_bucket *bucket = _ol_get_bucket(db, hash, key);
+    size_t _key_len = strlen(key) > KEY_SIZE ? KEY_SIZE : strlen(key);
+    char _key[KEY_SIZE + 1];
+    strncpy(_key, key, _key_len);
+    _key[_key_len] = '\0';
 
+    MurmurHash3_x86_32(_key, _key_len, DEVILS_SEED, &hash);
+    ol_bucket *bucket = _ol_get_bucket(db, hash, _key);
+
+    ol_log_msg(LOG_INFO, "Working key: %s, %zu", _key, _key_len);
 
     if (bucket != NULL) {
         if (dsize != NULL)
@@ -234,8 +241,15 @@ int _ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize,
         const char *ct, const size_t ctsize) {
     int ret;
     uint32_t hash;
-    MurmurHash3_x86_32(key, strlen(key), DEVILS_SEED, &hash);
+    size_t _key_len = strlen(key) > KEY_SIZE ? KEY_SIZE : strlen(key);
+    char _key[KEY_SIZE + 1];
+    strncpy(_key, key, _key_len);
+    _key[_key_len] = '\0';
+
+    MurmurHash3_x86_32(_key, _key_len, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, key);
+
+    ol_log_msg(LOG_INFO, "Working key: %s, %zu", _key, _key_len);
 
     /* Check to see if we have an existing entry with that key */
     if (bucket != NULL && strncmp(bucket->key, key, KEY_SIZE) == 0) {
