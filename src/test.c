@@ -483,6 +483,12 @@ int test_aol() {
 
     ol_close(db);
 
+    db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    db->enable(OL_F_APPENDONLY, &db->feature_set);
+    ol_aol_init(db);
+
+    ol_aol_restore(db);
+
     return 0;
 }
 
@@ -491,6 +497,7 @@ void run_tests(int results[2]) {
     int tests_failed = 0;
 
     ol_test_start();
+    ol_run_test(test_aol);
     ol_run_test(test_open_close);
     ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
@@ -503,7 +510,6 @@ void run_tests(int results[2]) {
     ol_run_test(test_dump_forking);
     ol_run_test(test_feature_flags);
     ol_run_test(test_uptime);
-    ol_run_test(test_aol);
 
     results[0] = tests_run;
     results[1] = tests_failed;

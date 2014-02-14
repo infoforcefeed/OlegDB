@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 int ol_aol_init(ol_database *db) {
     if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
@@ -44,7 +45,8 @@ error:
 
 int ol_aol_fsync(int fd) {
     int ret;
-    ret = fsync(fd);
+    //ret = fsync(fd);
+    ret = 0;
     return ret;
 }
 
@@ -71,12 +73,64 @@ error:
     return -1;
 }
 
+struct ol_aol_data *_ol_read_data(FILE *stream) {
+    int c, i, l;
+    char tmp_buf[20];
+    char *ret_buf;
+    struct ol_aol_data *data = malloc(sizeof(struct ol_aol_data));
+    check_mem(data);
+
+    c = fgetc(stream);
+    if (c == ':') {
+        i = 0;
+        for (c = fgetc(stream); c != ':'; c = fgetc(stream)) {
+            tmp_buf[i] = c;
+            i++;
+        }
+        tmp_buf[i+1] = '\0'; /* #yoyo */
+        l = strtol(tmp_buf, NULL, 10);
+        check(l > 0, "Data length was 0");
+        ret_buf = malloc(l);
+        check_mem(ret_buf);
+        check(fread(ret_buf, l, 1, stream) > 0, "Error reading");
+        data->len = l;
+        data->data = ret_buf;
+        return data;
+    }
+    return NULL;
+error:
+    return NULL;
+}
+
 int ol_aol_restore(ol_database *db) {
+    char tmp_buf[1];
+    struct ol_aol_data *command, *k, *v;
+
     ol_log_msg(LOG_INFO, "Restore DB from AOL file");
     if (!db->aolfd)
         db->aolfd = fopen(db->aol_file, "r");
     while (!feof(db->aolfd)) {
-        fgetc();
+        command = _ol_read_data(db->aolfd);
+        check(command != NULL, "Could not read command");
+        k = _ol_read_data(db->aolfd);
+        check(k != NULL, "Could not read key");
+        if (strncmp(command->data, "JAR", command->len)) {
+            v = _ol_read_data(db->aolfd);
+            check(v != NULL, "Could not read key");
+            check(ol_jar(db, k->data, (unsigned char*)v->data, v->len) == 0,
+                    "Could not jar!");
+        } else if (strncmp(command->data, "SCOOP", command->len)) {
+            check(ol_scoop(db, k->data) == 0, "Could not scoop!");
+        }
+        check(fread(tmp_buf, 1, 1, db->aolfd), "Could not strip newline!");
+        free(k);
+        free(v);
+        free(command);
     }
     return 0;
+
+error:
+    free(command->data);
+    free(command);
+    return -1;
 }

@@ -132,6 +132,7 @@ int _ol_close(ol_database *db){
 
     free(db->hashes);
     free(db->dump_file);
+    db->feature_set = 0;
     free(db);
     if (freed != rcrd_cnt) {
         ol_log_msg(LOG_INFO, "Error: Couldn't free all records.");
