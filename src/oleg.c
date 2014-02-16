@@ -64,7 +64,9 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     new_db->rcrd_cnt = 0;
     new_db->key_collisions = 0;
 
-    strncpy(new_db->name, name, strlen(name));
+    memset(new_db->name, '\0', DB_NAME_SIZE);
+    strncpy(new_db->name, name, DB_NAME_SIZE);
+    memset(new_db->path, '\0', PATH_LENGTH);
     strncpy(new_db->path, path, PATH_LENGTH);
 
     /* Make sure that the directory the database is in exists */

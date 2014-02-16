@@ -49,15 +49,20 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
     size_t fread_res;
     size_t klen;
 
-    tmp_key = malloc(KEY_SIZE);
-    check_mem(tmp_key);
-
     fread_res = fread(&klen, sizeof(size_t), 1, fd);
     if (!fread_res)
         ol_log_msg(LOG_WARN, "Could not read klen.\n");
+
+    if (klen > KEY_SIZE) {
+        ol_log_msg(LOG_ERR, "Key size too damn big! Size: %zu", klen);
+    }
+
+    tmp_key = malloc(klen + 1);
+    check_mem(tmp_key);
     fread_res = fread(tmp_key, sizeof(char), klen, fd);
     if (!fread_res)
         ol_log_msg(LOG_WARN, "Could not read key.\n");
+    tmp_key[klen] = '\0';
     fread_res = fread(&value_size, sizeof(size_t), 1, fd);
     if (!fread_res)
         ol_log_msg(LOG_WARN, "Could not read value_size.\n");
