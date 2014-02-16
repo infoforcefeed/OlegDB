@@ -55,7 +55,7 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
     fread_res = fread(&klen, sizeof(size_t), 1, fd);
     if (!fread_res)
         ol_log_msg(LOG_WARN, "Could not read klen.\n");
-    fread_res = fread(tmp_key, sizeof(char), KEY_SIZE, fd);
+    fread_res = fread(tmp_key, sizeof(char), klen, fd);
     if (!fread_res)
         ol_log_msg(LOG_WARN, "Could not read key.\n");
     fread_res = fread(&value_size, sizeof(size_t), 1, fd);
