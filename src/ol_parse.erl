@@ -47,7 +47,7 @@ parse_url(FirstLine) ->
     Split = binary:split(URL, [<<"/">>], [global]),
     %io:format("S: ~p~n", [Split]),
     case Split of
-        [<<>>, <<>> |_] -> {error, "No database or key specified."};
+        [<<>>, <<>>] -> {error, "No database or key specified."};
         % Url was like /users/1 or /pictures/thing
         [_, DB_Name, Key |_] -> {ok, DB_Name, truncate_key(Key)};
         % The url was like /test or /what, so just assume the default DB.
@@ -57,10 +57,10 @@ parse_url(FirstLine) ->
 parse_http(Data) ->
     case parse_db_name_and_key(Data) of
         {ok, DB_Name, Key} ->
-            parse_header(Data, #ol_record{database=DB_Name,
-                                          key=Key});
+            {ok, parse_header(Data, #ol_record{database=DB_Name,
+                                          key=Key})};
         {ok, Key} ->
-            parse_header(Data, #ol_record{key=Key});
+            {ok, parse_header(Data, #ol_record{key=Key})};
         {error, ErrMsg} -> {error, ErrMsg}
     end.
 
