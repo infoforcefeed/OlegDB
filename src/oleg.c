@@ -142,6 +142,16 @@ int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
     return index;
 }
 
+static inline char *_ol_trunc(const char *key, size_t klen) {
+    /* Silently truncate because #yolo */
+    size_t real_key_len = klen > KEY_SIZE ? KEY_SIZE : klen;
+    char *_key = malloc(real_key_len + 1);
+    _key[real_key_len + 1] = '\0';
+    strcpy(_key, key);
+
+    return _key;
+}
+
 ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
     ol_bucket *tmp_bucket = bucket;
     while (tmp_bucket->next != NULL)
@@ -221,17 +231,21 @@ ol_val ol_unjar(ol_database *db, const char *key, size_t klen) {
 ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize) {
     uint32_t hash;
 
-    MurmurHash3_x86_32(key, klen, DEVILS_SEED, &hash);
-    ol_bucket *bucket = _ol_get_bucket(db, hash, key, klen);
+    char *_key = _ol_trunc(key, klen);
+    size_t _klen = strlen(_key);
+    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
+    ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
 
-    debug("Working key: %s, %zu", key, klen);
+    debug("Working key: %s, %zu", _key, _klen);
 
     if (bucket != NULL) {
         if (dsize != NULL)
             memcpy(dsize, &bucket->data_size, sizeof(size_t));
+        free(_key);
         return bucket->data_ptr;
     }
 
+    free(_key);
     return NULL;
 }
 
@@ -240,10 +254,12 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     int ret;
     uint32_t hash;
 
-    MurmurHash3_x86_32(key, klen, DEVILS_SEED, &hash);
-    ol_bucket *bucket = _ol_get_bucket(db, hash, key, klen);
+    char *_key = _ol_trunc(key, klen);
+    size_t _klen = strlen(_key);
+    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
+    ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
 
-    debug("Working key: %s, %zu", key, klen);
+    debug("Working key: %s, %zu", _key, _klen);
 
     /* Check to see if we have an existing entry with that key */
     if (bucket) {
@@ -255,25 +271,24 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         if (memcpy(ct_real, ct, ctsize) != ct_real)
             return 5;
 
-        bucket->klen = klen;
+        bucket->klen = _klen;
         bucket->ctype_size = ctsize;
         bucket->content_type = ct_real;
         bucket->data_size = vsize;
         bucket->data_ptr = data;
         return 0;
     }
-
     /* Looks like we don't have an old hash */
     ol_bucket *new_bucket = malloc(sizeof(ol_bucket));
     if (new_bucket == NULL)
         return 1;
 
-    new_bucket->next = NULL;
-
-    /* Silently truncate because #yolo */
-    if (strncpy(new_bucket->key, key, klen) != new_bucket->key)
+    if (strncpy(new_bucket->key, _key, KEY_SIZE) != new_bucket->key) {
         return 2;
-    new_bucket->klen = klen;
+    }
+    new_bucket->klen = _klen;
+
+    new_bucket->next = NULL;
 
     new_bucket->data_size = vsize;
     unsigned char *data = calloc(1, vsize);
@@ -320,16 +335,21 @@ int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *valu
 int ol_scoop(ol_database *db, const char *key, size_t klen) {
     /* you know... like scoop some data from the jar and eat it? All gone. */
     uint32_t hash;
-    MurmurHash3_x86_32(key, klen, DEVILS_SEED, &hash);
+    char *_key = _ol_trunc(key, klen);
+    size_t _klen = strlen(key);
+
+    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     int index = _ol_calc_idx(db->cur_ht_size, hash);
 
-    if (index < 0)
+    if (index < 0) {
+        free(_key);
         return 1;
+    }
 
     if (db->hashes[index] != NULL) {
         ol_bucket *bucket = db->hashes[index];
 
-        if (strncmp(bucket->key, key, klen) == 0){
+        if (strncmp(bucket->key, _key, _klen) == 0){
             if (bucket->next != NULL) {
                 db->hashes[index] = bucket->next;
             } else {
@@ -337,6 +357,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             }
             free(bucket->data_ptr);
             free(bucket);
+            free(_key);
             db->rcrd_cnt -= 1;
             return 0;
         } else if (bucket->next != NULL) {
@@ -347,22 +368,28 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
                 if (strncmp(bucket->key, key, klen) == 0) {
                     if (bucket->next != NULL)
                         last->next = bucket->next;
+                    free(bucket->key);
                     free(bucket->content_type);
                     free(bucket->data_ptr);
                     free(bucket);
                     db->rcrd_cnt -= 1;
+                    free(_key);
                     return 0;
                 }
             } while (bucket->next != NULL);
         }
     }
+    free(_key);
     return 2;
 }
 
 char *ol_content_type(ol_database *db, const char *key, size_t klen) {
     uint32_t hash;
-    MurmurHash3_x86_32(key, klen, DEVILS_SEED, &hash);
-    ol_bucket *bucket = _ol_get_bucket(db, hash, key, klen);
+    char *_key = _ol_trunc(key, klen);
+    size_t _klen = strlen(_key);
+    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
+    ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
+    free(_key);
 
     if (bucket != NULL)
         return bucket->content_type;
