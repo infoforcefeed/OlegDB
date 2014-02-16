@@ -226,7 +226,7 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t *dsize) {
     MurmurHash3_x86_32(_key, _key_len, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key);
 
-    ol_log_msg(LOG_INFO, "Working key: %s, %zu", _key, _key_len);
+    debug("Working key: %s, %zu", _key, _key_len);
 
     if (bucket != NULL) {
         if (dsize != NULL)
@@ -249,7 +249,7 @@ int _ol_jar(ol_database *db, const char *key,unsigned char *value, size_t vsize,
     MurmurHash3_x86_32(_key, _key_len, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, key);
 
-    ol_log_msg(LOG_INFO, "Working key: %s, %zu", _key, _key_len);
+    debug("Working key: %s, %zu", _key, _key_len);
 
     /* Check to see if we have an existing entry with that key */
     if (bucket != NULL && strncmp(bucket->key, key, KEY_SIZE) == 0) {
