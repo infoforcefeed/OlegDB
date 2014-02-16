@@ -43,6 +43,7 @@ typedef struct {
 typedef struct {
     char database_name[DB_NAME_SIZE];
     char key[KEY_SIZE];
+    int klen;
     int ct_len;
     int data_len;
     int version;
@@ -91,6 +92,7 @@ static ol_record *read_record(char *buf, int index) {
         ol_log_msg(LOG_WARN, "Could not get database name.\n");
     if (ei_decode_binary(buf, &index, new_obj->key, &len))
         ol_log_msg(LOG_WARN, "Could not get key.\n");
+    new_obj->klen = len;
     if (ei_decode_binary(buf, &index, new_obj->content_type, &len))
         ol_log_msg(LOG_WARN, "Could not get content-type.");
     if (ei_decode_long(buf, &index, (long*)&new_obj->ct_len))
@@ -125,7 +127,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
     if (fn == 1) {
         /* ol_jar */
-        res = ol_jar_ct(d->db, obj->key, obj->data, obj->data_len,
+        res = ol_jar_ct(d->db, obj->key, obj->klen, obj->data, obj->data_len,
                obj->content_type, obj->ct_len);
         /* TODO: Actually return useful info here. */
         ei_x_buff to_send;
@@ -141,7 +143,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     } else if (fn == 2) {
         /* ol_unjar */
         size_t val_size;
-        unsigned char *data = ol_unjar_ds(d->db, obj->key, &val_size);
+        unsigned char *data = ol_unjar_ds(d->db, obj->key, obj->klen, &val_size);
         ei_x_buff to_send;
         ei_x_new_with_version(&to_send);
         if (data != NULL) {
@@ -155,7 +157,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         ei_x_free(&to_send);
     } else if (fn == 3) {
         /* ol_scoop */
-        int ret = ol_scoop(d->db, obj->key);
+        int ret = ol_scoop(d->db, obj->key, obj->klen);
         ei_x_buff to_send;
         ei_x_new_with_version(&to_send);
         if (ret == 0)

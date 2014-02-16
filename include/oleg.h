@@ -79,6 +79,7 @@ typedef unsigned char *ol_val;
 /* xXx STRUCT=ol_bucket xXx
 * xXx DESCRIPTION=This is the object stored in the database's hashtable. Contains references to value, key, etc. xXx
 * xXx key[KEY_SIZE]=The key used for this bucket. xXx
+* xXx klen=Length of the key. xXx
 * xXx *content_type=The content-type of this object. Defaults to "application/octet-stream". xXx
 * xXx ctype_size=Length of the string representing content-type. xXx
 * xXx data_ptr=Location of this key's value. xXx
@@ -88,6 +89,7 @@ typedef unsigned char *ol_val;
 */
 typedef struct ol_bucket {
     char              key[KEY_SIZE]; /* The key used to reference the data */
+    size_t            klen;
     char              *content_type;
     size_t            ctype_size;
     ol_val            data_ptr;
@@ -155,39 +157,43 @@ int ol_close_save(ol_database *database);
  * xXx RETURNS=A pointer to an ol_val object, or NULL if the object was not found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
+ * xXx klen=The length of the key. xXx
  */
-ol_val ol_unjar(ol_database *db, const char *key);
+ol_val ol_unjar(ol_database *db, const char *key, size_t klen);
 
 /* xXx FUNCTION=ol_unjar_ks xXx
  * xXx DESCRIPTION=Unjar a value from the mayo. Makes ksize a reference to the size of the data returned. xXx
  * xXx RETURNS=A pointer to an ol_val object, or NULL if the object was not found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
+ * xXx klen=The length of the key to use. xXx
  * xXx *dsize=The key to use. xXx
  */
-ol_val ol_unjar_ds(ol_database *db, const char *key, size_t *dsize);
+ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize);
 
 /* xXx FUNCTION=ol_jar xXx
  * xXx DESCRIPTION=Put a value into the mayo. It's easy to piss in a bucket, it's not easy to piss in 19 jars. Uses default content type. xXx
  * xXx RETURNS=0 on sucess. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
+ * xXx klen=The length of the key. xXx
  * xXx *value=The value to insert. xXx
  * xXx vsize=The size of the value in bytes. xXx
  */
-int ol_jar(ol_database *db, const char *key, unsigned char *value, size_t vsize);
+int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value, size_t vsize);
 
 /* xXx FUNCTION=ol_jar_ct xXx
  * xXx DESCRIPTION=Put a value into the mayo. It's easy to piss in a bucket, it's not easy to piss in 19 jars. Allows you to specify content type. xXx
  * xXx RETURNS=0 on sucess. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
+ * xXx klen=The key to use. xXx
  * xXx *value=The value to insert. xXx
  * xXx vsize=The size of the value in bytes. xXx
  * xXx *content_type=The content type to store, or really anything. Store your middle name if you want to. xXx
  * xXx content_type_size=The length of the content_type string. xXx
  */
-int ol_jar_ct(ol_database *db, const char *key,unsigned char *value, size_t vsize,
+int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *value, size_t vsize,
         const char *content_type, const size_t content_type_size);
 
 /* xXx FUNCTION=ol_content_type xXx
@@ -195,16 +201,18 @@ int ol_jar_ct(ol_database *db, const char *key,unsigned char *value, size_t vsiz
  * xXx RETURNS=Stored content type, or NULL if it was not found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
+ * xXx klen=The length of the key. xXx
  */
-char *ol_content_type(ol_database *db, const char *key);
+char *ol_content_type(ol_database *db, const char *key, size_t klen);
 
 /* xXx FUNCTION=ol_scoop xXx
  * xXx DESCRIPTION=Removes an object from the database. Get that crap out of the mayo jar. xXx
  * xXx RETURNS=0 on success, 2 if the object wasn't found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
+ * xXx klen=The length of the key. xXx
  */
-int ol_scoop(ol_database *db, const char *key);
+int ol_scoop(ol_database *db, const char *key, size_t klen);
 
 /* xXx FUNCTION=ol_uptime xXx
  * xXx DESCRIPTION=Gets the time, in seconds, that a database has been up. xXx
