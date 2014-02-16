@@ -153,12 +153,12 @@ ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char
     int index = _ol_calc_idx(db->cur_ht_size, hash);
     if (db->hashes[index] != NULL) {
         ol_bucket *tmp_bucket = db->hashes[index];
-        if (strncmp(tmp_bucket->key, key, KEY_SIZE) == 0) {
+        if (strncmp(tmp_bucket->key, key, klen) == 0) {
             return tmp_bucket;
         } else if (tmp_bucket->next != NULL) {
             do {
                 tmp_bucket = tmp_bucket->next;
-                if (strncmp(tmp_bucket->key, key, KEY_SIZE) == 0)
+                if (strncmp(tmp_bucket->key, key, klen) == 0)
                     return tmp_bucket;
             } while (tmp_bucket->next != NULL);
         }
@@ -329,7 +329,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
     if (db->hashes[index] != NULL) {
         ol_bucket *bucket = db->hashes[index];
 
-        if (strncmp(bucket->key, key, KEY_SIZE) == 0){
+        if (strncmp(bucket->key, key, klen) == 0){
             if (bucket->next != NULL) {
                 db->hashes[index] = bucket->next;
             } else {
@@ -344,7 +344,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             do {
                 last = bucket;
                 bucket = bucket->next;
-                if (strncmp(bucket->key, key, KEY_SIZE) == 0) {
+                if (strncmp(bucket->key, key, klen) == 0) {
                     if (bucket->next != NULL)
                         last->next = bucket->next;
                     free(bucket->content_type);
