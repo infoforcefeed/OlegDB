@@ -33,7 +33,8 @@
 
 static inline int _ol_write_bucket(const ol_bucket *bucket, FILE *fd) {
     do {
-        fwrite(&bucket->key, sizeof(char), KEY_SIZE, fd);
+        fwrite(&bucket->klen, sizeof(size_t), 1, fd);
+        fwrite(&bucket->key, sizeof(char), bucket->klen, fd);
         fwrite(&bucket->data_size, sizeof(size_t), 1, fd);
         fwrite(bucket->data_ptr, sizeof(char), bucket->data_size, fd);
         bucket = bucket->next;
@@ -46,11 +47,15 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
     unsigned char *tmp_value;
     size_t value_size;
     size_t fread_ret;
+    size_t klen;
 
     tmp_key = malloc(KEY_SIZE);
     check_mem(tmp_key);
 
-    fread_ret = fread(tmp_key, sizeof(char), KEY_SIZE, fd);
+    fread_res = fread(&klen, sizeof(size_t), 1, fd);
+    if (!fread_res)
+        ol_log_msg(LOG_WARN, "Could not read klen.\n");
+    fread_ret = fread(tmp_key, sizeof(char), klen, fd);
     check(fread_ret > 0, "Error reading");
     fread_ret = fread(&value_size, sizeof(size_t), 1, fd);
     check(fread_ret > 0, "Error reading");
@@ -60,7 +65,7 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
 
     fread_ret = fread(tmp_value, sizeof(char), value_size, fd);
     check(fread_ret > 0, "Error reading");
-    ol_jar(db, tmp_key, tmp_value, value_size);
+    ol_jar(db, tmp_key, klen, tmp_value, value_size);
 
     free(tmp_key);
     free(tmp_value);

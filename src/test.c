@@ -69,7 +69,7 @@ int test_jar() {
         strcat(key, append);
 
         size_t len = strlen((char *)to_insert);
-        int insert_result = ol_jar(db, key, to_insert, len);
+        int insert_result = ol_jar(db, key, strlen(key), to_insert, len);
 
         if (insert_result > 0) {
             ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
@@ -100,7 +100,7 @@ int test_unjar_ds() {
     char key[64] = "FANCY KEY IS YO MAMA";
     unsigned char val[] = "invariable variables invariably trip up programmers";
     size_t val_len = strlen((char*)val);
-    int inserted = ol_jar(db, key, val, val_len);
+    int inserted = ol_jar(db, key, strlen(key), val, val_len);
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
@@ -109,7 +109,7 @@ int test_unjar_ds() {
     }
 
     size_t to_test;
-    ol_val item = ol_unjar_ds(db, key, &to_test);
+    ol_val item = ol_unjar_ds(db, key, strlen(key), &to_test);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
@@ -129,7 +129,6 @@ int test_unjar_ds() {
         return 4;
     }
 
-
     ol_close(db);
     return 0;
 }
@@ -140,7 +139,7 @@ int test_unjar() {
 
     char key[64] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
-    int inserted = ol_jar(db, key, val, strlen((char*)val));
+    int inserted = ol_jar(db, key, strlen(key), val, strlen((char*)val));
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
@@ -148,7 +147,7 @@ int test_unjar() {
         return 1;
     }
 
-    ol_val item = ol_unjar(db, key);
+    ol_val item = ol_unjar(db, key, strlen(key));
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
@@ -172,7 +171,7 @@ int test_scoop() {
 
     char key[64] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
-    int inserted = ol_jar(db, key, val, strlen((char*)val));
+    int inserted = ol_jar(db, key, strlen(key), val, strlen((char*)val));
     if (db->rcrd_cnt != 1 || inserted > 0) {
         ol_log_msg(LOG_ERR, "Record not inserted. Record count: %i\n", db->rcrd_cnt);
         return 2;
@@ -180,7 +179,7 @@ int test_scoop() {
     ol_log_msg(LOG_INFO, "Value inserted. Records: %i", db->rcrd_cnt);
 
 
-    if (ol_scoop(db, "muh_hash_tho") == 0) {
+    if (ol_scoop(db, key, strlen(key)) == 0) {
         ol_log_msg(LOG_INFO, "Deleted record.");
     } else {
         ol_log_msg(LOG_ERR, "Could not delete record.\n");
@@ -222,7 +221,7 @@ int test_update() {
 
     char key[64] = "muh_hash_thoalk";
     unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
-    int inserted = ol_jar(db, key, val, strlen((char*)val));
+    int inserted = ol_jar(db, key, strlen(key), val, strlen((char*)val));
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
@@ -230,7 +229,7 @@ int test_update() {
         return 1;
     }
 
-    ol_val item = ol_unjar(db, key);
+    ol_val item = ol_unjar(db, key, strlen(key));
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
@@ -244,9 +243,9 @@ int test_update() {
     }
 
     unsigned char new_val[] = "WOW THAT WAS COOL, WASNT IT?";
-    inserted = ol_jar(db, key, new_val, strlen((char*)new_val));
+    inserted = ol_jar(db, key, strlen(key), new_val, strlen((char*)new_val));
 
-    item = ol_unjar(db, key);
+    item = ol_unjar(db, key, strlen(key));
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
@@ -276,7 +275,7 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
         strcat(key, append);
 
         size_t len = strlen((char *)to_insert);
-        int insert_result = ol_jar(db, key, to_insert, len);
+        int insert_result = ol_jar(db, key, strlen(key), to_insert, len);
 
         if (insert_result > 0) {
             ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
@@ -332,7 +331,7 @@ int test_ct() {
     unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
     char content_type[] = "application/json";
     size_t ct_size = sizeof(content_type);
-    int inserted = ol_jar_ct(db, key, val, strlen((char*)val), content_type, ct_size);
+    int inserted = ol_jar_ct(db, key, strlen(key), val, strlen((char*)val), content_type, ct_size);
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
@@ -340,14 +339,14 @@ int test_ct() {
         return 1;
     }
 
-    ol_val item = ol_unjar(db, key);
+    ol_val item = ol_unjar(db, key, strlen(key));
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
         return 2;
     }
 
-    char *content_type_retrieved = ol_content_type(db, key);
+    char *content_type_retrieved = ol_content_type(db, key, strlen(key));
     if (strncmp(content_type, content_type_retrieved, ct_size) != 0) {
         ol_log_msg(LOG_ERR, "Content types were different.\n");
         return 3;
