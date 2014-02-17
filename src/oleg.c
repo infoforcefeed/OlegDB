@@ -147,12 +147,9 @@ int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
 static inline char *_ol_trunc(const char *key, size_t klen) {
     /* Silently truncate because #yolo */
     size_t real_key_len = klen > KEY_SIZE ? KEY_SIZE : klen;
-    char *_key = malloc(real_key_len);
+    char *_key = malloc(real_key_len+1);
     strncpy(_key, key, real_key_len);
-    if (klen > KEY_SIZE)
-        _key[KEY_SIZE-1] = '\0';
-    else
-        _key[real_key_len] = '\0';
+    _key[real_key_len] = '\0';
     return _key;
 }
 
@@ -258,6 +255,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     int ret;
     uint32_t hash;
 
+    /* Free the _key as soon as possible */
     char *_key = _ol_trunc(key, klen);
     size_t _klen = strlen(_key);
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
@@ -267,6 +265,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     /* Check to see if we have an existing entry with that key */
     if (bucket) {
+        free(_key);
         unsigned char *data = realloc(bucket->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data)
             return 4;
@@ -288,8 +287,10 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         return 1;
 
     if (strncpy(new_bucket->key, _key, KEY_SIZE) != new_bucket->key) {
+        free(_key);
         return 2;
     }
+    free(_key);
     new_bucket->klen = _klen;
 
     new_bucket->next = NULL;
