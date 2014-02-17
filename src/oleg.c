@@ -84,6 +84,11 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     return new_db;
 }
 
+static inline void _ol_free_bucket(ol_bucket *ptr) {
+    free(ptr->content_type);
+    free(ptr->data_ptr);
+    free(ptr);
+}
 int _ol_close(ol_database *db){
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
     int i;
@@ -97,9 +102,7 @@ int _ol_close(ol_database *db){
             ol_bucket *next;
             for (ptr = db->hashes[i]; NULL != ptr; ptr = next) {
                 next = ptr->next;
-                free(ptr->content_type);
-                free(ptr->data_ptr);
-                free(ptr);
+                _ol_free_bucket(ptr);
                 freed++;
             }
         }
@@ -360,8 +363,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             } else {
                 db->hashes[index] = NULL;
             }
-            free(bucket->data_ptr);
-            free(bucket);
+            _ol_free_bucket(bucket);
             free(_key);
             db->rcrd_cnt -= 1;
             return 0;
@@ -373,10 +375,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
                 if (strncmp(bucket->key, key, klen) == 0) {
                     if (bucket->next != NULL)
                         last->next = bucket->next;
-                    free(bucket->key);
-                    free(bucket->content_type);
-                    free(bucket->data_ptr);
-                    free(bucket);
+                    _ol_free_bucket(bucket);
                     db->rcrd_cnt -= 1;
                     free(_key);
                     return 0;
