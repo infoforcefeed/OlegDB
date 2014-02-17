@@ -205,18 +205,36 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     debug("Growing DB to %zu bytes.", to_alloc);
     tmp_hashes = calloc(1, to_alloc);
     check_mem(tmp_hashes);
-    for (i = 0; i < ol_ht_bucket_max(db->cur_ht_size); i++) {
+    int rehashed = 0;
+    int iterations = ol_ht_bucket_max(db->cur_ht_size);
+
+    int orphans = 0;
+    for (i = 0; i < iterations; i++) {
         bucket = db->hashes[i];
         if (bucket != NULL) {
-            new_index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
+            ol_bucket *ptr=NULL, *next=NULL;
+            for (ptr = bucket->next; NULL != ptr; ptr = next) {
+                next = ptr->next;
+                orphans++;
+            }
+
+            new_index = _ol_calc_idx(to_alloc, bucket->hash);
             if (tmp_hashes[new_index] != NULL) {
                 ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(
                         tmp_hashes[new_index]);
                 last_bucket->next = bucket;
+                rehashed++;
             } else {
                 tmp_hashes[new_index] = bucket;
+                rehashed++;
             }
         }
+    }
+    if (rehashed != db->rcrd_cnt) {
+        ol_log_msg(LOG_WARN,
+            "Not all records present after rehash! "
+            "Rehashed: %i rcrd_cnt: %i Orphans: %i",
+                rehashed, db->rcrd_cnt, orphans);
     }
     free(db->hashes);
     db->hashes = tmp_hashes;

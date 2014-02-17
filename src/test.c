@@ -367,7 +367,7 @@ int test_dump() {
         ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
         return 1;
     }
-    if (db->rcrd_cnt != RECORD_COUNT) {
+    if (db->rcrd_cnt != num_keys) {
         ol_log_msg(LOG_ERR, "Not all records were inserted.\n", ret);
         return 2;
     }
