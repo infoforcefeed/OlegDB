@@ -91,7 +91,7 @@ int _ol_close(ol_database *db){
     int freed = 0;
     debug("Freeing %d records.", rcrd_cnt);
     debug("Hash table iterations: %d.", iterations);
-    for (i = 0; i <= iterations; i++) { /* 8=======D */
+    for (i = 0; i < iterations; i++) { /* 8=======D */
         if (db->hashes[i] != NULL) {
             ol_bucket *ptr;
             ol_bucket *next;
