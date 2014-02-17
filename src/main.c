@@ -39,27 +39,15 @@ void clean_up(int signum) {
     exit(0);
 }
 
-void usage(char *name) {
-    fprintf(stderr, "Usage: %s test\n", name);
-    fprintf(stderr, "       %s\n", name);
-}
-
 int main(int argc, char *argv[]) {
-    if (argc >= 2) {
-        signal(SIGTERM, clean_up);
-        signal(SIGINT, clean_up);
-        signal(SIGCHLD, SIG_IGN);
-        if (strcmp(argv[1], "test") == 0) {
-            ol_log_msg(LOG_INFO, "Running tests.");
-            int results[2];
-            run_tests(results);
-            ol_log_msg(LOG_INFO, "Tests passed: %i.\n", results[0]);
-        }
-        else if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
-            usage(argv[0]);
-            return 1;
-        }
-    }
+    signal(SIGTERM, clean_up);
+    signal(SIGINT, clean_up);
+    signal(SIGCHLD, SIG_IGN);
+
+    ol_log_msg(LOG_INFO, "Running tests.");
+    int results[2];
+    run_tests(results);
+    ol_log_msg(LOG_INFO, "Tests passed: %i.\n", results[0]);
 
     printf("No.\n");
     return 0;
