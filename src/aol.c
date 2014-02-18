@@ -21,6 +21,7 @@
 * THE SOFTWARE.
 */
 #include "aol.h"
+#include "data.h"
 #include "oleg.h"
 #include "logging.h"
 #include "errhandle.h"
@@ -72,65 +73,58 @@ error:
     return -1;
 }
 
-struct ol_aol_data *_ol_read_data(FILE *stream) {
-    int c, i, l;
-    char tmp_buf[20];
-    char *ret_buf;
-    struct ol_aol_data *data = malloc(sizeof(struct ol_aol_data));
-    check_mem(data);
 
-    c = fgetc(stream);
-    if (c == ':') {
+ol_string *_ol_read_data(FILE *fd) {
+    int c;
+    int i;
+    size_t l;
+    char buf[20] = {0};
+    ol_string *data = calloc(1, sizeof(ol_string));
+
+    c = fgetc(fd);
+    if (c == ':'){
         i = 0;
-        for (c = fgetc(stream); c != ':'; c = fgetc(stream)) {
-            tmp_buf[i] = c;
+        while ((c = fgetc(fd)) != ':') {
+            buf[i] = '\0';
+            buf[i] = c;
             i++;
         }
-        tmp_buf[i+1] = '\0'; /* #yoyo */
-        l = strtol(tmp_buf, NULL, 10);
-        check(l > 0, "Data length was 0");
-        ret_buf = malloc(l);
-        check_mem(ret_buf);
-        check(fread(ret_buf, l, 1, stream) > 0, "Error reading");
-        data->len = l;
-        data->data = ret_buf;
-        return data;
+        buf[i + 1] = '\0';
     }
-    return NULL;
-error:
-    return NULL;
+    l = (size_t)strtol(buf, NULL, 10);
+    data->data = calloc(1, l);
+    fread(data->data, l, 1, fd);
+    data->dlen = l;
+
+    return data;
 }
 
 int ol_aol_restore(ol_database *db) {
-    int c;
-    struct ol_aol_data *command, *k, *v;
+    char c[1];
+    FILE *fd;
+    ol_string *command, *key, *value;
+    fd = fopen(db->aol_file, "r");
+    while (!feof(fd)) {
+        command = _ol_read_data(fd);
+        key = _ol_read_data(fd);
+        ol_log_msg(LOG_INFO, "Command: %s", command->data);
+        ol_log_msg(LOG_INFO, "Key: %s", key->data);
 
-    ol_log_msg(LOG_INFO, "Restore DB from AOL file");
-    if (!db->aolfd)
-        db->aolfd = fopen(db->aol_file, "r");
-    while (!feof(db->aolfd)) {
-        command = _ol_read_data(db->aolfd);
-        check(command != NULL, "Could not read command");
-        k = _ol_read_data(db->aolfd);
-        check(k != NULL, "Could not read key");
-        if (strncmp(command->data, "JAR", command->len) == 0) {
-            v = _ol_read_data(db->aolfd);
-            check(v != NULL, "Could not read key");
-            check(ol_jar(db, k->data, (unsigned char*)v->data, v->len) == 0,
-                    "Could not jar!");
-        } else if (strncmp(command->data, "SCOOP", command->len) == 0) {
-            check(ol_scoop(db, k->data) == 0, "Could not scoop!");
+        if (strncmp(command->data, "JAR", 3) == 0) {
+            value = _ol_read_data(fd);
+            ol_log_msg(LOG_INFO, "Value: %s", value->data);
+            ol_jar(db, key->data, key->dlen, (unsigned char*)value->data, value->dlen);
+        } else if (strncmp(command->data, "SCOOP", 5) == 0) {
+            ol_scoop(db, key->data, key->dlen);
         }
-        c = fgetc(db->aolfd);
-        check(c == '\n', "Could not strip newline!");
-        free(k);
-        free(v);
-        free(command);
+
+        /* Strip the newline char after each "record" */
+        fread(c, 1, 1, fd);
+        check(*c == '\n', "Could not strip newline");
+
     }
     return 0;
 
 error:
-    free(command->data);
-    free(command);
     return -1;
 }

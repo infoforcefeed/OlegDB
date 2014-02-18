@@ -22,9 +22,8 @@
 * THE SOFTWARE.
 */
 
-#include "oleg.h"
 
-int ol_aol_init(ol_database *db);
-int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bucket);
-int ol_aol_restore(ol_database *db);
-int ol_aol_fsync(int fd);
+typedef struct ol_string {
+    char *data;
+    size_t dlen;
+} ol_string;

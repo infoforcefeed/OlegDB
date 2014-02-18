@@ -455,7 +455,7 @@ int test_aol() {
         strcat(key, append);
 
         size_t len = strlen((char *)to_insert);
-        int insert_result = ol_jar(db, key, to_insert, len);
+        int insert_result = ol_jar(db, key, strlen(key), to_insert, len);
 
         if (insert_result > 0) {
             ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
@@ -470,7 +470,7 @@ int test_aol() {
         }
     }
 
-    if (ol_scoop(db, "crazy hash2") == 0) {
+    if (ol_scoop(db, "crazy hash2", strlen("crazy hash2")) == 0) {
         ol_log_msg(LOG_INFO, "Deleted record.");
     } else {
         ol_log_msg(LOG_ERR, "Could not delete record.");
@@ -492,11 +492,11 @@ int test_aol() {
 
     ol_aol_restore(db);
 
-    ol_log_msg(LOG_INFO, "Cleaning up files created...");
-    if (unlink(db->aol_file) != 0) {
-        ol_log_msg(LOG_ERR, "Could not remove file: %s", db->aol_file);
-        return 5;
-    }
+    //ol_log_msg(LOG_INFO, "Cleaning up files created...");
+    //if (unlink(db->aol_file) != 0) {
+    //    ol_log_msg(LOG_ERR, "Could not remove file: %s", db->aol_file);
+    //    return 5;
+    //}
 
     return 0;
 }
