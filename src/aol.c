@@ -53,10 +53,10 @@ int ol_aol_fsync(int fd) {
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     int ret;
 
-    if (strcmp(cmd, "JAR") == 0) {
+    if (strncmp(cmd, "JAR", 3) == 0) {
         ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%s\n", strlen(cmd), cmd,
                 strlen(bct->key), bct->key, bct->data_size, bct->data_ptr);
-    } else if (strcmp(cmd, "SCOOP") == 0) {
+    } else if (strncmp(cmd, "SCOOP", 5) == 0) {
         ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s\n", strlen(cmd), cmd,
                 strlen(bct->key), bct->key);
     } else {
@@ -121,7 +121,6 @@ int ol_aol_restore(ol_database *db) {
         /* Strip the newline char after each "record" */
         fread(c, 1, 1, fd);
         check(*c == '\n', "Could not strip newline");
-
     }
     return 0;
 

@@ -420,6 +420,9 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             } else {
                 db->hashes[index] = NULL;
             }
+            if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+                ol_aol_write_cmd(db, "SCOOP", bucket);
+            }
             _ol_free_bucket(bucket);
             free(_key);
             db->rcrd_cnt -= 1;
