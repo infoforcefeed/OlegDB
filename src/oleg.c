@@ -158,8 +158,13 @@ static inline char *_ol_trunc(const char *key, size_t klen) {
 
 ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
     ol_bucket *tmp_bucket = bucket;
-    while (tmp_bucket->next != NULL)
+    int depth = 0;
+    while (tmp_bucket->next != NULL) {
         tmp_bucket = tmp_bucket->next;
+        depth++;
+        if (depth > 100)
+            ol_log_msg(LOG_WARN, "Depth of bucket stack is crazy, help");
+    }
     return tmp_bucket;
 }
 
@@ -195,9 +200,22 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
     return 0;
 }
 
+static inline void _ol_rehash_insert_bucket(
+        ol_bucket **tmp_hashes, const size_t to_alloc, ol_bucket *bucket) {
+    int new_index;
+    new_index = _ol_calc_idx(to_alloc, bucket->hash);
+    if (tmp_hashes[new_index] != NULL) {
+        /* Enforce that this is the last bucket, KILL THE ORPHANS */
+        ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(
+                tmp_hashes[new_index]);
+        last_bucket->next = bucket;
+    } else {
+        tmp_hashes[new_index] = bucket;
+    }
+}
+
 int _ol_grow_and_rehash_db(ol_database *db) {
     int i;
-    int new_index;
     ol_bucket *bucket;
     ol_bucket **tmp_hashes = NULL;
 
@@ -205,36 +223,14 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     debug("Growing DB to %zu bytes.", to_alloc);
     tmp_hashes = calloc(1, to_alloc);
     check_mem(tmp_hashes);
-    int rehashed = 0;
-    int iterations = ol_ht_bucket_max(db->cur_ht_size);
 
-    int orphans = 0;
+    int iterations = ol_ht_bucket_max(db->cur_ht_size);
     for (i = 0; i < iterations; i++) {
         bucket = db->hashes[i];
         if (bucket != NULL) {
-            ol_bucket *ptr=NULL, *next=NULL;
-            for (ptr = bucket->next; NULL != ptr; ptr = next) {
-                next = ptr->next;
-                orphans++;
-            }
-
-            new_index = _ol_calc_idx(to_alloc, bucket->hash);
-            if (tmp_hashes[new_index] != NULL) {
-                ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(
-                        tmp_hashes[new_index]);
-                last_bucket->next = bucket;
-                rehashed++;
-            } else {
-                tmp_hashes[new_index] = bucket;
-                rehashed++;
-            }
+            /* Rehash the bucket itself. */
+            _ol_rehash_insert_bucket(tmp_hashes, to_alloc, bucket);
         }
-    }
-    if (rehashed != db->rcrd_cnt) {
-        ol_log_msg(LOG_WARN,
-            "Not all records present after rehash! "
-            "Rehashed: %i rcrd_cnt: %i Orphans: %i",
-                rehashed, db->rcrd_cnt, orphans);
     }
     free(db->hashes);
     db->hashes = tmp_hashes;
