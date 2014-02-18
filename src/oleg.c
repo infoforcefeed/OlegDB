@@ -114,6 +114,11 @@ error:
     return NULL;
 }
 
+static inline void _ol_free_bucket(ol_bucket *ptr) {
+    free(ptr->content_type);
+    free(ptr->data_ptr);
+    free(ptr);
+}
 int _ol_close(ol_database *db){
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
     int i;
@@ -127,9 +132,7 @@ int _ol_close(ol_database *db){
             ol_bucket *next;
             for (ptr = db->hashes[i]; NULL != ptr; ptr = next) {
                 next = ptr->next;
-                free(ptr->content_type);
-                free(ptr->data_ptr);
-                free(ptr);
+                _ol_free_bucket(ptr);
                 freed++;
             }
         }
@@ -182,12 +185,9 @@ int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
 static inline char *_ol_trunc(const char *key, size_t klen) {
     /* Silently truncate because #yolo */
     size_t real_key_len = klen > KEY_SIZE ? KEY_SIZE : klen;
-    char *_key = malloc(real_key_len);
+    char *_key = malloc(real_key_len+1);
     strncpy(_key, key, real_key_len);
-    if (klen > KEY_SIZE)
-        _key[KEY_SIZE-1] = '\0';
-    else
-        _key[real_key_len] = '\0';
+    _key[real_key_len] = '\0';
     return _key;
 }
 
@@ -240,18 +240,36 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     debug("Growing DB to %zu bytes.", to_alloc);
     tmp_hashes = calloc(1, to_alloc);
     check_mem(tmp_hashes);
-    for (i = 0; i < ol_ht_bucket_max(db->cur_ht_size); i++) {
+    int rehashed = 0;
+    int iterations = ol_ht_bucket_max(db->cur_ht_size);
+
+    int orphans = 0;
+    for (i = 0; i < iterations; i++) {
         bucket = db->hashes[i];
         if (bucket != NULL) {
-            new_index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
+            ol_bucket *ptr=NULL, *next=NULL;
+            for (ptr = bucket->next; NULL != ptr; ptr = next) {
+                next = ptr->next;
+                orphans++;
+            }
+
+            new_index = _ol_calc_idx(to_alloc, bucket->hash);
             if (tmp_hashes[new_index] != NULL) {
                 ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(
                         tmp_hashes[new_index]);
                 last_bucket->next = bucket;
+                rehashed++;
             } else {
                 tmp_hashes[new_index] = bucket;
+                rehashed++;
             }
         }
+    }
+    if (rehashed != db->rcrd_cnt) {
+        ol_log_msg(LOG_WARN,
+            "Not all records present after rehash! "
+            "Rehashed: %i rcrd_cnt: %i Orphans: %i",
+                rehashed, db->rcrd_cnt, orphans);
     }
     free(db->hashes);
     db->hashes = tmp_hashes;
@@ -293,6 +311,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     int ret;
     uint32_t hash;
 
+    /* Free the _key as soon as possible */
     char *_key = _ol_trunc(key, klen);
     size_t _klen = strlen(_key);
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
@@ -302,6 +321,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     /* Check to see if we have an existing entry with that key */
     if (bucket) {
+        free(_key);
         unsigned char *data = realloc(bucket->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data)
             return 4;
@@ -323,8 +343,10 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         return 1;
 
     if (strncpy(new_bucket->key, _key, KEY_SIZE) != new_bucket->key) {
+        free(_key);
         return 2;
     }
+    free(_key);
     new_bucket->klen = _klen;
 
     new_bucket->next = NULL;
@@ -398,8 +420,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             } else {
                 db->hashes[index] = NULL;
             }
-            free(bucket->data_ptr);
-            free(bucket);
+            _ol_free_bucket(bucket);
             free(_key);
             db->rcrd_cnt -= 1;
             return 0;
@@ -411,10 +432,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
                 if (strncmp(bucket->key, key, klen) == 0) {
                     if (bucket->next != NULL)
                         last->next = bucket->next;
-                    free(bucket->key);
-                    free(bucket->content_type);
-                    free(bucket->data_ptr);
-                    free(bucket);
+                    _ol_free_bucket(bucket);
                     db->rcrd_cnt -= 1;
                     free(_key);
                     return 0;
