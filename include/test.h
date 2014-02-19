@@ -28,7 +28,7 @@
 #include "logging.h"
 #include "dump.h"
 
-#define DB_PATH "~/tmp/oleg_is_king"
+#define DB_PATH "/tmp/oleg_is_king" /* TODO: Change this */
 #define DB_NAME "testdb"
 #define RECORD_COUNT 1000000
 
