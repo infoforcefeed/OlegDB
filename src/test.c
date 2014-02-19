@@ -445,8 +445,9 @@ int test_aol() {
     ol_aol_init(db);
 
     int i;
-    int max_records = 10;
+    int max_records = 3;
     unsigned char to_insert[] = "123456789\nthis is a test!";
+    ol_log_msg(LOG_INFO, "Inserting %i records.", max_records);
     for (i = 0; i < max_records; i++) { /* 8======D */
         char key[] = "crazy hash";
         char append[10] = "";
@@ -490,13 +491,23 @@ int test_aol() {
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
 
-    ol_aol_restore(db);
+    if (ol_aol_restore(db) != 0) {
+        ol_log_msg(LOG_ERR, "Error during AOL restore...");
+        ol_close(db);
+        return 5;
+    }
 
-    //ol_log_msg(LOG_INFO, "Cleaning up files created...");
-    //if (unlink(db->aol_file) != 0) {
-    //    ol_log_msg(LOG_ERR, "Could not remove file: %s", db->aol_file);
-    //    return 5;
-    //}
+    if (db->rcrd_cnt != max_records - 1) {
+        ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
+        ol_close(db);
+        return 6;
+    }
+
+    ol_log_msg(LOG_INFO, "Cleaning up files created...");
+    if (unlink(db->aol_file) != 0) {
+        ol_log_msg(LOG_ERR, "Could not remove file: %s", db->aol_file);
+        return 7;
+    }
 
     return 0;
 }

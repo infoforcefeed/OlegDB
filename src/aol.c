@@ -90,40 +90,68 @@ ol_string *_ol_read_data(FILE *fd) {
             i++;
         }
         buf[i + 1] = '\0';
+        l = (size_t)strtol(buf, NULL, 10);
+        data->data = calloc(1, l);
+        check(fread(data->data, l, 1, fd) != 0, "Error reading");
+        data->dlen = l;
+        return data;
+    } else if (c == EOF) {
+        data->dlen = 0;
+        data->data = NULL;
+        return data; /* A NULL ol_string means EOF was reached */
     }
-    l = (size_t)strtol(buf, NULL, 10);
-    data->data = calloc(1, l);
-    fread(data->data, l, 1, fd);
-    data->dlen = l;
 
-    return data;
+    return NULL;
+
+error:
+    free(data->data);
+    free(data);
+    return NULL;
 }
 
 int ol_aol_restore(ol_database *db) {
     char c[1];
     FILE *fd;
-    ol_string *command, *key, *value;
+    ol_string *command, *k, *v;
     fd = fopen(db->aol_file, "r");
+    check(fd, "Error opening file");
     while (!feof(fd)) {
         command = _ol_read_data(fd);
-        key = _ol_read_data(fd);
-        ol_log_msg(LOG_INFO, "Command: %s", command->data);
-        ol_log_msg(LOG_INFO, "Key: %s", key->data);
+        check(command, "Error reading");
 
-        if (strncmp(command->data, "JAR", 3) == 0) {
-            value = _ol_read_data(fd);
-            ol_log_msg(LOG_INFO, "Value: %s", value->data);
-            ol_jar(db, key->data, key->dlen, (unsigned char*)value->data, value->dlen);
-        } else if (strncmp(command->data, "SCOOP", 5) == 0) {
-            ol_scoop(db, key->data, key->dlen);
+        /* Kind of a hack to check for EOF. If the struct is blank, then we
+         * read past EOF in _ol_read_data. feof is rarely useful I guess... */
+        if (command->data == NULL) {
+            free(command);
+            break;
         }
 
+        k = _ol_read_data(fd);
+        check(k, "Error reading"); /* Everything needs a key */
+
+        if (strncmp(command->data, "JAR", 3) == 0) {
+            v = _ol_read_data(fd);
+            check(v, "Error reading");
+            ol_jar(db, k->data, k->dlen, (unsigned char*)v->data, v->dlen);
+            free(v->data);
+            free(v);
+        } else if (strncmp(command->data, "SCOOP", 5) == 0) {
+            ol_scoop(db, k->data, k->dlen);
+        }
+
+        free(command->data);
+        free(command);
+        free(k->data);
+        free(k);
+
         /* Strip the newline char after each "record" */
-        fread(c, 1, 1, fd);
+        check(fread(c, 1, 1, fd) != 0, "Error reading");
         check(*c == '\n', "Could not strip newline");
     }
+    fclose(fd);
     return 0;
 
 error:
+    ol_log_msg(LOG_ERR, "Restore failed. Corrupt AOL?");
     return -1;
 }
