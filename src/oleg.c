@@ -74,12 +74,9 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     if (stat(path, &st) == -1) /* Check to see if the DB exists */
         mkdir(path, 0755);
 
-    char dump_file[512];
+    new_db->dump_file = calloc(1, 512);
     new_db->get_db_name = &_ol_get_dump_name;
-    new_db->get_db_name(new_db, dump_file);
-
-    new_db->dump_file = calloc(1, strlen(dump_file));
-    memcpy(new_db->dump_file, dump_file, strlen(dump_file));
+    new_db->get_db_name(new_db, new_db->dump_file);
 
     return new_db;
 }
