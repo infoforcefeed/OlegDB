@@ -22,25 +22,9 @@
 * THE SOFTWARE.
 */
 
-#include <string.h>
-#include <unistd.h>
 #include "oleg.h"
-#include "logging.h"
-#include "dump.h"
 
-#define DB_PATH "/tmp/oleg_is_king" /* TODO: Change this */
-#define DB_NAME "testdb"
-#define RECORD_COUNT 1000000
-
-#define ol_test_start() int test_return_val = 0;
-#define ol_run_test(test) ol_log_msg(LOG_INFO, "----- %s -----\n", #test);\
-    test_return_val = test();\
-    if (test_return_val != 0) {\
-        tests_failed++;\
-        ol_log_msg(LOG_ERR, "%c[%dmFailed.%c[%dm\n", 0x1B, 31, 0x1B, 0);\
-    } else {\
-        tests_run++;\
-        ol_log_msg(LOG_INFO, "%c[%dmPassed.%c[%dm\n", 0x1B, 32, 0x1B, 0);\
-    }
-
-void run_tests();
+int ol_aol_init(ol_database *db);
+int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bucket);
+int ol_aol_restore(ol_database *db);
+int ol_aol_fsync(int fd);

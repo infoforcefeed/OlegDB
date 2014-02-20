@@ -24,6 +24,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <time.h>
 
 
@@ -71,6 +72,18 @@ typedef enum {
     OL_MANUFACTURE_DIR  = 1 << 3  /* Create */
 } ol_filemode;
 
+/* xXx ENUM=ol_feature_flags xXx
+* xXx DESCRIPTION=Feature flags tell the database what it should be doing. xXx
+* xXx OL_F_APPENDONLY=Enable the append only log xXx
+* xXx OL_F_SEMIVOL=Tell servers that it's okay to fsync every once in a while xXx
+* xXx OL_F_REGDUMPS=Tell servers to snapshot the data using ol_save() regularly xXx
+*/
+typedef enum {
+    OL_F_APPENDONLY     = 1 << 0,
+    OL_F_SEMIVOL        = 1 << 1,
+    OL_F_REGDUMPS       = 1 << 2
+} ol_feature_flags;
+
 /* xXx TYPEDEF=ol_val xXx
  * xXx DESCRIPTION=Typedef for the values that can be stored inside the database. xXx
  */
@@ -104,6 +117,8 @@ typedef struct ol_bucket {
 * xXx name=The name of the database. xXx
 * xXx path[PATH_LENGTH]=Path to the database's working directory. xXx
 * xXx dump_file=Path and filename of db dump. xXx
+* xXx aol_file=Path and filename of the append only log. xXx
+* xXx aolfd=Pointer of FILE type to append only log. xXx
 * xXx rcrd_cnt=Number of records in the database. xXx
 * xXx key_collisions=Number of key collisions this database has had since initialization. xXx
 * xXx created=Timestamp of when the database was initialized. xXx
@@ -111,10 +126,16 @@ typedef struct ol_bucket {
 * xXx **hashes=The actual hashtable. Stores ol_bucket instances. xXx
 */
 typedef struct ol_database {
-    void      (*get_db_name)(struct ol_database *db,char*);
+    void      (*get_db_file_name)(struct ol_database *db,const char *p,char*);
+    void      (*enable)(int, int*);
+    void      (*disable)(int, int*);
+    bool      (*is_enabled)(int, int*);
     char      name[DB_NAME_SIZE];
     char      path[PATH_LENGTH];
     char      *dump_file;
+    char      *aol_file;
+    FILE      *aolfd;
+    int       feature_set;
     int       rcrd_cnt;
     int       key_collisions;
     time_t    created;

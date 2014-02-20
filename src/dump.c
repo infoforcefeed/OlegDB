@@ -46,12 +46,11 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
     char *tmp_key;
     unsigned char *tmp_value;
     size_t value_size;
-    size_t fread_res;
+    size_t fread_ret;
     size_t klen;
 
-    fread_res = fread(&klen, sizeof(size_t), 1, fd);
-    if (!fread_res)
-        ol_log_msg(LOG_WARN, "Could not read klen.\n");
+    fread_ret = fread(&klen, sizeof(size_t), 1, fd);
+    check(fread_ret > 0, "Error reading");
 
     if (klen > KEY_SIZE) {
         ol_log_msg(LOG_ERR, "Key size too damn big! Size: %zu", klen);
@@ -59,20 +58,17 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
 
     tmp_key = malloc(klen + 1);
     check_mem(tmp_key);
-    fread_res = fread(tmp_key, sizeof(char), klen, fd);
-    if (!fread_res)
-        ol_log_msg(LOG_WARN, "Could not read key.\n");
-    tmp_key[klen] = '\0';
-    fread_res = fread(&value_size, sizeof(size_t), 1, fd);
-    if (!fread_res)
-        ol_log_msg(LOG_WARN, "Could not read value_size.\n");
+
+    fread_ret = fread(tmp_key, sizeof(char), klen, fd);
+    check(fread_ret > 0, "Error reading");
+    fread_ret = fread(&value_size, sizeof(size_t), 1, fd);
+    check(fread_ret > 0, "Error reading");
 
     tmp_value = calloc(1, value_size);
     check_mem(tmp_value);
 
-    fread_res = fread(tmp_value, sizeof(char), value_size, fd);
-    if (!fread_res)
-        ol_log_msg(LOG_WARN, "Could not read value.\n");
+    fread_ret = fread(tmp_value, sizeof(char), value_size, fd);
+    check(fread_ret > 0, "Error reading");
     ol_jar(db, tmp_key, klen, tmp_value, value_size);
 
     free(tmp_key);
@@ -80,8 +76,6 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
     return 0;
 
 error:
-    free(tmp_key);
-    free(tmp_value);
     return -1;
 }
 
@@ -163,14 +157,13 @@ int ol_load_db(ol_database *db, char *filename) {
     FILE *fd;
     int i, dump_version;
     struct dump_header header;
-    size_t fread_res;
 
     debug("Opening file %s", filename);
     fd = fopen(filename, "r");
     check(fd, "Failed to open file: %s", filename);
 
-    fread_res = fread(&header, sizeof(header), 1, fd);
-    if (fread_res > 0 && memcmp(header.sig, DUMP_SIG, 4) != 0) {
+    check(fread(&header, sizeof(header), 1, fd) > 0, "Error reading.");
+    if (memcmp(header.sig, DUMP_SIG, 4) != 0) {
         fclose(fd);
         printf("Error: Not a valid oleg dump\n");
         return -1;

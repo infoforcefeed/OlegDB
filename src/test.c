@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include "test.h"
+#include "aol.h"
 #include "logging.h"
 
 int test_open_close() {
@@ -290,7 +291,8 @@ int test_dump_forking() {
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     int ret;
-    ret = _insert_keys(db, RECORD_COUNT);
+    unsigned int num_keys = RECORD_COUNT;
+    ret = _insert_keys(db, num_keys);
     if (ret > 0) {
         ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
         return 1;
@@ -309,14 +311,31 @@ int test_dump_forking() {
     db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
 
     char tmp_path[512];
-    db->get_db_name(db, tmp_path);
+    db->get_db_file_name(db, "dump", tmp_path);
 
     ol_log_msg(LOG_INFO, "Loading DB from disk");
-    if (ol_load_db(db, tmp_path) == -1) {
-        ol_log_msg(LOG_ERR, "Could not load DB.\n");
-        return 2;
-    };
+    ol_load_db(db, tmp_path);
 
+    if (db->rcrd_cnt != num_keys) {
+        ol_log_msg(LOG_ERR, "Not all records were loaded. %i\n", db->rcrd_cnt);
+        return 2;
+    }
+    ol_log_msg(LOG_INFO, "Loaded %i records from dump file.", db->rcrd_cnt);
+    ol_log_msg(LOG_INFO, "Checking for corruption.");
+    int i;
+    for (i = 0; i < (db->cur_ht_size/sizeof(ol_bucket*));i++) {
+        ol_bucket *temp = db->hashes[i];
+
+        if (temp != NULL) {
+            do {
+                if (temp->data_ptr == NULL || temp->data_size == 0) {
+                    ol_log_msg(LOG_ERR, "Records were corrupt or something. I: %i\n", i);
+                    exit(1);
+                }
+                temp = temp->next;
+            } while(temp != NULL);
+        }
+    }
     /* Finally, close and exit */
     ol_close(db);
     return 0;
@@ -385,7 +404,7 @@ int test_dump() {
     db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
 
     char tmp_path[512];
-    db->get_db_name(db, tmp_path);
+    db->get_db_file_name(db, "dump", tmp_path);
 
     ol_log_msg(LOG_INFO, "Loading DB from disk.");
     ol_load_db(db, tmp_path);
@@ -415,11 +434,108 @@ int test_dump() {
     return 0;
 }
 
+int test_feature_flags() {
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+
+    db->enable(OL_F_APPENDONLY, &db->feature_set);
+
+    if (!db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+        ol_log_msg(LOG_ERR, "Feature did not enable correctly.");
+        return 1;
+    }
+    ol_log_msg(LOG_INFO, "Feature was enabled.");
+
+    db->disable(OL_F_APPENDONLY, &db->feature_set);
+
+    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+        ol_log_msg(LOG_ERR, "Feature did not disable correctly.");
+        return 2;
+    }
+    ol_log_msg(LOG_INFO, "Feature was disabled.");
+
+    return 0;
+}
+
+int test_aol() {
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    db->enable(OL_F_APPENDONLY, &db->feature_set);
+    ol_aol_init(db);
+
+    int i;
+    int max_records = 3;
+    unsigned char to_insert[] = "123456789\nthis is a test!";
+    ol_log_msg(LOG_INFO, "Inserting %i records.", max_records);
+    for (i = 0; i < max_records; i++) { /* 8======D */
+        char key[] = "crazy hash";
+        char append[10] = "";
+
+        sprintf(append, "%i", i);
+        strcat(key, append);
+
+        size_t len = strlen((char *)to_insert);
+        int insert_result = ol_jar(db, key, strlen(key), to_insert, len);
+
+        if (insert_result > 0) {
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 2;
+        }
+
+        if (db->rcrd_cnt != i+1) {
+            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 3;
+        }
+    }
+
+    if (ol_scoop(db, "crazy hash2", strlen("crazy hash2")) == 0) {
+        ol_log_msg(LOG_INFO, "Deleted record.");
+    } else {
+        ol_log_msg(LOG_ERR, "Could not delete record.");
+        ol_close(db);
+        return 1;
+    }
+
+    if (db->rcrd_cnt != max_records - 1) {
+        ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
+        ol_close(db);
+        return 4;
+    }
+
+    ol_close(db);
+
+    db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    db->enable(OL_F_APPENDONLY, &db->feature_set);
+    ol_aol_init(db);
+
+    if (ol_aol_restore(db) != 0) {
+        ol_log_msg(LOG_ERR, "Error during AOL restore...");
+        ol_close(db);
+        return 5;
+    }
+
+    if (db->rcrd_cnt != max_records - 1) {
+        ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
+        ol_close(db);
+        return 6;
+    }
+
+    ol_log_msg(LOG_INFO, "Cleaning up files created...");
+    if (unlink(db->aol_file) != 0) {
+        ol_log_msg(LOG_ERR, "Could not remove file: %s", db->aol_file);
+        return 7;
+    }
+
+    return 0;
+}
+
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
 
     ol_test_start();
+    ol_run_test(test_aol);
     ol_run_test(test_open_close);
     ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
@@ -430,6 +546,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_ct);
     ol_run_test(test_dump);
     ol_run_test(test_dump_forking);
+    ol_run_test(test_feature_flags);
     ol_run_test(test_uptime);
 
     results[0] = tests_run;

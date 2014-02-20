@@ -30,20 +30,26 @@ def main():
 
         resp = requests.get("http://localhost:8080/{}".format(real_key))
         assert(resp.status_code == 200)
-        assert_key_is_good(resp, value, real_key, key)
+        assert(assert_key_is_good(resp, value, real_key, key) == 0)
 
         y = requests.get("http://localhost:8080/{}".format(i))
         assert(y.status_code == 200)
-        assert_key_is_good(resp, value, real_key, key)
+        assert(assert_key_is_good(y, value, i, key) == 0)
         i = i + 1
 
+    i = 0
     print "Immediate get tests passed."
     for key, value in videos.iteritems():
         real_key = enc_key(key)
 
-        resp = requests.get("http://localhost:8080/{}".format(real_key))
-        assert(resp.status_code == 200)
-        assert_key_is_good(resp, value, real_key, key)
+        y = requests.get("http://localhost:8080/{}".format(i))
+        assert(y.status_code == 200)
+        assert(assert_key_is_good(y, value, i, key)==0)
+        i = i + 1
+
+        #resp = requests.get("http://localhost:8080/{}".format(real_key))
+        #assert(resp.status_code == 200)
+        #assert(assert_key_is_good(resp, value, real_key, key) == 0)
 
     print "Full integrity passed."
 

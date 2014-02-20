@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include "oleg.h"
+#include "aol.h"
 #include "logging.h"
 #include "dump.h"
 #include "murmur3.h"
@@ -39,8 +40,20 @@ inline int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
 }
 
-void _ol_get_dump_name(ol_database *db, char *dump_file) {
-    sprintf(dump_file, "%s/%s.dump", db->path, db->name);
+void _ol_get_file_name(ol_database *db, const char *p, char *o_file) {
+    sprintf(o_file, "%s/%s.%s", db->path, db->name, p);
+}
+
+void _ol_enable(int feature, int *feature_set) {
+    *feature_set |= feature;
+}
+
+void _ol_disable(int feature, int *feature_set) {
+    *feature_set &= ~feature;
+}
+
+bool _ol_is_enabled(int feature, int *feature_set) {
+    return (*feature_set & feature);
 }
 
 ol_database *ol_open(char *path, char *name, ol_filemode filemode){
@@ -59,10 +72,17 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
 
     time_t created;
     time(&created);
-
     new_db->created = created;
     new_db->rcrd_cnt = 0;
     new_db->key_collisions = 0;
+
+    /* Function pointers for feature flags */
+    new_db->enable = &_ol_enable;
+    new_db->disable = &_ol_disable;
+    new_db->is_enabled = &_ol_is_enabled;
+
+    /* Function pointer building file paths based on db name */
+    new_db->get_db_file_name = &_ol_get_file_name;
 
     memset(new_db->name, '\0', DB_NAME_SIZE);
     strncpy(new_db->name, name, DB_NAME_SIZE);
@@ -74,14 +94,18 @@ ol_database *ol_open(char *path, char *name, ol_filemode filemode){
     if (stat(path, &st) == -1) /* Check to see if the DB exists */
         mkdir(path, 0755);
 
-    char dump_file[512];
-    new_db->get_db_name = &_ol_get_dump_name;
-    new_db->get_db_name(new_db, dump_file);
+    new_db->dump_file = calloc(1, 512);
+    check_mem(new_db->dump_file);
+    new_db->get_db_file_name(new_db, "dump", new_db->dump_file);
 
-    new_db->dump_file = calloc(1, strlen(dump_file));
-    memcpy(new_db->dump_file, dump_file, strlen(dump_file));
+    new_db->aol_file = calloc(1, 512);
+    check_mem(new_db->aol_file);
+    new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
 
     return new_db;
+
+error:
+    return NULL;
 }
 
 static inline void _ol_free_bucket(ol_bucket *ptr) {
@@ -108,8 +132,13 @@ int _ol_close(ol_database *db){
         }
     }
 
+    debug("Force flushing files");
+    if (db->aolfd)
+        fflush(db->aolfd);
+
     free(db->hashes);
     free(db->dump_file);
+    db->feature_set = 0;
     free(db);
     if (freed != rcrd_cnt) {
         ol_log_msg(LOG_INFO, "Error: Couldn't free all records.");
@@ -158,21 +187,29 @@ static inline char *_ol_trunc(const char *key, size_t klen) {
 
 ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
     ol_bucket *tmp_bucket = bucket;
-    while (tmp_bucket->next != NULL)
+    int depth = 0;
+    while (tmp_bucket->next != NULL) {
         tmp_bucket = tmp_bucket->next;
+        depth++;
+        if (depth > 100)
+            ol_log_msg(LOG_WARN, "Depth of bucket stack is crazy, help");
+    }
     return tmp_bucket;
 }
 
 ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char *key, size_t klen) {
     int index = _ol_calc_idx(db->cur_ht_size, hash);
+    size_t larger_key = 0;
     if (db->hashes[index] != NULL) {
         ol_bucket *tmp_bucket = db->hashes[index];
-        if (strncmp(tmp_bucket->key, key, klen) == 0) {
+        larger_key = tmp_bucket->klen > klen ? tmp_bucket->klen : klen;
+        if (strncmp(tmp_bucket->key, key, larger_key) == 0) {
             return tmp_bucket;
         } else if (tmp_bucket->next != NULL) {
             do {
                 tmp_bucket = tmp_bucket->next;
-                if (strncmp(tmp_bucket->key, key, klen) == 0)
+                larger_key = tmp_bucket->klen > klen ? tmp_bucket->klen : klen;
+                if (strncmp(tmp_bucket->key, key, larger_key) == 0)
                     return tmp_bucket;
             } while (tmp_bucket->next != NULL);
         }
@@ -195,9 +232,22 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
     return 0;
 }
 
+static inline void _ol_rehash_insert_bucket(
+        ol_bucket **tmp_hashes, const size_t to_alloc, ol_bucket *bucket) {
+    int new_index;
+    new_index = _ol_calc_idx(to_alloc, bucket->hash);
+    if (tmp_hashes[new_index] != NULL) {
+        /* Enforce that this is the last bucket, KILL THE ORPHANS */
+        ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(
+                tmp_hashes[new_index]);
+        last_bucket->next = bucket;
+    } else {
+        tmp_hashes[new_index] = bucket;
+    }
+}
+
 int _ol_grow_and_rehash_db(ol_database *db) {
     int i;
-    int new_index;
     ol_bucket *bucket;
     ol_bucket **tmp_hashes = NULL;
 
@@ -205,36 +255,14 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     debug("Growing DB to %zu bytes.", to_alloc);
     tmp_hashes = calloc(1, to_alloc);
     check_mem(tmp_hashes);
-    int rehashed = 0;
-    int iterations = ol_ht_bucket_max(db->cur_ht_size);
 
-    int orphans = 0;
+    int iterations = ol_ht_bucket_max(db->cur_ht_size);
     for (i = 0; i < iterations; i++) {
         bucket = db->hashes[i];
         if (bucket != NULL) {
-            ol_bucket *ptr=NULL, *next=NULL;
-            for (ptr = bucket->next; NULL != ptr; ptr = next) {
-                next = ptr->next;
-                orphans++;
-            }
-
-            new_index = _ol_calc_idx(to_alloc, bucket->hash);
-            if (tmp_hashes[new_index] != NULL) {
-                ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(
-                        tmp_hashes[new_index]);
-                last_bucket->next = bucket;
-                rehashed++;
-            } else {
-                tmp_hashes[new_index] = bucket;
-                rehashed++;
-            }
+            /* Rehash the bucket itself. */
+            _ol_rehash_insert_bucket(tmp_hashes, to_alloc, bucket);
         }
-    }
-    if (rehashed != db->rcrd_cnt) {
-        ol_log_msg(LOG_WARN,
-            "Not all records present after rehash! "
-            "Rehashed: %i rcrd_cnt: %i Orphans: %i",
-                rehashed, db->rcrd_cnt, orphans);
     }
     free(db->hashes);
     db->hashes = tmp_hashes;
@@ -258,8 +286,6 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
 
-    debug("Working key: %s, %zu", _key, _klen);
-
     if (bucket != NULL) {
         if (dsize != NULL)
             memcpy(dsize, &bucket->data_size, sizeof(size_t));
@@ -281,8 +307,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     size_t _klen = strlen(_key);
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
-
-    debug("Working key: %s, %zu", _key, _klen);
 
     /* Check to see if we have an existing entry with that key */
     if (bucket) {
@@ -342,6 +366,10 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     ret = _ol_set_bucket(db, new_bucket);
 
+    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+        ol_aol_write_cmd(db, "JAR", new_bucket);
+    }
+
     if(ret > 0)
         ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);
 
@@ -380,6 +408,9 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
                 db->hashes[index] = bucket->next;
             } else {
                 db->hashes[index] = NULL;
+            }
+            if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+                ol_aol_write_cmd(db, "SCOOP", bucket);
             }
             _ol_free_bucket(bucket);
             free(_key);
