@@ -48,6 +48,7 @@ encode(_) ->
 
 loop(Port) ->
     %% Wait for someone to call for something
+    %io:format("Queue size: ~p~n", [erlang:process_info(self(), message_queue_len)]),
     receive
         {call, Caller, Msg} ->
             %% Send that to liboleg
