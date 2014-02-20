@@ -1,6 +1,7 @@
 CFLAGS=-Wall -Werror -g3
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 cc=gcc -std=gnu99
+libcc=gcc
 VERSION=0.1
 BUILD_DIR=$(shell pwd)/build/
 LIB_DIR=$(BUILD_DIR)lib/
@@ -28,12 +29,12 @@ liboleg:
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/dump.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/logging.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/aol.c
-	$(cc) $(CFLAGS) $(INCLUDES) -c -shared -fpic ./src/port_driver.c
-	$(cc) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o aol.o oleg.o -fpic -shared $(MATH_LINKER)
-	$(cc) $(CFLAGS) $(INCLUDES) $(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
+	$(cc) $(CFLAGS) $(INCLUDES) -c -fpic ./src/port_driver.c
+	$(libcc) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o aol.o oleg.o -fpic -shared $(MATH_LINKER)
+	$(libcc) $(CFLAGS) $(INCLUDES) $(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/test.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/main.c
-	$(cc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
+	$(libcc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
 server:
 	erlc $(ERLFLAGS) ./src/ol_database.erl
