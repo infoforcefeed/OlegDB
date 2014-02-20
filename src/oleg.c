@@ -167,14 +167,17 @@ ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
 
 ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char *key, size_t klen) {
     int index = _ol_calc_idx(db->cur_ht_size, hash);
+    size_t larger_key = 0;
     if (db->hashes[index] != NULL) {
         ol_bucket *tmp_bucket = db->hashes[index];
-        if (strncmp(tmp_bucket->key, key, klen) == 0) {
+        larger_key = tmp_bucket->klen > klen ? tmp_bucket->klen : klen;
+        if (strncmp(tmp_bucket->key, key, larger_key) == 0) {
             return tmp_bucket;
         } else if (tmp_bucket->next != NULL) {
             do {
                 tmp_bucket = tmp_bucket->next;
-                if (strncmp(tmp_bucket->key, key, klen) == 0)
+                larger_key = tmp_bucket->klen > klen ? tmp_bucket->klen : klen;
+                if (strncmp(tmp_bucket->key, key, larger_key) == 0)
                     return tmp_bucket;
             } while (tmp_bucket->next != NULL);
         }
