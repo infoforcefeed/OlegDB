@@ -230,7 +230,7 @@ int ol_uptime(ol_database *db);
 /* xXx FUNCTION=ol_ht_bucket_max xXx
  * xXx DESCRIPTION=Does some sizeof witchery to return the maximum current size of the database. xXx
  * xXx RETURNS=The maximum possible bucket slots for db. xXx
- * xXx *db=Database to retrieve value from. xXx
+ * xXx *ht_size=The size you want to divide by sizeof(ol_bucket). xXx
  */
 int ol_ht_bucket_max(size_t ht_size);
 
