@@ -20,7 +20,12 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %%% THE SOFTWARE.
 -module(ol_http).
--export([get_response/1, not_found_response/0, post_response/0, deleted_response/0]).
+-export([get_response/1,
+         not_found_response/0,
+         post_response/0,
+         deleted_response/0,
+         continue_you_shit_response/0
+        ]).
 
 get_response(Data) ->
     io_lib:format(
@@ -58,4 +63,10 @@ deleted_response() ->
     "Connection: close\r\n"
     "\r\n"
     "The wind whispers through your empty forest.\n">>.
+
+continue_you_shit_response() ->
+    <<"HTTP/1.1 100 Continue\r\n"
+    "Server: OlegDB/fresh_cuts_n_jams\r\n"
+    "Content-Length: 0\r\n"
+    "\r\n">>.
 

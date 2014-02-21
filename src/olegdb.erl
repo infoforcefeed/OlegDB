@@ -64,6 +64,8 @@ request_handler(Accepted) ->
 
 route(Bits) ->
     case ol_parse:parse_http(Bits) of
+        {ok, send_100} ->
+            ol_http:continue_you_shit_response();
         {ok, Header} ->
             case Bits of
                 <<"GET", _/binary>> ->

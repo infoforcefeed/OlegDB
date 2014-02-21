@@ -79,6 +79,7 @@ parse_header(Data, Record) ->
 parse_header1([], Record) -> Record;
 parse_header1([Line|Header], Record) ->
     case Line of
+        <<"Expect: 100-continue">> -> send_100;
         <<"Content-Length: ", CLength/binary>> ->
             Len = list_to_integer(binary_to_list(CLength)),
             parse_header1(Header, Record#ol_record{content_length=Len});
