@@ -56,7 +56,7 @@ bool _ol_is_enabled(int feature, int *feature_set) {
     return (*feature_set & feature);
 }
 
-ol_database *ol_open(char *path, char *name, ol_filemode filemode){
+ol_database *ol_open(char *path, char *name){
     debug("Opening \"%s\" database", name);
     ol_database *new_db = malloc(sizeof(struct ol_database));
 

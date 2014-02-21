@@ -27,7 +27,7 @@
 #include "logging.h"
 
 int test_open_close() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_CONSUME_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
     int ret = ol_close(db);
     if (ret > 0){
@@ -40,7 +40,7 @@ int test_open_close() {
 
 int test_bucket_max() {
     int expected_bucket_max = HASH_MALLOC / 8;
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
 
     ol_log_msg(LOG_INFO, "Expected max is: %i", expected_bucket_max);
     int generated_bucket_max = ol_ht_bucket_max(db->cur_ht_size);
@@ -55,7 +55,7 @@ int test_bucket_max() {
 }
 
 int test_jar() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     int i;
@@ -94,7 +94,7 @@ int test_jar() {
 }
 
 int test_unjar_ds() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[64] = "FANCY KEY IS YO MAMA";
@@ -134,7 +134,7 @@ int test_unjar_ds() {
 }
 int test_unjar() {
     /* TODO: This test should actually make sure all of the data is consistent */
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[64] = "muh_hash_tho";
@@ -166,7 +166,7 @@ int test_unjar() {
 }
 
 int test_scoop() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[64] = "muh_hash_tho";
@@ -198,7 +198,7 @@ int test_scoop() {
 }
 
 int test_uptime() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_CARESS_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     sleep(3);
@@ -216,7 +216,7 @@ int test_uptime() {
 }
 
 int test_update() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[64] = "muh_hash_thoalk";
@@ -287,7 +287,7 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
 }
 
 int test_dump_forking() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     int ret;
@@ -308,7 +308,7 @@ int test_dump_forking() {
     /* Close the DB to try and load it */
     ol_close(db);
 
-    db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    db = ol_open(DB_PATH, DB_NAME);
 
     char tmp_path[512];
     db->get_db_file_name(db, "dump", tmp_path);
@@ -342,7 +342,7 @@ int test_dump_forking() {
 }
 
 int test_ct() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[64] = "alksjdflkjwef";
@@ -376,7 +376,7 @@ int test_ct() {
 }
 
 int test_dump() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     int ret;
@@ -401,7 +401,7 @@ int test_dump() {
 
     ol_close(db);
 
-    db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    db = ol_open(DB_PATH, DB_NAME);
 
     char tmp_path[512];
     db->get_db_file_name(db, "dump", tmp_path);
@@ -435,7 +435,7 @@ int test_dump() {
 }
 
 int test_feature_flags() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     db->enable(OL_F_APPENDONLY, &db->feature_set);
@@ -458,7 +458,7 @@ int test_feature_flags() {
 }
 
 int test_aol() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
 
@@ -505,7 +505,7 @@ int test_aol() {
 
     ol_close(db);
 
-    db = ol_open(DB_PATH, DB_NAME, OL_SLAUGHTER_DIR);
+    db = ol_open(DB_PATH, DB_NAME);
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
 

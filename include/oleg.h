@@ -58,20 +58,6 @@
 */
 #define DEVILS_SEED 666
 
-/* xXx ENUM=ol_filemode xXx
-* xXx DESCRIPTION=The filemodes to open and manipulate a database with. OR them together to use multiple. xXx
-* xXx OL_CONSUME_DIR=Open database for reading. xXx
-* xXx OL_SLAUGHTER_DIR=Open database in for writing. xXx
-* xXx OL_CARESS_DIR=Open database in appendonly mode. xXx
-* xXx OL_SLAUGHTER_DIR=Open database and create directories and dumpfiles if they don't exist. xXx
-*/
-typedef enum {
-    OL_CONSUME_DIR      = 1 << 0, /* Read */
-    OL_SLAUGHTER_DIR    = 1 << 1, /* Write */
-    OL_CARESS_DIR       = 1 << 2, /* Append */
-    OL_MANUFACTURE_DIR  = 1 << 3  /* Create */
-} ol_filemode;
-
 /* xXx ENUM=ol_feature_flags xXx
 * xXx DESCRIPTION=Feature flags tell the database what it should be doing. xXx
 * xXx OL_F_APPENDONLY=Enable the append only log xXx
@@ -155,9 +141,8 @@ typedef struct ol_meta {
  * xXx RETURNS=A new database object. xXx
  * xXx *path=The directory where the database will be stored. xXx
  * xXx *name=The name of the database. This is used to create the dumpfile, and keep track of the database. xXx
- * xXx filemode=The filemode used to interact with the database. See ol_filemode. xXx
  */
-ol_database *ol_open(char *path, char *name, ol_filemode filemode);
+ol_database *ol_open(char *path, char *name);
 
 /* xXx FUNCTION=ol_close xXx
  * xXx DESCRIPTION=Closes a database cleanly, frees memory and makes sure everything is written. xXx

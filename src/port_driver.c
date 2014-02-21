@@ -123,7 +123,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
     /* Open up a db if we don't have on already */
     if (d->db == NULL)
-        d->db = ol_open("/tmp", obj->database_name, OL_CONSUME_DIR);
+        d->db = ol_open("/tmp", obj->database_name);
 
     if (fn == 1) {
         /* ol_jar */
