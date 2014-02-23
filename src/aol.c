@@ -54,8 +54,11 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     int ret;
 
     if (strncmp(cmd, "JAR", 3) == 0) {
-        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%s\n", strlen(cmd), cmd,
-                strlen(bct->key), bct->key, bct->data_size, bct->data_ptr);
+        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%s:%zu:%s\n",
+                strlen(cmd), cmd,
+                bct->klen, bct->key,
+                bct->ctype_size, bct->content_type,
+                bct->data_size, bct->data_ptr);
     } else if (strncmp(cmd, "SCOOP", 5) == 0) {
         ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s\n", strlen(cmd), cmd,
                 strlen(bct->key), bct->key);
@@ -112,7 +115,7 @@ error:
 int ol_aol_restore(ol_database *db) {
     char c[1];
     FILE *fd;
-    ol_string *command, *k, *v;
+    ol_string *command, *k, *v, *ct;
     fd = fopen(db->aol_file, "r");
     check(fd, "Error opening file");
     while (!feof(fd)) {
@@ -130,9 +133,12 @@ int ol_aol_restore(ol_database *db) {
         check(k, "Error reading"); /* Everything needs a key */
 
         if (strncmp(command->data, "JAR", 3) == 0) {
+            ct = _ol_read_data(fd);
+            check(ct, "Error reading");
             v = _ol_read_data(fd);
             check(v, "Error reading");
-            ol_jar(db, k->data, k->dlen, (unsigned char*)v->data, v->dlen);
+            ol_jar_ct(db, k->data, k->dlen, (unsigned char*)v->data, v->dlen,
+                    ct->data, ct->dlen);
             free(v->data);
             free(v);
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {

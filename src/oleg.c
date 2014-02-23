@@ -348,9 +348,10 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     new_bucket->hash = hash;
 
     new_bucket->ctype_size = ctsize;
-    char *ct_real = calloc(1, ctsize);
-    if (memcpy(ct_real, ct, ctsize) != ct_real)
+    char *ct_real = calloc(1, ctsize+1);
+    if (strncpy(ct_real, ct, ctsize) != ct_real)
         return 7;
+    ct_real[ctsize] = '\0';
     new_bucket->content_type = ct_real;
 
     int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
