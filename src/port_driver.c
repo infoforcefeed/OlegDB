@@ -85,7 +85,7 @@ static ol_record *read_record(char *buf, int index) {
     if (ei_decode_tuple_header(buf, &index, &arity))
         ol_log_msg(LOG_WARN, "Could not decode tuple header.\n");
 
-    if (arity != 6)
+    if (arity != 5)
         ol_log_msg(LOG_WARN, "Arity was not as expected.\n");
 
     if (ei_decode_atom(buf, &index, atom))
@@ -99,8 +99,6 @@ static ol_record *read_record(char *buf, int index) {
     if (ei_decode_binary(buf, &index, new_obj->content_type, &len))
         ol_log_msg(LOG_WARN, "Could not get content-type.");
     new_obj->ct_len = len;
-    if (ei_decode_long(buf, &index, &len))
-        ol_log_msg(LOG_WARN, "Could not get ct_len.\n");
 
     /* This stuff is all to get the data. */
     ei_get_type(buf, &index, &type, &data_size);
