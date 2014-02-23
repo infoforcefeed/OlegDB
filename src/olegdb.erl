@@ -21,7 +21,7 @@
 %%% THE SOFTWARE.
 -module(olegdb).
 -include("olegdb.hrl").
--export([main/0, request_handler/1, route/1]).
+-export([main/0, request_handler/1, route/2]).
 
 -define(LISTEN_PORT, 8080).
 
@@ -49,7 +49,7 @@ request_handler(Accepted) ->
     % Read in all data, timeout after 60 seconds
     case gen_tcp:recv(Accepted, 0, 60000) of
         {ok, Data} ->
-            case gen_tcp:send(Accepted, route(Data)) of
+            case gen_tcp:send(Accepted, route(Data, Accepted)) of
                 ok -> request_handler(Accepted);
                 {error, Reason} ->
                     io:format("[-] Could not send to socket: ~p~n", [Reason])
@@ -62,11 +62,11 @@ request_handler(Accepted) ->
     end,
     ok = gen_tcp:close(Accepted).
 
-route(Bits) ->
+route(Bits, Socket) ->
     case ol_parse:parse_http(Bits) of
-        {ok, send_100} ->
-            ol_http:continue_you_shit_response();
-        {ok, Header} ->
+        {ok, {Header, [send_100|_]}} ->
+            hundred_handler(Header, Socket);
+        {ok, {Header, Options}} ->
             case Bits of
                 <<"GET", _/binary>> ->
                     case ol_database:ol_unjar(Header) of
@@ -88,6 +88,26 @@ route(Bits) ->
             end;
         {error, _} -> ol_http:not_found_response()
     end.
+
+hundred_handler(Header, Socket) ->
+    case gen_tcp:send(Socket, ol_http:continue_you_shit_response()) of
+        ok ->
+            case gen_tcp:recv(Socket, 0, 60000) of
+                {ok, Data} ->
+                    case ol_database:ol_jar(Header#ol_record{value=Data}) of
+                        ok -> ol_http:post_response();
+                        _ -> ol_http:not_found_response()
+                    end;
+                {error, closed} ->
+                    ok;
+                {error, timeout} ->
+                    io:format("[-] Client timed out.~n"),
+                    ok
+            end;
+        {error, Reason} ->
+            io:format("[-] Could not send to socket: ~p~n", [Reason])
+    end.
+
 
 main() ->
     io:format("[-] Starting server.~n"),

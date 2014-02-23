@@ -70,18 +70,19 @@ parse_header(Data, Record) ->
     case Split of
         [Header,PostedData|_] ->
             parse_header1(binary:split(Header, [<<"\r\n">>], [global]),
-                          Record#ol_record{value=PostedData});
+                          { Record#ol_record{value=PostedData}, []});
         X -> X
     end.
 
 %% Tail recursive function that maps over the lines in a header to fill out
 %% an ol_record to later.
-parse_header1([], Record) -> Record;
-parse_header1([Line|Header], Record) ->
+parse_header1([], {Record, Options}) -> {Record, Options};
+parse_header1([Line|Header], {Record, Options}) ->
     case Line of
-        <<"Expect: 100-continue">> -> send_100;
+        <<"Expect: 100-continue">> ->
+            parse_header1(Header, {Record, Options ++ [send_100]});
         <<"Content-Type: ", CType/binary>> ->
-            parse_header1(Header, Record#ol_record{content_type=CType});
+            parse_header1(Header, {Record#ol_record{content_type=CType}, Options});
         _ ->
-            parse_header1(Header, Record)
+            parse_header1(Header, {Record, Options})
     end.
