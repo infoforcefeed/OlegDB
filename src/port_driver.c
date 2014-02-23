@@ -98,7 +98,8 @@ static ol_record *read_record(char *buf, int index) {
     new_obj->klen = len;
     if (ei_decode_binary(buf, &index, new_obj->content_type, &len))
         ol_log_msg(LOG_WARN, "Could not get content-type.");
-    if (ei_decode_long(buf, &index, (long*)&new_obj->ct_len))
+    new_obj->ct_len = len;
+    if (ei_decode_long(buf, &index, &len))
         ol_log_msg(LOG_WARN, "Could not get ct_len.\n");
 
     /* This stuff is all to get the data. */
@@ -157,12 +158,17 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     } else if (fn == 2) {
         /* ol_unjar */
         size_t val_size;
+        /* TODO: Fix this when we have one clean function to retrieve content type
+         * and data at the same time.
+         */
         unsigned char *data = ol_unjar_ds(d->db, obj->key, obj->klen, &val_size);
+        char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
         ei_x_buff to_send;
         ei_x_new_with_version(&to_send);
         if (data != NULL) {
-            ei_x_encode_tuple_header(&to_send, 2);
+            ei_x_encode_tuple_header(&to_send, 3);
             ei_x_encode_atom(&to_send, "ok");
+            ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
             ei_x_encode_binary(&to_send, data, val_size);
         } else {
             ei_x_encode_atom(&to_send, "not_found");

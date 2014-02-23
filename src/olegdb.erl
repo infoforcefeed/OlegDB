@@ -70,7 +70,7 @@ route(Bits) ->
             case Bits of
                 <<"GET", _/binary>> ->
                     case ol_database:ol_unjar(Header) of
-                        {ok, Data} -> ol_http:get_response(Data);
+                        {ok, ContentType, Data} -> ol_http:get_response(ContentType, Data);
                         _ -> ol_http:not_found_response()
                     end;
                 <<"POST", _/binary>> ->
