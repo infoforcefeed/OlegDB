@@ -22,4 +22,5 @@
 -record(ol_record, {database = <<"oleg">>,
                     key, % Binary
                     content_type = <<"application/octet-stream">>,
-                    value = <<>>}).
+                    value = <<>>,
+                    content_length=0}).

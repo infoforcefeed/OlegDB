@@ -89,20 +89,31 @@ route(Bits, Socket) ->
         {error, _} -> ol_http:not_found_response()
     end.
 
+read_all_data(Socket, ExpectedLength) ->
+    read_all_data1(Socket, ExpectedLength, <<>>).
+read_all_data1(Socket, ExpectedLength, Data) ->
+    case gen_tcp:recv(Socket, 0, 60000) of
+        {ok, ReadData} ->
+            Combined = <<Data/binary, ReadData/binary>>,
+            if
+                byte_size(Combined) < ExpectedLength ->
+                    io:format("[-] Continuing to read.~n"),
+                    read_all_data1(Socket, ExpectedLength, Combined);
+                true -> Combined
+            end;
+        {error, closed} ->
+            ok;
+        {error, timeout} ->
+            io:format("[-] Client timed out.~n"),
+            ok
+    end.
 hundred_handler(Header, Socket) ->
     case gen_tcp:send(Socket, ol_http:continue_you_shit_response()) of
         ok ->
-            case gen_tcp:recv(Socket, 0, 60000) of
-                {ok, Data} ->
-                    case ol_database:ol_jar(Header#ol_record{value=Data}) of
-                        ok -> ol_http:post_response();
-                        _ -> ol_http:not_found_response()
-                    end;
-                {error, closed} ->
-                    ok;
-                {error, timeout} ->
-                    io:format("[-] Client timed out.~n"),
-                    ok
+            Data = read_all_data(Socket, Header#ol_record.content_length),
+            case ol_database:ol_jar(Header#ol_record{value=Data}) of
+                ok -> ol_http:post_response();
+                _ -> ol_http:not_found_response()
             end;
         {error, Reason} ->
             io:format("[-] Could not send to socket: ~p~n", [Reason])

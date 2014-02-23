@@ -85,7 +85,7 @@ static ol_record *read_record(char *buf, int index) {
     if (ei_decode_tuple_header(buf, &index, &arity))
         ol_log_msg(LOG_WARN, "Could not decode tuple header.\n");
 
-    if (arity != 5)
+    if (arity != 6)
         ol_log_msg(LOG_WARN, "Arity was not as expected.\n");
 
     if (ei_decode_atom(buf, &index, atom))
