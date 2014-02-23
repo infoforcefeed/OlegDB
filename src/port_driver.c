@@ -25,8 +25,10 @@
 #include <string.h>
 #include "ei.h"
 #include "erl_driver.h"
-#include "logging.h"
+
+#include "aol.h"
 #include "oleg.h"
+#include "logging.h"
 
 /* Needed for R14B or earlier */
 #if (ERL_DRV_EXTENDED_MAJOR_VERSION < 2)
@@ -90,6 +92,7 @@ static ol_record *read_record(char *buf, int index) {
         ol_log_msg(LOG_WARN, "Could not decode ol_record atom\n");
     if (ei_decode_binary(buf, &index, new_obj->database_name, &len))
         ol_log_msg(LOG_WARN, "Could not get database name.\n");
+    new_obj->database_name[len] = '\0';
     if (ei_decode_binary(buf, &index, new_obj->key, &len))
         ol_log_msg(LOG_WARN, "Could not get key.\n");
     new_obj->klen = len;
@@ -122,8 +125,19 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     obj = read_record(cmd, 1);
 
     /* Open up a db if we don't have on already */
-    if (d->db == NULL)
-        d->db = ol_open("/tmp", obj->database_name);
+    if (d->db == NULL) {
+        ol_database *db;
+        db = ol_open("/tmp", obj->database_name);
+        db->enable(OL_F_APPENDONLY, &db->feature_set);
+        ol_aol_init(db);
+
+        if (ol_aol_restore(db) != 0) {
+            ol_log_msg(LOG_ERR, "Error during AOL restore...");
+            ol_close(db);
+        }
+
+        d->db = db;
+    }
 
     if (fn == 1) {
         /* ol_jar */
