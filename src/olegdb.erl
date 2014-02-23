@@ -66,7 +66,7 @@ route(Bits, Socket) ->
     case ol_parse:parse_http(Bits) of
         {ok, {Header, [send_100|_]}} ->
             hundred_handler(Header, Socket);
-        {ok, {Header, Options}} ->
+        {ok, {Header, _}} ->
             case Bits of
                 <<"GET", _/binary>> ->
                     case ol_database:ol_unjar(Header) of

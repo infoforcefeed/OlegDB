@@ -99,6 +99,7 @@ static ol_record *read_record(char *buf, int index) {
     if (ei_decode_binary(buf, &index, new_obj->content_type, &len))
         ol_log_msg(LOG_WARN, "Could not get content-type.");
     new_obj->ct_len = len;
+    new_obj->content_type[len] = '\0';
 
     /* This stuff is all to get the data. */
     ei_get_type(buf, &index, &type, &data_size);

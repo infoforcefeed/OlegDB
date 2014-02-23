@@ -345,11 +345,13 @@ int test_ct() {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
-    char key[64] = "alksjdflkjwef";
-    unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
-    char content_type[] = "application/json";
-    size_t ct_size = sizeof(content_type);
-    int inserted = ol_jar_ct(db, key, strlen(key), val, strlen((char*)val), content_type, ct_size);
+    char key1[] = "test_key", key2[] = "test_key2";
+    char ct1[] = "application/json", ct2[] = "image/png";
+    unsigned char v1[] = "ILL BURN YOUR HOUSE DOWN",
+                  v2[] = "test_Value";
+    int inserted = ol_jar_ct(db, key1, strlen(key1),
+        v1, strlen((char*)v2),
+        ct1, strlen(ct1));
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
@@ -357,15 +359,38 @@ int test_ct() {
         return 1;
     }
 
-    ol_val item = ol_unjar(db, key, strlen(key));
+    inserted = ol_jar_ct(db, key2, strlen(key2),
+        v2, strlen((char*)v2),
+        ct2, strlen(ct2));
+
+    if (inserted > 0) {
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
+        ol_close(db);
+        return 1;
+    }
+
+    ol_val item = ol_unjar(db, key1, strlen(key1));
     if (item == NULL) {
-        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key1);
         ol_close(db);
         return 2;
     }
 
-    char *content_type_retrieved = ol_content_type(db, key, strlen(key));
-    if (strncmp(content_type, content_type_retrieved, ct_size) != 0) {
+    item = ol_unjar(db, key2, strlen(key2));
+    if (item == NULL) {
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key2);
+        ol_close(db);
+        return 2;
+    }
+
+    char *ctr = ol_content_type(db, key1, strlen(key1));
+    if (strncmp(ct1, ctr, strlen(ct1)) != 0) {
+        ol_log_msg(LOG_ERR, "Content types were different.\n");
+        return 3;
+    }
+
+    char *ctr2 = ol_content_type(db, key2, strlen(key2));
+    if (strncmp(ct2, ctr2, strlen(ct2)) != 0) {
         ol_log_msg(LOG_ERR, "Content types were different.\n");
         return 3;
     }
