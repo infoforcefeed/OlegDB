@@ -318,6 +318,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         char *ct_real = realloc(bucket->content_type, ctsize);
         if (memcpy(ct_real, ct, ctsize) != ct_real)
             return 5;
+        ct_real[ctsize] = '\0';
 
         bucket->klen = _klen;
         bucket->ctype_size = ctsize;
