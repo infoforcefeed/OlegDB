@@ -75,6 +75,7 @@ ol_database *ol_open(char *path, char *name){
     new_db->created = created;
     new_db->rcrd_cnt = 0;
     new_db->key_collisions = 0;
+    new_db->aolfd = 0;
 
     /* Function pointers for feature flags */
     new_db->enable = &_ol_enable;
@@ -133,8 +134,13 @@ int _ol_close(ol_database *db){
     }
 
     debug("Force flushing files");
-    if (db->aolfd)
+
+    if (db->aolfd) {
         fflush(db->aolfd);
+        fclose(db->aolfd);
+    }
+
+    debug("Files flushed to disk");
 
     free(db->hashes);
     free(db->dump_file);
