@@ -45,7 +45,7 @@ server:
 	erlc $(ERLFLAGS) ./src/ol_parse.erl
 	erlc $(ERLFLAGS) ./src/olegdb.erl
 
-install:
+install: liboleg
 	@mkdir -p $(INSTALL_LIB)
 	@mkdir -p $(INSTALL_BIN)
 	install $(LIB_DIR)liboleg.so $(INSTALL_LIB)liboleg.so.$(VERSION)
