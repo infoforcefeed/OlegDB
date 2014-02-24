@@ -10,7 +10,9 @@ BIN_DIR=$(BUILD_DIR)bin/
 PREFIX?=/usr/local/
 INSTALL_LIB=$(PREFIX)/lib/
 INSTALL_BIN=$(PREFIX)/bin/
-ERLFLAGS=-smp -W1 -Werror -b beam -I./include -o $(BIN_DIR)
+
+ERL_LIB_LOOKFOR=-DLIBLOCATION=\"./build/lib/\"
+ERLFLAGS=-smp -W1 -Werror -b beam -I./include -o $(BIN_DIR) $(ERL_LIB_LOOKFOR)
 ERL_DIR=$(shell echo 'io:format("~s~n",[code:root_dir()]),init:stop().' | erl | sed -n '/^1>/s/^1> //p')
 ERLI_DIR=$(shell echo 'io:format("~s~n",[code:lib_dir(erl_interface)]),init:stop().' | erl | sed -n '/^1>/s/^1> //p')
 ERLINCLUDES=-I$(ERL_DIR)/usr/include/ -I$(ERLI_DIR)/include/
@@ -26,26 +28,24 @@ endif
 
 all: liboleg server
 
-liboleg:
-	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/murmur3.c
-	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/oleg.c
-	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/dump.c
-	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/logging.c
-	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC ./src/aol.c
-	$(cc) $(CFLAGS) $(INCLUDES) -c -fpic ./src/port_driver.c
+%.o: ./src/%.c
+	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC $<
+
+%.beam: ./src/%.erl
+	erlc $(ERLFLAGS) $<
+
+liboleg: murmur3.o oleg.o dump.o logging.o aol.o port_driver.o
 	$(libcc) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o aol.o oleg.o -fpic -shared $(MATH_LINKER)
 	$(libcc) $(CFLAGS) $(INCLUDES) $(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/test.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/main.c
 	$(libcc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
-server:
-	erlc $(ERLFLAGS) ./src/ol_database.erl
-	erlc $(ERLFLAGS) ./src/ol_http.erl
-	erlc $(ERLFLAGS) ./src/ol_parse.erl
-	erlc $(ERLFLAGS) ./src/olegdb.erl
+server: ol_database.beam ol_http.beam ol_parse.beam olegdb.beam
 
-install: liboleg
+
+install: ERL_LIB_LOOKFOR=-DLIBLOCATION=\"$(INSTALL_LIB)\"
+install: liboleg server
 	@mkdir -p $(INSTALL_LIB)
 	@mkdir -p $(INSTALL_BIN)
 	install $(LIB_DIR)liboleg.so $(INSTALL_LIB)liboleg.so.$(VERSION)

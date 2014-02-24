@@ -26,8 +26,8 @@
 -define(SHAREDLIB, "libolegserver").
 
 start() ->
-    code:add_path("./build/lib/"),
-    case erl_ddll:load_driver("./build/lib/", ?SHAREDLIB) of
+    code:add_path(?LIBLOCATION),
+    case erl_ddll:load_driver(?LIBLOCATION, ?SHAREDLIB) of
         ok -> ok;
         {error, already_loaded} -> ok;
         {error, ErrorDesc} -> exit(erl_ddll:format_error(ErrorDesc))
