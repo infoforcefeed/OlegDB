@@ -84,7 +84,7 @@ parse_header1([Line|Header], {Record, Options}) ->
         <<"Content-Length: ", CLength/binary>> ->
             % This is only used for 100 requests
             Len = list_to_integer(binary_to_list(CLength)),
-            io:format("Length is ~p~n", [Len]),
+            %io:format("Length is ~p~n", [Len]),
             parse_header1(Header, {Record#ol_record{content_length=Len}, Options});
         <<"Content-Type: ", CType/binary>> ->
             parse_header1(Header, {Record#ol_record{content_type=CType}, Options});

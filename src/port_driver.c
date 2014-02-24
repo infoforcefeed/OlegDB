@@ -27,6 +27,7 @@
 #include "erl_driver.h"
 
 #include "aol.h"
+#include "errhandle.h"
 #include "oleg.h"
 #include "logging.h"
 
@@ -45,9 +46,9 @@ typedef struct {
 typedef struct {
     char database_name[DB_NAME_SIZE];
     char key[KEY_SIZE];
-    int klen;
-    int ct_len;
-    int data_len;
+    size_t klen;
+    size_t ct_len;
+    size_t data_len;
     int version;
     char content_type[255];
     unsigned char *data;
@@ -100,6 +101,7 @@ static ol_record *read_record(char *buf, int index) {
         ol_log_msg(LOG_WARN, "Could not get content-type.");
     new_obj->ct_len = len;
     new_obj->content_type[len] = '\0';
+    debug("Content type: %s", new_obj->content_type);
 
     /* This stuff is all to get the data. */
     ei_get_type(buf, &index, &type, &data_size);
@@ -109,7 +111,7 @@ static ol_record *read_record(char *buf, int index) {
         if (ei_decode_binary(buf, &index, new_obj->data, &len))
             ol_log_msg(LOG_WARN, "Could not get data.\n");
         new_obj->data_len = len;
-
+        debug("Data length: %zu", len);
     }
 
     return new_obj;

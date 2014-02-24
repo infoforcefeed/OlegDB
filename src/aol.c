@@ -54,11 +54,12 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     int ret;
 
     if (strncmp(cmd, "JAR", 3) == 0) {
-        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%s:%zu:%s\n",
+        debug("Writing: \"%.*s\"", (int)bct->klen, bct->key);
+        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%.*s:%zu:%.*s:%zu:%.*s\n",
                 strlen(cmd), cmd,
-                bct->klen, bct->key,
-                bct->ctype_size, bct->content_type,
-                bct->data_size, bct->data_ptr);
+                bct->klen, (int)bct->klen, bct->key,
+                bct->ctype_size, (int)bct->ctype_size, bct->content_type,
+                bct->data_size, (int)bct->data_size, bct->data_ptr);
     } else if (strncmp(cmd, "SCOOP", 5) == 0) {
         ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s\n", strlen(cmd), cmd,
                 strlen(bct->key), bct->key);
