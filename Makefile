@@ -2,11 +2,14 @@ CFLAGS=-Wall -Werror -g3
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 cc=gcc -std=gnu99
 libcc=gcc
-VERSION=0.1
+VERSION=0.1.0
+SOVERSION=0
 BUILD_DIR=$(shell pwd)/build/
 LIB_DIR=$(BUILD_DIR)lib/
 BIN_DIR=$(BUILD_DIR)bin/
-SONAME=liboleg.so.1
+PREFIX?=/usr/local/
+INSTALL_LIB=$(PREFIX)/lib/
+INSTALL_BIN=$(PREFIX)/bin/
 ERLFLAGS=-smp -W1 -Werror -b beam -I./include -o $(BIN_DIR)
 ERL_DIR=$(shell echo 'io:format("~s~n",[code:root_dir()]),init:stop().' | erl | sed -n '/^1>/s/^1> //p')
 ERLI_DIR=$(shell echo 'io:format("~s~n",[code:lib_dir(erl_interface)]),init:stop().' | erl | sed -n '/^1>/s/^1> //p')
@@ -41,6 +44,16 @@ server:
 	erlc $(ERLFLAGS) ./src/ol_http.erl
 	erlc $(ERLFLAGS) ./src/ol_parse.erl
 	erlc $(ERLFLAGS) ./src/olegdb.erl
+
+install:
+	@mkdir -p $(INSTALL_LIB)
+	@mkdir -p $(INSTALL_BIN)
+	install $(LIB_DIR)liboleg.so $(INSTALL_LIB)liboleg.so.$(VERSION)
+	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so
+	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
+	install $(LIB_DIR)libolegserver.so $(INSTALL_LIB)libolegserver.so.$(VERSION)
+	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so
+	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so.$(SOVERSION)
 
 test:
 	./run_tests.sh

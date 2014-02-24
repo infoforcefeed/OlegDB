@@ -37,6 +37,8 @@ make
 make server
 # Just the C library:
 make liboleg
+# Install
+sudo make install
 ```
 
 To run tests:
