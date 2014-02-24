@@ -31,7 +31,7 @@ all: liboleg server
 %.o: ./src/%.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC $<
 
-%.beam: ./src/%.erl
+./build/bin/%.beam: ./src/%.erl
 	erlc $(ERLFLAGS) $<
 
 liboleg: ./build/lib/liboleg.so
@@ -42,7 +42,8 @@ liboleg: ./build/lib/liboleg.so
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/main.c
 	$(libcc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
-server: ol_database.beam ol_http.beam ol_parse.beam olegdb.beam
+server: $(BIN_DIR)ol_database.beam $(BIN_DIR)ol_http.beam \
+	$(BIN_DIR)ol_parse.beam $(BIN_DIR)olegdb.beam
 
 install: ERL_LIB_LOOKFOR=-DLIBLOCATION=\"$(INSTALL_LIB)\"
 install: liboleg server
