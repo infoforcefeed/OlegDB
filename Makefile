@@ -34,7 +34,8 @@ all: liboleg server
 %.beam: ./src/%.erl
 	erlc $(ERLFLAGS) $<
 
-liboleg: murmur3.o oleg.o dump.o logging.o aol.o port_driver.o
+liboleg: ./build/lib/liboleg.so
+./build/lib/liboleg.so: murmur3.o oleg.o dump.o logging.o aol.o port_driver.o
 	$(libcc) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o aol.o oleg.o -fpic -shared $(MATH_LINKER)
 	$(libcc) $(CFLAGS) $(INCLUDES) $(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
 	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/test.c
@@ -42,7 +43,6 @@ liboleg: murmur3.o oleg.o dump.o logging.o aol.o port_driver.o
 	$(libcc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
 server: ol_database.beam ol_http.beam ol_parse.beam olegdb.beam
-
 
 install: ERL_LIB_LOOKFOR=-DLIBLOCATION=\"$(INSTALL_LIB)\"
 install: liboleg server
