@@ -26,7 +26,7 @@
 #include "aol.h"
 #include "logging.h"
 
-int test_open_close() {
+int test_open_close(void) {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
     int ret = ol_close(db);
@@ -38,7 +38,7 @@ int test_open_close() {
     return 0;
 }
 
-int test_bucket_max() {
+int test_bucket_max(void) {
     int expected_bucket_max = HASH_MALLOC / 8;
     ol_database *db = ol_open(DB_PATH, DB_NAME);
 
@@ -54,7 +54,7 @@ int test_bucket_max() {
     return 0;
 }
 
-int test_jar() {
+int test_jar(void) {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
@@ -93,7 +93,7 @@ int test_jar() {
     return 0;
 }
 
-int test_unjar_ds() {
+int test_unjar_ds(void) {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
@@ -132,7 +132,7 @@ int test_unjar_ds() {
     ol_close(db);
     return 0;
 }
-int test_unjar() {
+int test_unjar(void) {
     /* TODO: This test should actually make sure all of the data is consistent */
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
@@ -165,7 +165,7 @@ int test_unjar() {
     return 0;
 }
 
-int test_scoop() {
+int test_scoop(void) {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
@@ -197,7 +197,7 @@ int test_scoop() {
     return 0;
 }
 
-int test_uptime() {
+int test_uptime(void) {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
@@ -215,7 +215,7 @@ int test_uptime() {
     return 0;
 }
 
-int test_update() {
+int test_update(void) {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
@@ -286,7 +286,7 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
     return 0;
 }
 
-int test_dump_forking() {
+int test_dump_forking(void) {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
@@ -341,7 +341,7 @@ int test_dump_forking() {
     return 0;
 }
 
-int test_ct() {
+int test_ct(void) {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
@@ -400,7 +400,7 @@ int test_ct() {
     return 0;
 }
 
-int test_dump() {
+int test_dump(void) {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
@@ -459,7 +459,7 @@ int test_dump() {
     return 0;
 }
 
-int test_feature_flags() {
+int test_feature_flags(void) {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
@@ -482,7 +482,7 @@ int test_feature_flags() {
     return 0;
 }
 
-int test_aol() {
+int test_aol(void) {
     ol_database *db = ol_open(DB_PATH, DB_NAME);
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
