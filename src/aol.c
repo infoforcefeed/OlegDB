@@ -162,3 +162,7 @@ error:
     ol_log_msg(LOG_ERR, "Restore failed. Corrupt AOL?");
     return -1;
 }
+
+int ol_aol_rebuild(ol_database *db) {
+    return 0;
+}

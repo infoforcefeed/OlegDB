@@ -555,6 +555,10 @@ int test_aol(void) {
     return 0;
 }
 
+int test_aol_rebuild(void) {
+    return 1;
+}
+
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
