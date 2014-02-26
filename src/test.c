@@ -556,6 +556,57 @@ int test_aol(void) {
 }
 
 int test_aol_rebuild(void) {
+    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    db->enable(OL_F_APPENDONLY, &db->feature_set);
+    ol_aol_init(db);
+
+    int i, j;
+    int max_records = 10;
+    unsigned char iter = '0';
+    unsigned char to_insert[] = "123456789\nthis is a test!";
+    ol_log_msg(LOG_INFO, "Inserting %i records.", max_records);
+    for (i = 0; i < max_records; i++) { /* 8======D */
+        char key[] = "crazy hash";
+        char append[10] = "";
+
+        sprintf(append, "%i", i);
+        strcat(key, append);
+
+        size_t len = strlen((char *)to_insert);
+        int insert_result = ol_jar(db, key, strlen(key), to_insert, len);
+
+        if (insert_result > 0) {
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 2;
+        }
+
+        if (db->rcrd_cnt != i+1) {
+            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 3;
+        }
+    }
+
+    if (ol_scoop(db, "crazy hash2", strlen("crazy hash2")) == 0) {
+        ol_log_msg(LOG_INFO, "Deleted record.");
+    } else {
+        ol_log_msg(LOG_ERR, "Could not delete record.");
+        ol_close(db);
+        return 1;
+    }
+
+    for (j = 0; j < 10; j++) {
+        iter = '0' + j;
+        ol_jar(db, "test_key", strlen("test_key"), iter,
+            sizeof(iter));
+    }
+
+    if (db->rcrd_cnt != 21 - 1) { /* Minus one for the delete up there */
+        ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
+    }
+
+
     return 1;
 }
 
