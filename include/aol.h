@@ -26,6 +26,13 @@
 
 int ol_aol_init(ol_database *db);
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bucket);
+
+/*
+ * xXx FUNCTION=ol_aol_restore xXx
+ * xXx DESCRIPTION=Restores a database from an AOL file xXx
+ * xXx RETURNS=The count of the commands that were run xXx
+ * xXx *db=Database object to work with xXx
+ */
 int ol_aol_restore(ol_database *db);
 int ol_aol_fsync(int fd);
 int ol_aol_rebuild(ol_database *db);

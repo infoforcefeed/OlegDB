@@ -116,24 +116,26 @@ error:
 int ol_aol_restore(ol_database *db) {
     char c[1];
     FILE *fd;
-    ol_string *command, *k, *v, *ct;
+    int cmd_count;
+    ol_string *cmd, *k, *v, *ct;
     fd = fopen(db->aol_file, "r");
     check(fd, "Error opening file");
+    cmd_count = 0;
     while (!feof(fd)) {
-        command = _ol_read_data(fd);
-        check(command, "Error reading");
+        cmd = _ol_read_data(fd);
+        check(cmd, "Error reading");
 
         /* Kind of a hack to check for EOF. If the struct is blank, then we
          * read past EOF in _ol_read_data. feof is rarely useful I guess... */
-        if (command->data == NULL) {
-            free(command);
+        if (cmd->data == NULL) {
+            free(cmd);
             break;
         }
 
         k = _ol_read_data(fd);
         check(k, "Error reading"); /* Everything needs a key */
 
-        if (strncmp(command->data, "JAR", 3) == 0) {
+        if (strncmp(cmd->data, "JAR", 3) == 0) {
             ct = _ol_read_data(fd);
             check(ct, "Error reading");
             v = _ol_read_data(fd);
@@ -142,12 +144,16 @@ int ol_aol_restore(ol_database *db) {
                     ct->data, ct->dlen);
             free(v->data);
             free(v);
-        } else if (strncmp(command->data, "SCOOP", 5) == 0) {
+            cmd_count++;
+        } else if (strncmp(cmd->data, "SCOOP", 5) == 0) {
             ol_scoop(db, k->data, k->dlen);
+            cmd_count++;
+        } else {
+            ol_log_msg(LOG_WARN, "Unknown command \"%s\"", cmd->data);
         }
 
-        free(command->data);
-        free(command);
+        free(cmd->data);
+        free(cmd);
         free(k->data);
         free(k);
 
@@ -156,7 +162,7 @@ int ol_aol_restore(ol_database *db) {
         check(*c == '\n', "Could not strip newline");
     }
     fclose(fd);
-    return 0;
+    return cmd_count;
 
 error:
     ol_log_msg(LOG_ERR, "Restore failed. Corrupt AOL?");

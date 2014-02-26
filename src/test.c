@@ -534,7 +534,7 @@ int test_aol(void) {
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
 
-    if (ol_aol_restore(db) != 0) {
+    if (ol_aol_restore(db) < 1) {
         ol_log_msg(LOG_ERR, "Error during AOL restore...");
         ol_close(db);
         return 5;
@@ -565,6 +565,7 @@ void run_tests(int results[2]) {
 
     ol_test_start();
     ol_run_test(test_aol);
+    ol_run_test(test_aol_rebuild);
     ol_run_test(test_open_close);
     ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
