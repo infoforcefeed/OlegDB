@@ -55,7 +55,7 @@ install: liboleg server
 	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so
 	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so.$(SOVERSION)
 
-test:
+test: all
 	./run_tests.sh
 
 clean:
