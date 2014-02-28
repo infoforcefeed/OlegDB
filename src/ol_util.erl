@@ -23,11 +23,17 @@
 -include("olegdb.hrl").
 -export([read_all_data/2, read_remaining_data/2]).
 read_remaining_data(Header, Socket) ->
-    Header#ol_record{value =
-                     read_all_data1(Socket,
-                                    Header#ol_record.content_length,
-                                    Header#ol_record.value)
-                    }.
+    ExpectedLength = Header#ol_record.content_length,
+    if
+        byte_size(Header#ol_record.value) < ExpectedLength ->
+            Header#ol_record{value =
+                             read_all_data1(Socket,
+                                            Header#ol_record.content_length,
+                                            Header#ol_record.value)
+                            };
+        true ->
+            Header
+    end.
 
 read_all_data(Socket, ExpectedLength) ->
     read_all_data1(Socket, ExpectedLength, <<>>).
