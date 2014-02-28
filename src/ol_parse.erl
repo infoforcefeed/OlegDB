@@ -29,17 +29,8 @@ parse_db_name_and_key(Data) ->
         [<<"GET ", Rest/binary>>|_] -> parse_url(Rest);
         [<<"POST ", Rest/binary>>|_] -> parse_url(Rest);
         [<<"DELETE ", Rest/binary>>|_]-> parse_url(Rest);
-        Chunk -> {error, "Didn't understand your verb.", Chunk}
-    end.
-
-%% Truncating the key here saves some memory management in The
-%% C backend.
-truncate_key(Key) ->
-    if
-        byte_size(Key) > ?KEY_SIZE ->
-            binary:part(Key, 0, ?KEY_SIZE);
-        true ->
-            Key
+        Chunk ->
+            {error, "Didn't understand your verb.", Chunk}
     end.
 
 parse_url(FirstLine) ->
@@ -49,9 +40,9 @@ parse_url(FirstLine) ->
     case Split of
         [<<>>, <<>>] -> {error, "No database or key specified."};
         % Url was like /users/1 or /pictures/thing
-        [_, DB_Name, Key |_] -> {ok, DB_Name, truncate_key(Key)};
+        [_, DB_Name, Key |_] -> {ok, DB_Name, Key};
         % The url was like /test or /what, so just assume the default DB.
-        [_, Key |_] -> {ok, truncate_key(Key)}
+        [_, Key |_] -> {ok, Key}
     end.
 
 parse_http(Data) ->
@@ -61,7 +52,7 @@ parse_http(Data) ->
                                           key=Key})};
         {ok, Key} ->
             {ok, parse_header(Data, #ol_record{key=Key})};
-        {error, ErrMsg} -> {error, ErrMsg}
+        {error, ErrMsg, Chunk} -> {error, ErrMsg, Chunk}
     end.
 
 parse_header(Data, Record) ->

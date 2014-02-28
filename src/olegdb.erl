@@ -38,7 +38,7 @@ server_manager(Port) ->
 do_accept(Sock) ->
     case gen_tcp:accept(Sock) of
         {ok, Accepted} ->
-            %io:format("[-] Connection accepted!~n"),
+            io:format("[-] Connection accepted!~n"),
             spawn(?MODULE, request_handler, [Accepted]),
             do_accept(Sock);
         {error, Error} ->
@@ -74,7 +74,8 @@ route(Bits, Socket) ->
                         _ -> ol_http:not_found_response()
                     end;
                 <<"POST", _/binary>> ->
-                    case ol_database:ol_jar(Header) of
+                    NewHeader = ol_util:read_remaining_data(Header, Socket),
+                    case ol_database:ol_jar(NewHeader) of
                         ok -> ol_http:post_response();
                         _ -> ol_http:not_found_response()
                     end;
@@ -89,28 +90,10 @@ route(Bits, Socket) ->
         {error, _} -> ol_http:not_found_response()
     end.
 
-read_all_data(Socket, ExpectedLength) ->
-    read_all_data1(Socket, ExpectedLength, <<>>).
-read_all_data1(Socket, ExpectedLength, Data) ->
-    case gen_tcp:recv(Socket, 0, 60000) of
-        {ok, ReadData} ->
-            Combined = <<Data/binary, ReadData/binary>>,
-            if
-                byte_size(Combined) < ExpectedLength ->
-                    io:format("[-] Continuing to read.~n"),
-                    read_all_data1(Socket, ExpectedLength, Combined);
-                true -> Combined
-            end;
-        {error, closed} ->
-            ok;
-        {error, timeout} ->
-            io:format("[-] Client timed out.~n"),
-            ok
-    end.
 hundred_handler(Header, Socket) ->
     case gen_tcp:send(Socket, ol_http:continue_you_shit_response()) of
         ok ->
-            Data = read_all_data(Socket, Header#ol_record.content_length),
+            Data = ol_util:read_all_data(Socket, Header#ol_record.content_length),
             case ol_database:ol_jar(Header#ol_record{value=Data}) of
                 ok -> ol_http:post_response();
                 _ -> ol_http:not_found_response()
