@@ -37,10 +37,9 @@ read_all_data1(Socket, ExpectedLength, Data) ->
             Combined = <<Data/binary, ReadData/binary>>,
             if
                 byte_size(Combined) < ExpectedLength ->
-                    io:format("[-] Continuing to read. Byte size: ~p~n", [byte_size(Combined)]),
+                    %io:format("[-] Continuing to read. Byte size: ~p~n", [byte_size(Combined)]),
                     read_all_data1(Socket, ExpectedLength, Combined);
                 true -> 
-                    io:format("Posted Data: ~p~n", [Combined]),
                     Combined
             end;
         {error, closed} ->
