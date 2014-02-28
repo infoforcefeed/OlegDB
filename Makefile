@@ -26,7 +26,12 @@ else
 	MATH_LINKER=-lm
 endif
 
-all: liboleg server
+all: liboleg oleg_test server
+
+test.o: ./src/test.c
+	$(cc) $(CFLAGS) $(INCLUDES) -c $<
+main.o: ./src/main.c
+	$(cc) $(CFLAGS) $(INCLUDES) -c $<
 
 %.o: ./src/%.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC $<
@@ -34,13 +39,14 @@ all: liboleg server
 $(BIN_DIR)%.beam: ./src/%.erl
 	erlc $(ERLFLAGS) $<
 
-liboleg: ./build/lib/liboleg.so
-./build/lib/liboleg.so: murmur3.o oleg.o dump.o logging.o aol.o port_driver.o
+oleg_test: $(BIN_DIR)oleg_test
+$(BIN_DIR)oleg_test: test.o main.o
+	$(libcc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
+
+liboleg: $(LIB_DIR)liboleg.so
+$(LIB_DIR)liboleg.so: murmur3.o oleg.o dump.o logging.o aol.o port_driver.o
 	$(libcc) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o aol.o oleg.o -fpic -shared $(MATH_LINKER)
 	$(libcc) $(CFLAGS) $(INCLUDES) $(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
-	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/test.c
-	$(cc) $(CFLAGS) $(INCLUDES) -c ./src/main.c
-	$(libcc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
 server: $(BIN_DIR)ol_database.beam $(BIN_DIR)ol_http.beam \
 	$(BIN_DIR)ol_parse.beam $(BIN_DIR)ol_util.beam $(BIN_DIR)olegdb.beam
