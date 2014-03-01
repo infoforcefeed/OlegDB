@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Werror -g3
+CFLAGS=-Wall -Werror -g3 -O2
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 cc=gcc -std=gnu99
 libcc=gcc
@@ -39,7 +39,7 @@ main.o: ./src/main.c
 $(BIN_DIR)%.beam: ./src/%.erl
 	erlc $(ERLFLAGS) $<
 
-oleg_test: $(BIN_DIR)oleg_test
+oleg_test: liboleg $(BIN_DIR)oleg_test
 $(BIN_DIR)oleg_test: test.o main.o
 	$(libcc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 

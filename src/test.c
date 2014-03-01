@@ -492,7 +492,7 @@ int test_aol() {
     unsigned char to_insert[] = "123456789\nthis is a test!";
     ol_log_msg(LOG_INFO, "Inserting %i records.", max_records);
     for (i = 0; i < max_records; i++) { /* 8======D */
-        char key[] = "crazy hash";
+        char key[64] = "crazy hash";
         char append[10] = "";
 
         sprintf(append, "%i", i);
