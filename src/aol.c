@@ -35,7 +35,7 @@ int ol_aol_init(ol_database *db) {
     if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         debug("Opening append only log");
         debug("Append only log: %s", db->aol_file);
-        db->aolfd = fopen(db->aol_file, "a+");
+        db->aolfd = fopen(db->aol_file, "ab+");
         check(db->aolfd != NULL, "Error opening append only file");
     }
 
