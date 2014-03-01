@@ -290,7 +290,7 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
     uint32_t hash;
 
     char *_key = _ol_trunc(key, klen);
-    size_t _klen = strlen(_key);
+    size_t _klen = strnlen(_key, KEY_SIZE);
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
 
@@ -312,7 +312,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     /* Free the _key as soon as possible */
     char *_key = _ol_trunc(key, klen);
-    size_t _klen = strlen(_key);
+    size_t _klen = strnlen(_key, KEY_SIZE);
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
 
@@ -323,7 +323,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         if (memcpy(data, value, vsize) != data)
             return 4;
 
-        char *ct_real = realloc(bucket->content_type, ctsize);
+        char *ct_real = realloc(bucket->content_type, ctsize+1);
         if (memcpy(ct_real, ct, ctsize) != ct_real)
             return 5;
         ct_real[ctsize] = '\0';
@@ -400,7 +400,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
     /* you know... like scoop some data from the jar and eat it? All gone. */
     uint32_t hash;
     char *_key = _ol_trunc(key, klen);
-    size_t _klen = strlen(key);
+    size_t _klen = strnlen(_key, KEY_SIZE);
 
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     int index = _ol_calc_idx(db->cur_ht_size, hash);
@@ -449,7 +449,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
 char *ol_content_type(ol_database *db, const char *key, size_t klen) {
     uint32_t hash;
     char *_key = _ol_trunc(key, klen);
-    size_t _klen = strlen(_key);
+    size_t _klen = strnlen(_key, KEY_SIZE);
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
     free(_key);
