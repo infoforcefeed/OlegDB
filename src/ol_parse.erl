@@ -30,7 +30,7 @@ parse_db_name_and_key(Data) ->
         [<<"POST ", Rest/binary>>|_] -> parse_url(Rest);
         [<<"DELETE ", Rest/binary>>|_]-> parse_url(Rest);
         Chunk ->
-            {error, "Didn't understand your verb.", Chunk}
+            {error, <<"Didn't understand your verb.">>, Chunk}
     end.
 
 parse_url(FirstLine) ->
@@ -38,7 +38,7 @@ parse_url(FirstLine) ->
     Split = binary:split(URL, [<<"/">>], [global]),
     %io:format("S: ~p~n", [Split]),
     case Split of
-        [<<>>, <<>>] -> {error, "No database or key specified."};
+        [<<>>, <<>>] -> {error, <<"No database or key specified.">>};
         % Url was like /users/1 or /pictures/thing
         [_, DB_Name, Key |_] -> {ok, DB_Name, Key};
         % Url was like //key. Bad!
@@ -54,7 +54,7 @@ parse_http(Data) ->
                                           key=Key})};
         {ok, Key} ->
             {ok, parse_header(Data, #ol_record{key=Key})};
-        {error, ErrMsg, Chunk} -> {error, ErrMsg, Chunk}
+        X -> X
     end.
 
 parse_header(Data, Record) ->

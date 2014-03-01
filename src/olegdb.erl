@@ -87,7 +87,7 @@ route(Bits, Socket) ->
                 _ ->
                     ol_http:not_found_response()
             end;
-        {error, _} -> ol_http:not_found_response()
+        {error, ErrMsg} -> ol_http:error_response(ErrMsg)
     end.
 
 hundred_handler(Header, Socket) ->

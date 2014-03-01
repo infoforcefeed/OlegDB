@@ -24,7 +24,8 @@
          not_found_response/0,
          post_response/0,
          deleted_response/0,
-         continue_you_shit_response/0
+         continue_you_shit_response/0,
+         error_response/1
         ]).
 
 get_response(ContentType, Data) ->
@@ -70,3 +71,10 @@ continue_you_shit_response() ->
     "Content-Length: 0\r\n"
     "\r\n">>.
 
+error_response(Data) ->
+    io_lib:format(
+        <<"HTTP/1.1 500 Internal Server Error\r\n"
+        "Server: OlegDB/fresh_cuts_n_jams\r\n"
+        "Content-Length: ~p\r\n"
+        "\r\n"
+        "~s">>, [byte_size(Data), Data]).
