@@ -109,12 +109,17 @@ typedef struct ol_bucket {
 
 /* xXx STRUCT=ol_database xXx
 * xXx DESCRIPTION=The object representing a database. xXx
-* xXx get_db_name=A function pointer that returns the path/name.db to reduec code duplication. Used for writing and reading of dump files. xXx
+* xXx get_db_file_name=A function pointer that returns the path/name.db to reduec code duplication. Used for writing and reading of dump files. xXx
+* xXx enable=Helper function to enable a feature for the database instance passed in. xXx
+* xXx disable=Helper function to disable a database feature. xXx
+* xXx is_enabled=Helper function that checks weather or not a feature is enabled. xXx
 * xXx name=The name of the database. xXx
 * xXx path[PATH_LENGTH]=Path to the database's working directory. xXx
 * xXx dump_file=Path and filename of db dump. xXx
 * xXx aol_file=Path and filename of the append only log. xXx
 * xXx aolfd=Pointer of FILE type to append only log. xXx
+* xXx feature_set=Bitmask holding enabled/disabled status of various features. See ol_feature_flags. xXx
+* xXx state=Current state of the database. See ol_state_flags. xXx
 * xXx rcrd_cnt=Number of records in the database. xXx
 * xXx key_collisions=Number of key collisions this database has had since initialization. xXx
 * xXx created=Timestamp of when the database was initialized. xXx
