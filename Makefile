@@ -62,10 +62,10 @@ install: liboleg server
 	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so
 	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so.$(SOVERSION)
 
-test:
+test: all
 	./run_tests.sh
 
 clean:
-	rm $(BIN_DIR)*
-	rm $(LIB_DIR)*
-	rm *.o
+	rm -f $(BIN_DIR)*
+	rm -f $(LIB_DIR)*
+	rm -f *.o
