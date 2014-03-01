@@ -530,15 +530,7 @@ int test_aol() {
 
     ol_close(db);
 
-    db = ol_open(DB_PATH, DB_NAME, 0);
-    db->enable(OL_F_APPENDONLY, &db->feature_set);
-    ol_aol_init(db);
-
-    if (ol_aol_restore(db) != 0) {
-        ol_log_msg(LOG_ERR, "Error during AOL restore...");
-        ol_close(db);
-        return 5;
-    }
+    db = ol_open(DB_PATH, DB_NAME, OL_F_APPENDONLY);
 
     if (db->rcrd_cnt != max_records - 1) {
         ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
