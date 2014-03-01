@@ -102,6 +102,7 @@ ol_database *ol_open(char *path, char *name){
     new_db->aol_file = calloc(1, 512);
     check_mem(new_db->aol_file);
     new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
+    new_db->feature_set = 0;
 
     return new_db;
 
