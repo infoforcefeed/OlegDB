@@ -38,7 +38,7 @@ server_manager(Port) ->
 do_accept(Sock) ->
     case gen_tcp:accept(Sock) of
         {ok, Accepted} ->
-            io:format("[-] Connection accepted!~n"),
+            %io:format("[-] Connection accepted!~n"),
             spawn(?MODULE, request_handler, [Accepted]),
             do_accept(Sock);
         {error, Error} ->
