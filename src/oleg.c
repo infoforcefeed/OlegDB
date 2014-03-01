@@ -339,6 +339,12 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         bucket->content_type = ct_real;
         bucket->data_size = vsize;
         bucket->data_ptr = data;
+
+        if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
+                db->state != OL_S_STARTUP) {
+            ol_aol_write_cmd(db, "JAR", bucket);
+        }
+
         return 0;
     }
     /* Looks like we don't have an old hash */
@@ -382,13 +388,14 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     ret = _ol_set_bucket(db, new_bucket);
 
+    if(ret > 0)
+        ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);
+
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
             db->state != OL_S_STARTUP) {
         ol_aol_write_cmd(db, "JAR", new_bucket);
     }
 
-    if(ret > 0)
-        ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);
 
     return 0;
 }
