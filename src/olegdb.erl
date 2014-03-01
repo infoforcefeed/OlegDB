@@ -64,22 +64,23 @@ request_handler(Accepted) ->
 
 route(Bits, Socket) ->
     case ol_parse:parse_http(Bits) of
-        {ok, {Header, [send_100|_]}} ->
+        {ok, _, {Header, [send_100|_]}} ->
             hundred_handler(Header, Socket);
-        {ok, {Header, _}} ->
-            case Bits of
-                <<"GET", _/binary>> ->
+        {ok, ReqType, {Header, _}} ->
+            case ReqType of
+                get ->
+                    %ol_http:not_found_response();
                     case ol_database:ol_unjar(Header) of
                         {ok, ContentType, Data} -> ol_http:get_response(ContentType, Data);
                         _ -> ol_http:not_found_response()
                     end;
-                <<"POST", _/binary>> ->
+                post ->
                     NewHeader = ol_util:read_remaining_data(Header, Socket),
                     case ol_database:ol_jar(NewHeader) of
                         ok -> ol_http:post_response();
                         _ -> ol_http:not_found_response()
                     end;
-                <<"DELETE", _/binary>> ->
+                delete ->
                     case ol_database:ol_scoop(Header) of
                         ok -> ol_http:deleted_response();
                         _ -> ol_http:not_found_response()

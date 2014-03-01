@@ -26,9 +26,9 @@
 
 parse_db_name_and_key(Data) ->
     case binary:split(Data, [<<"\r\n">>]) of
-        [<<"GET ", Rest/binary>>|_] -> parse_url(Rest);
-        [<<"POST ", Rest/binary>>|_] -> parse_url(Rest);
-        [<<"DELETE ", Rest/binary>>|_]-> parse_url(Rest);
+        [<<"GET ", Rest/binary>>|_] -> {get, parse_url(Rest)};
+        [<<"POST ", Rest/binary>>|_] -> {post, parse_url(Rest)};
+        [<<"DELETE ", Rest/binary>>|_]-> {delete, parse_url(Rest)};
         Chunk ->
             {error, <<"Didn't understand your verb.">>, Chunk}
     end.
@@ -49,11 +49,12 @@ parse_url(FirstLine) ->
 
 parse_http(Data) ->
     case parse_db_name_and_key(Data) of
-        {ok, DB_Name, Key} ->
-            {ok, parse_header(Data, #ol_record{database=DB_Name,
-                                          key=Key})};
-        {ok, Key} ->
-            {ok, parse_header(Data, #ol_record{key=Key})};
+        {ReqType, {ok, DB_Name, Key}} ->
+            {ok, ReqType, parse_header(Data,
+                    #ol_record{database=DB_Name,key=Key}
+                )};
+        {ReqType, {ok, Key}} ->
+            {ok, ReqType, parse_header(Data, #ol_record{key=Key})};
         X -> X
     end.
 
