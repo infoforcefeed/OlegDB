@@ -50,7 +50,7 @@ request_handler(Accepted) ->
     case gen_tcp:recv(Accepted, 0, 60000) of
         {ok, Data} ->
             case gen_tcp:send(Accepted, route(Data, Accepted)) of
-                ok -> request_handler(Accepted);
+                ok -> ok;
                 {error, Reason} ->
                     io:format("[-] Could not send to socket: ~p~n", [Reason])
             end;
@@ -71,7 +71,8 @@ route(Bits, Socket) ->
                 get ->
                     %ol_http:not_found_response();
                     case ol_database:ol_unjar(Header) of
-                        {ok, ContentType, Data} -> ol_http:get_response(ContentType, Data);
+                        {ok, ContentType, Data} ->
+                            ol_http:get_response(ContentType, Data);
                         _ -> ol_http:not_found_response()
                     end;
                 post ->
@@ -85,8 +86,8 @@ route(Bits, Socket) ->
                         ok -> ol_http:deleted_response();
                         _ -> ol_http:not_found_response()
                     end;
-                _ ->
-                    ol_http:not_found_response()
+                DontKnow ->
+                    ol_http:error_response(DontKnow)
             end;
         {error, ErrMsg} -> ol_http:error_response(ErrMsg)
     end.
