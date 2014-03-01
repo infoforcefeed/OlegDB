@@ -144,6 +144,7 @@ int _ol_close(ol_database *db){
 
     free(db->hashes);
     free(db->dump_file);
+    free(db->aol_file);
     db->feature_set = 0;
     free(db);
     if (freed != rcrd_cnt) {
