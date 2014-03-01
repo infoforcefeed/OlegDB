@@ -41,6 +41,8 @@ parse_url(FirstLine) ->
         [<<>>, <<>>] -> {error, "No database or key specified."};
         % Url was like /users/1 or /pictures/thing
         [_, DB_Name, Key |_] -> {ok, DB_Name, Key};
+        % Url was like //key. Bad!
+        [_, <<>>, Key |_] -> {ok, Key};
         % The url was like /test or /what, so just assume the default DB.
         [_, Key |_] -> {ok, Key}
     end.
