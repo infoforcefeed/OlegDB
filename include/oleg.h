@@ -70,6 +70,16 @@ typedef enum {
     OL_F_REGDUMPS       = 1 << 2
 } ol_feature_flags;
 
+/* xXx ENUM=ol_state_flags xXx
+* xXx DESCRIPTION=State flags tell the database what it should be doing. xXx
+* xXx OL_S_STARTUP=The DB is starting, duh. xXx
+* xXx OL_S_AOKAY=The database is a-okay xXx
+*/
+typedef enum {
+    OL_S_STARTUP        = 0,
+    OL_S_AOKAY          = 1
+} ol_state_flags;
+
 /* xXx TYPEDEF=ol_val xXx
  * xXx DESCRIPTION=Typedef for the values that can be stored inside the database. xXx
  */
@@ -122,6 +132,7 @@ typedef struct ol_database {
     char      *aol_file;
     FILE      *aolfd;
     int       feature_set;
+    short int state;
     int       rcrd_cnt;
     int       key_collisions;
     time_t    created;
@@ -141,8 +152,9 @@ typedef struct ol_meta {
  * xXx RETURNS=A new database object. xXx
  * xXx *path=The directory where the database will be stored. xXx
  * xXx *name=The name of the database. This is used to create the dumpfile, and keep track of the database. xXx
+ * xXx features=Features to enable when the database is initialized. ORd. xXx
  */
-ol_database *ol_open(char *path, char *name);
+ol_database *ol_open(char *path, char *name, int features);
 
 /* xXx FUNCTION=ol_close xXx
  * xXx DESCRIPTION=Closes a database cleanly, frees memory and makes sure everything is written. xXx

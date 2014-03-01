@@ -129,14 +129,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     /* Open up a db if we don't have on already */
     if (d->db == NULL) {
         ol_database *db;
-        db = ol_open("/tmp", obj->database_name);
-        db->enable(OL_F_APPENDONLY, &db->feature_set);
-        ol_aol_init(db);
-
-        if (ol_aol_restore(db) != 0) {
-            ol_log_msg(LOG_ERR, "Error during AOL restore...");
-            ol_close(db);
-        }
+        db = ol_open("/tmp", obj->database_name, OL_F_APPENDONLY);
 
         d->db = db;
     }
