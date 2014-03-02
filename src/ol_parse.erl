@@ -27,7 +27,7 @@
 parse_db_name_and_key(Data) ->
     [FirstLine|_] = binary:split(Data, [<<"\r\n">>]),
     % Actually Verb Url HttpVersion\r\n:
-    [Verb, Url|_] = binary:split(FirstLine, [<<" ">>]),
+    [Verb, Url|_] = binary:split(FirstLine, [<<" ">>], [global]),
     case Verb of
         <<"GET">>    -> {get, parse_url(Url)};
         <<"POST">>   -> {post, parse_url(Url)};
