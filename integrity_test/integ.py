@@ -21,11 +21,11 @@ def main():
     for key, value in videos.iteritems():
         real_key = enc_key(key)
         resp = requests.post("http://localhost:8080/{}".format(real_key),
-                data=json.dumps(value), headers={'content-type': 'application/json'})
+                data=json.dumps(value), headers={'Content-Type': 'application/json'})
         assert(resp.status_code == 200)
 
         resp = requests.post("http://localhost:8080/{}".format(i),
-                data=json.dumps(value), headers={'content-type': 'application/json'})
+                data=json.dumps(value), headers={'Content-Type': 'application/json'})
         assert(resp.status_code == 200)
 
         resp = requests.get("http://localhost:8080/{}".format(real_key))
