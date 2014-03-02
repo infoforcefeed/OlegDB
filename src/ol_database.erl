@@ -39,9 +39,9 @@ init() ->
     Port = open_port({spawn, ?SHAREDLIB}, [binary]),
     loop(Port).
 
-encode({ol_jar, X}) -> [1, X];
-encode({ol_unjar, Y}) -> [2, Y];
-encode({ol_scoop, Z}) -> [3, Z];
+encode({ol_jar, X}) -> term_to_binary({1, X});
+encode({ol_unjar, Y}) -> term_to_binary({2, Y});
+encode({ol_scoop, Z}) -> term_to_binary({3, Z});
 encode(_) ->
     io:format("Don't know how to decode that.~n"),
     exit(unknown_call).
@@ -83,12 +83,12 @@ call_port(Msg) ->
 ol_jar(OlRecord) ->
     if
         byte_size(OlRecord#ol_record.value) > 0 ->
-            call_port({ol_jar, term_to_binary(OlRecord)});
+            call_port({ol_jar, OlRecord});
         true -> {error, no_data_posted}
     end.
 
 ol_unjar(OlRecord) ->
-    call_port({ol_unjar, term_to_binary(OlRecord)}).
+    call_port({ol_unjar, OlRecord}).
 
 ol_scoop(OlRecord) ->
-    call_port({ol_scoop, term_to_binary(OlRecord)}).
+    call_port({ol_scoop, OlRecord}).
