@@ -25,26 +25,28 @@
 -define(KEY_SIZE, 32). % Should match the one in include/oleg.h
 
 parse_db_name_and_key(Data) ->
-    case binary:split(Data, [<<"\r\n">>]) of
-        [<<"GET ", Rest/binary>>|_] -> {get, parse_url(Rest)};
-        [<<"POST ", Rest/binary>>|_] -> {post, parse_url(Rest)};
-        [<<"DELETE ", Rest/binary>>|_]-> {delete, parse_url(Rest)};
+    [FirstLine|_] = binary:split(Data, [<<"\r\n">>]),
+    % Actually Verb Url HttpVersion\r\n:
+    [Verb, Url|_] = binary:split(FirstLine, [<<" ">>]),
+    case Verb of
+        <<"GET">>    -> {get, parse_url(Url)};
+        <<"POST">>   -> {post, parse_url(Url)};
+        <<"DELETE">> -> {delete, parse_url(Url)};
         Chunk ->
             {error, <<"Didn't understand your verb.">>, Chunk}
     end.
 
-parse_url(FirstLine) ->
-    [URL|_] = binary:split(FirstLine, [<<" ">>]),
-    Split = binary:split(URL, [<<"/">>], [global]),
+parse_url(Url) ->
+    Split = binary:split(Url, [<<"/">>], [global]),
     %io:format("S: ~p~n", [Split]),
     case Split of
         [<<>>, <<>>] -> {error, <<"No database or key specified.">>};
         % Url was like /users/1 or /pictures/thing
-        [_, DB_Name, Key |_] -> {ok, DB_Name, Key};
+        [_, <<DB_Name/binary>>, <<Key/binary>> |_] -> {ok, DB_Name, Key};
         % Url was like //key. Bad!
-        [_, <<>>, Key |_] -> {ok, Key};
+        [_, <<>>, <<Key/binary>> |_] -> {ok, Key};
         % The url was like /test or /what, so just assume the default DB.
-        [_, Key |_] -> {ok, Key}
+        [_, <<Key/binary>> |_] -> {ok, Key}
     end.
 
 parse_http(Data) ->
