@@ -24,19 +24,15 @@
 -export([main/0, request_handler/1, route/2, do_accept/1]).
 
 -define(LISTEN_PORT, 8080).
+-define(ACCEPTOR_POOL_NUM, 16).
 
-server_manager(Port) ->
-    case gen_tcp:listen(Port, [binary, {active, false}, {reuseaddr, true},
-                {nodelay, true}, {backlog, 50}]) of
+server_manager(Caller, Port) ->
+    case gen_tcp:listen(Port, [binary, {active, false}, {reuseaddr, true}, {nodelay, true}, {backlog, 50}]) of
         {ok, Sock} ->
             io:format("[-] Listening on port ~p~n", [?LISTEN_PORT]),
-            spawn(?MODULE, do_accept, [Sock]),
-            spawn(?MODULE, do_accept, [Sock]),
-            spawn(?MODULE, do_accept, [Sock]),
-            spawn(?MODULE, do_accept, [Sock]),
-            receive
-                Y -> Y
-            end;
+            gen_tcp:controlling_process(Sock, Caller),
+            % Spawn our acceptor pool workers
+            [spawn(?MODULE, do_accept, [Sock]) || _ <- lists:seq(0, ?ACCEPTOR_POOL_NUM)];
         {error, Reason} ->
             io:format("[X] Could not listen: ~p~n", [Reason])
     end.
@@ -116,7 +112,14 @@ hundred_handler(Header, Socket) ->
     end.
 
 
+mama() ->
+    %% Eventually this function will do something interesting.
+    receive
+        _ -> mama()
+    end.
+
 main() ->
     io:format("[-] Starting server.~n"),
     ol_database:start(),
-    server_manager(?LISTEN_PORT).
+    server_manager(self(), ?LISTEN_PORT),
+    mama().
