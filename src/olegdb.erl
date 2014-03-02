@@ -21,15 +21,22 @@
 %%% THE SOFTWARE.
 -module(olegdb).
 -include("olegdb.hrl").
--export([main/0, request_handler/1, route/2]).
+-export([main/0, request_handler/1, route/2, do_accept/1]).
 
 -define(LISTEN_PORT, 8080).
 
 server_manager(Port) ->
-    case gen_tcp:listen(Port, [binary, {active, false}, {reuseaddr, true}, {nodelay, true}]) of
+    case gen_tcp:listen(Port, [binary, {active, false}, {reuseaddr, true},
+                {nodelay, true}, {backlog, 50}]) of
         {ok, Sock} ->
             io:format("[-] Listening on port ~p~n", [?LISTEN_PORT]),
-            do_accept(Sock);
+            spawn(?MODULE, do_accept, [Sock]),
+            spawn(?MODULE, do_accept, [Sock]),
+            spawn(?MODULE, do_accept, [Sock]),
+            spawn(?MODULE, do_accept, [Sock]),
+            receive
+                Y -> Y
+            end;
         {error, Reason} ->
             io:format("[X] Could not listen: ~p~n", [Reason])
     end.
@@ -42,23 +49,27 @@ do_accept(Sock) ->
             spawn(?MODULE, request_handler, [Accepted]),
             do_accept(Sock);
         {error, Error} ->
-            io:format("[X] Could not accept a connection. Error: ~p~n", [Error])
+            io:format("[X] Could not accept a connection. Error: ~p~n", [Error]);
+        X -> X
     end.
 
 request_handler(Accepted) ->
     % Read in all data, timeout after 60 seconds
     case gen_tcp:recv(Accepted, 0, 60000) of
         {ok, Data} ->
-            case gen_tcp:send(Accepted, route(Data, Accepted)) of
-                ok -> ok;
-                {error, Reason} ->
-                    io:format("[-] Could not send to socket: ~p~n", [Reason])
-            end;
-        {error, closed} ->
-            ok;
+            send_handler(Data, Accepted);
+        {error, closed} -> ok;
         {error, timeout} ->
             io:format("[-] Client timed out.~n"),
             ok
+    end.
+
+send_handler(Data, Accepted) ->
+    Resp = route(Data, Accepted),
+    case gen_tcp:send(Accepted, Resp) of
+        {error, Reason} ->
+            io:format("[-] Could not send to socket: ~p~n", [Reason]);
+        _ -> ok
     end,
     ok = gen_tcp:close(Accepted).
 

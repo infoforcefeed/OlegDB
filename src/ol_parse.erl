@@ -28,10 +28,11 @@ parse_db_name_and_key(Data) ->
     [FirstLine|_] = binary:split(Data, [<<"\r\n">>]),
     % Actually Verb Url HttpVersion\r\n:
     [Verb, Url|_] = binary:split(FirstLine, [<<" ">>], [global]),
+    ParsedUrl = parse_url(Url),
     case Verb of
-        <<"GET">>    -> {get, parse_url(Url)};
-        <<"POST">>   -> {post, parse_url(Url)};
-        <<"DELETE">> -> {delete, parse_url(Url)};
+        <<"GET">>    -> {get, ParsedUrl};
+        <<"POST">>   -> {post, ParsedUrl};
+        <<"DELETE">> -> {delete, ParsedUrl};
         Chunk ->
             {error, <<"Didn't understand your verb.">>, Chunk}
     end.
