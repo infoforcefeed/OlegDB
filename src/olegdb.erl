@@ -21,15 +21,23 @@
 %%% THE SOFTWARE.
 -module(olegdb).
 -include("olegdb.hrl").
--export([main/0, request_handler/1, route/2, do_accept/1]).
+-export([main/0, main/1, request_handler/1, route/2, do_accept/1]).
 
--define(LISTEN_PORT, 8080).
+-define(DEFAULT_HOST, "localhost").
+-define(DEFAULT_PORT, 8080).
 -define(ACCEPTOR_POOL_NUM, 16).
 
+server_manager(Caller) ->
+    server_manager(Caller, ?DEFAULT_HOST, ?DEFAULT_PORT).
+
 server_manager(Caller, Port) ->
-    case gen_tcp:listen(Port, [binary, {active, false}, {reuseaddr, true}, {nodelay, true}, {backlog, 50}]) of
+    server_manager(Caller, ?DEFAULT_HOST, Port).
+
+server_manager(Caller, Hostname, Port) ->
+    {ok, Ip} = inet:getaddr(Hostname, inet),
+    case gen_tcp:listen(Port, [binary, {ip, Ip}, {active, false}, {reuseaddr, true}, {nodelay, true}, {backlog, 50}]) of
         {ok, Sock} ->
-            io:format("[-] Listening on port ~p~n", [?LISTEN_PORT]),
+            io:format("[-] Listening on IP ~p, port ~p~n", [Ip, Port]),
             gen_tcp:controlling_process(Sock, Caller),
             % Spawn our acceptor pool workers
             [spawn(?MODULE, do_accept, [Sock]) || _ <- lists:seq(0, ?ACCEPTOR_POOL_NUM)];
@@ -118,8 +126,17 @@ mama() ->
         _ -> mama()
     end.
 
-main() ->
+main() -> main([]).
+main(Args) ->
     io:format("[-] Starting server.~n"),
     ol_database:start(),
-    server_manager(self(), ?LISTEN_PORT),
+    case Args of
+        [] -> server_manager(self());
+        [Port] ->
+            {PortNum, _} = string:to_integer(Port),
+            server_manager(self(), PortNum);
+        [Hostname, Port] ->
+            {PortNum, _} = string:to_integer(Port),
+            server_manager(self(), Hostname, PortNum)
+    end,
     mama().
