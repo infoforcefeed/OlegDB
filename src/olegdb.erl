@@ -25,7 +25,7 @@
 
 -define(DEFAULT_HOST, "localhost").
 -define(DEFAULT_PORT, 8080).
--define(ACCEPTOR_POOL_NUM, 16).
+-define(ACCEPTOR_POOL_NUM, 64).
 
 server_manager(Caller) ->
     server_manager(Caller, ?DEFAULT_HOST, ?DEFAULT_PORT).
@@ -84,6 +84,7 @@ route(Bits, Socket) ->
         {ok, ReqType, {Header, _}} ->
             case ReqType of
                 get ->
+                    %io:format("[-] Requesting ~p~n", [Header#ol_record.key]),
                     %ol_http:not_found_response();
                     case ol_database:ol_unjar(Header) of
                         {ok, ContentType, Data} ->
@@ -91,12 +92,14 @@ route(Bits, Socket) ->
                         _ -> ol_http:not_found_response()
                     end;
                 post ->
+                    %io:format("[-] Posting to ~p~n", [Header#ol_record.key]),
                     NewHeader = ol_util:read_remaining_data(Header, Socket),
                     case ol_database:ol_jar(NewHeader) of
                         ok -> ol_http:post_response();
                         _ -> ol_http:not_found_response()
                     end;
                 delete ->
+                    %io:format("[-] Deleting ~p~n", [Header#ol_record.key]),
                     case ol_database:ol_scoop(Header) of
                         ok -> ol_http:deleted_response();
                         _ -> ol_http:not_found_response()

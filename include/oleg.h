@@ -36,7 +36,7 @@
 /* xXx DEFINE=KEY_SIZE xXx
 * xXx DESCRIPTION=The hardcoded upperbound for key lengths. xXx
 */
-#define KEY_SIZE 32
+#define KEY_SIZE 250
 
 /* xXx DEFINE=HASH_MALLOC xXx
 * xXx DESCRIPTION=The size, in bytes, to allocate when initially creating the database. ol_bucket pointers are stored here. xXx
