@@ -302,9 +302,17 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
     free(_key);
 
     if (bucket != NULL) {
-        if (dsize != NULL)
-            memcpy(dsize, &bucket->data_size, sizeof(size_t));
-        return bucket->data_ptr;
+        time_t now;
+        time(&now);
+
+        if (now < bucket->expiration) {
+            if (dsize != NULL)
+                memcpy(dsize, &bucket->data_size, sizeof(size_t));
+            return bucket->data_ptr;
+        } else {
+            /* It's dead, get rid of it. */
+            ol_scoop(db, key, klen);
+        }
     }
 
     return NULL;
@@ -395,7 +403,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         ol_aol_write_cmd(db, "JAR", new_bucket);
     }
 
-
     return 0;
 }
 
@@ -409,7 +416,7 @@ int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *valu
     return _ol_jar(db, key, klen, value, vsize, content_type, content_type_size);
 }
 
-int ol_set_expire(ol_database *db, const char *key, size_t klen, const time_t time) {
+int ol_spoil(ol_database *db, const char *key, size_t klen, const time_t time) {
     uint32_t hash;
     char *_key = _ol_trunc(key, klen);
     size_t _klen = strnlen(_key, KEY_SIZE);
