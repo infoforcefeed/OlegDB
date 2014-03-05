@@ -74,10 +74,11 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
                 bct->klen, bct->key);
         check(ret > -1, "Error writing to file.");
     } else if (strncmp(cmd, "SPOIL", 5) == 0) {
-        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%ju\n",
+        char *exptime = ctime(&bct->expiration);
+        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%s\n",
                 strlen(cmd), cmd,
                 bct->klen, bct->key,
-                (uintmax_t)(time_t)bct->expiration);
+                strlen(exptime), exptime);
         check(ret > -1, "Error writing to file.");
     } else {
         ol_log_msg(LOG_ERR, "No such command '%s'", cmd);
@@ -92,7 +93,6 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
 error:
     return -1;
 }
-
 
 ol_string *_ol_read_data(FILE *fd) {
     int c;
@@ -160,6 +160,11 @@ int ol_aol_restore(ol_database *db) {
             free(v);
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {
             ol_scoop(db, k->data, k->dlen);
+        } else if (strncmp(command->data, "SPOIL", 5) == 0) {
+            ol_string *spoil;
+            spoil = _ol_read_data(fd);
+            check(spoil, "Error reading");
+            ol_spoil(db, k->data, k->dlen, (time_t)spoil);
         }
 
         free(command->data);

@@ -508,7 +508,7 @@ int test_aol() {
     }
 
     time_t now;
-    gmtime(&now);
+    time(&now);
     /* Expire a key */
     if (ol_spoil(db, "crazy hash1", strlen("crazy hash1"), now) == 0) {
         ol_log_msg(LOG_INFO, "Spoiled record.");
@@ -547,7 +547,7 @@ int test_expiration() {
     ol_database *db = _test_db_open();
     /* Get the current time */
     time_t current_time;
-    gmtime(&current_time);
+    time(&current_time);
 
     const char key[] = "testKey";
     unsigned char value[] = "TestValue yo";
