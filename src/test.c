@@ -498,10 +498,22 @@ int test_aol() {
         return 1;
     }
 
+    /* Delete a key */
     if (ol_scoop(db, "crazy hash2", strlen("crazy hash2")) == 0) {
         ol_log_msg(LOG_INFO, "Deleted record.");
     } else {
         ol_log_msg(LOG_ERR, "Could not delete record.");
+        ol_close(db);
+        return 2;
+    }
+
+    time_t now;
+    gmtime(&now);
+    /* Expire a key */
+    if (ol_spoil(db, "crazy hash1", strlen("crazy hash1"), now) == 0) {
+        ol_log_msg(LOG_INFO, "Spoiled record.");
+    } else {
+        ol_log_msg(LOG_ERR, "Could not spoil record.");
         ol_close(db);
         return 2;
     }
