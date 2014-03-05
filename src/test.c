@@ -26,9 +26,16 @@
 #include "aol.h"
 #include "logging.h"
 
-int test_open_close() {
+/* Helper function to open databases, so we don't have to change API code
+ * in a million places when we modify it.
+ */
+ol_database *_test_db_open() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    return db;
+}
+int test_open_close() {
+    ol_database *db = _test_db_open();
     int ret = ol_close(db);
     if (ret > 0){
         ol_log_msg(LOG_INFO, "Couldn't free all memory.");
@@ -39,8 +46,8 @@ int test_open_close() {
 }
 
 int test_bucket_max() {
+    ol_database *db = _test_db_open();
     int expected_bucket_max = HASH_MALLOC / 8;
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
 
     ol_log_msg(LOG_INFO, "Expected max is: %i", expected_bucket_max);
     int generated_bucket_max = ol_ht_bucket_max(db->cur_ht_size);
@@ -55,8 +62,7 @@ int test_bucket_max() {
 }
 
 int test_jar() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
-    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    ol_database *db = _test_db_open();
 
     int i;
     int max_records = RECORD_COUNT;
@@ -94,8 +100,7 @@ int test_jar() {
 }
 
 int test_unjar_ds() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
-    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    ol_database *db = _test_db_open();
 
     char key[64] = "FANCY KEY IS YO MAMA";
     unsigned char val[] = "invariable variables invariably trip up programmers";
@@ -133,9 +138,7 @@ int test_unjar_ds() {
     return 0;
 }
 int test_unjar() {
-    /* TODO: This test should actually make sure all of the data is consistent */
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
-    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    ol_database *db = _test_db_open();
 
     char key[64] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
@@ -166,8 +169,7 @@ int test_unjar() {
 }
 
 int test_scoop() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
-    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    ol_database *db = _test_db_open();
 
     char key[64] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
@@ -198,8 +200,7 @@ int test_scoop() {
 }
 
 int test_uptime() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
-    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    ol_database *db = _test_db_open();
 
     sleep(3);
     int uptime = ol_uptime(db);
@@ -216,8 +217,7 @@ int test_uptime() {
 }
 
 int test_update() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
-    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    ol_database *db = _test_db_open();
 
     char key[64] = "muh_hash_thoalk";
     unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
@@ -287,8 +287,7 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
 }
 
 int test_dump_forking() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
-    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    ol_database *db = _test_db_open();
 
     int ret;
     unsigned int num_keys = RECORD_COUNT;
@@ -308,7 +307,7 @@ int test_dump_forking() {
     /* Close the DB to try and load it */
     ol_close(db);
 
-    db = ol_open(DB_PATH, DB_NAME, 0);
+    db = _test_db_open();
 
     char tmp_path[512];
     db->get_db_file_name(db, "dump", tmp_path);
@@ -342,8 +341,7 @@ int test_dump_forking() {
 }
 
 int test_ct() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
-    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    ol_database *db = _test_db_open();
 
     char key1[] = "test_key", key2[] = "test_key2";
     char ct1[] = "application/json", ct2[] = "image/png";
@@ -401,8 +399,7 @@ int test_ct() {
 }
 
 int test_dump() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
-    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    ol_database *db = _test_db_open();
 
     int ret;
     unsigned int num_keys = RECORD_COUNT;
@@ -426,7 +423,7 @@ int test_dump() {
 
     ol_close(db);
 
-    db = ol_open(DB_PATH, DB_NAME, 0);
+    db = _test_db_open();
 
     char tmp_path[512];
     db->get_db_file_name(db, "dump", tmp_path);
@@ -460,8 +457,7 @@ int test_dump() {
 }
 
 int test_feature_flags() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
-    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    ol_database *db = _test_db_open();
 
     db->enable(OL_F_APPENDONLY, &db->feature_set);
 
@@ -483,7 +479,7 @@ int test_feature_flags() {
 }
 
 int test_aol() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
+    ol_database *db = _test_db_open();
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
 
