@@ -246,7 +246,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen);
  */
 int ol_uptime(ol_database *db);
 
-/* xXx FUNCTION=ol_set_expire xXx
+/* xXx FUNCTION=ol_spoil xXx
  * xXx DESCRIPTION=Sets the expiration value of a key. Will fail if no bucket under the chosen key exists. xXx
  * xXx RETURNS=0 upon success, -1 if otherwise. xXx
  * xXx *db=Database to retrieve value from. xXx
@@ -254,7 +254,7 @@ int ol_uptime(ol_database *db);
  * xXx klen=The length of the key. xXx
  * xXx time=The time to set the expiration to. xXx
  */
-int ol_set_expire(ol_database *db, const char *key, size_t klen, const time_t time);
+int ol_spoil(ol_database *db, const char *key, size_t klen, const time_t time);
 
 /* xXx FUNCTION=ol_ht_bucket_max xXx
  * xXx DESCRIPTION=Does some sizeof witchery to return the maximum current size of the database. xXx
