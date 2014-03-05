@@ -413,7 +413,7 @@ int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *valu
     return _ol_jar(db, key, klen, value, vsize, content_type, content_type_size);
 }
 
-int ol_set_expire(ol_database *db, const char *key, const time_t time) {
+int ol_set_expire(ol_database *db, const char *key, size_t klen, const time_t time) {
     return 0;
 }
 
