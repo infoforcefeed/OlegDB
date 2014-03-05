@@ -95,6 +95,7 @@ typedef unsigned char *ol_val;
 * xXx data_size=Length of the value in bytes. xXx
 * xXx hash=Hashed value of this key. xXx
 * xXx next=Collisions are resolved via linked list. This contains the pointer to the next object in the chain, or NULL. xXx
+* xXx expiration=The POSIX timestamp when this key will expire. xXx
 */
 typedef struct ol_bucket {
     char              key[KEY_SIZE]; /* The key used to reference the data */
@@ -105,6 +106,7 @@ typedef struct ol_bucket {
     size_t            data_size;
     uint32_t          hash;
     struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
+    time_t            expiration;
 } ol_bucket;
 
 /* xXx STRUCT=ol_database xXx
@@ -243,6 +245,15 @@ int ol_scoop(ol_database *db, const char *key, size_t klen);
  * xXx *db=Database to retrieve value from. xXx
  */
 int ol_uptime(ol_database *db);
+
+/* xXx FUNCTION=ol_set_expire xXx
+ * xXx DESCRIPTION=Sets the expiration value of a key. Will fail if no bucket under the chosen key exists. xXx
+ * xXx RETURNS=0 upon success, -1 if otherwise. xXx
+ * xXx *db=Database to retrieve value from. xXx
+ * xXx *key=The key to use. xXx
+ * xXx time=The time to set the expiration to. xXx
+ */
+int ol_set_expire(ol_database *db, const char *key, const time_t time);
 
 /* xXx FUNCTION=ol_ht_bucket_max xXx
  * xXx DESCRIPTION=Does some sizeof witchery to return the maximum current size of the database. xXx
