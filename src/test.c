@@ -531,11 +531,33 @@ int test_aol() {
     return 0;
 }
 
+int test_expiration() {
+    ol_database *db = _test_db_open();
+    /* Get the current time */
+    time_t current_time;
+    gmtime(&current_time);
+
+    const char key[] = "testKey";
+    unsigned char value[] = "TestValue yo";
+
+    check(ol_jar(db, key, strlen(key), value, strlen((char *)value)) == 0, "Could not insert.");
+    check(ol_spoil(db, key, strlen(key), current_time) == 0, "Could not set expiration");
+    check(ol_unjar(db, key, strlen(key)) == NULL, "Key did not expire properly.");
+
+    ol_close(db);
+
+    return 0;
+
+error:
+    return 1;
+}
+
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
 
     ol_test_start();
+    ol_run_test(test_expiration);
     ol_run_test(test_aol);
     ol_run_test(test_open_close);
     ol_run_test(test_bucket_max);
