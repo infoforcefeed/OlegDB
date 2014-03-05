@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <time.h>
 
 int ol_aol_init(ol_database *db) {
     if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
@@ -68,8 +69,16 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
         check(ret > -1, "Error writing to file.");
         ret = fprintf(db->aolfd, "\n");
     } else if (strncmp(cmd, "SCOOP", 5) == 0) {
-        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s\n", strlen(cmd), cmd,
-                strlen(bct->key), bct->key);
+        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s\n",
+                strlen(cmd), cmd,
+                bct->klen, bct->key);
+        check(ret > -1, "Error writing to file.");
+    } else if (strncmp(cmd, "SPOIL", 5) == 0) {
+        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%ju\n",
+                strlen(cmd), cmd,
+                bct->klen, bct->key,
+                (uintmax_t)(time_t)bct->expiration);
+        check(ret > -1, "Error writing to file.");
     } else {
         ol_log_msg(LOG_ERR, "No such command '%s'", cmd);
         return -1;
