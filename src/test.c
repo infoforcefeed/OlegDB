@@ -22,9 +22,10 @@
 */
 
 #include <stdlib.h>
-#include "test.h"
 #include "aol.h"
+#include "errhandle.h"
 #include "logging.h"
+#include "test.h"
 
 /* Helper function to open databases, so we don't have to change API code
  * in a million places when we modify it.
@@ -282,6 +283,12 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
             ol_close(db);
             return 2;
         }
+
+        if (db->rcrd_cnt != i+1) {
+            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 3;
+        }
     }
     return 0;
 }
@@ -483,31 +490,12 @@ int test_aol() {
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
 
-    int i;
-    int max_records = 3;
-    unsigned char to_insert[] = "123456789\nthis is a test!";
+    const int max_records = 3;
     ol_log_msg(LOG_INFO, "Inserting %i records.", max_records);
-    for (i = 0; i < max_records; i++) { /* 8======D */
-        char key[64] = "crazy hash";
-        char append[10] = "";
-
-        sprintf(append, "%i", i);
-        strcat(key, append);
-
-        size_t len = strlen((char *)to_insert);
-        int insert_result = ol_jar(db, key, strlen(key), to_insert, len);
-
-        if (insert_result > 0) {
-            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
-            ol_close(db);
-            return 2;
-        }
-
-        if (db->rcrd_cnt != i+1) {
-            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
-            ol_close(db);
-            return 3;
-        }
+    int ret = _insert_keys(db, max_records);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
     }
 
     if (ol_scoop(db, "crazy hash2", strlen("crazy hash2")) == 0) {
@@ -515,7 +503,7 @@ int test_aol() {
     } else {
         ol_log_msg(LOG_ERR, "Could not delete record.");
         ol_close(db);
-        return 1;
+        return 2;
     }
 
     if (db->rcrd_cnt != max_records - 1) {
