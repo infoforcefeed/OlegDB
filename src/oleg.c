@@ -303,9 +303,10 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
 
     if (bucket != NULL) {
         time_t now;
-        time(&now);
+        gmtime(&now);
 
-        if (now < bucket->expiration) {
+        /* For some reason you can't compare 0 to a time_t. */
+        if (bucket->expiration == 0 || now < bucket->expiration) {
             if (dsize != NULL)
                 memcpy(dsize, &bucket->data_size, sizeof(size_t));
             return bucket->data_ptr;
@@ -346,6 +347,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         bucket->content_type = ct_real;
         bucket->data_size = vsize;
         bucket->data_ptr = data;
+        bucket->expiration = 0;
 
         if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
                 db->state != OL_S_STARTUP) {
@@ -365,6 +367,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
     free(_key);
     new_bucket->klen = _klen;
+    new_bucket->expiration = 0;
 
     new_bucket->next = NULL;
 
@@ -427,6 +430,10 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, const time_t time) {
 
     if (bucket != NULL) {
         bucket->expiration = time;
+        if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
+                db->state != OL_S_STARTUP) {
+            ol_aol_write_cmd(db, "SPOIL", bucket);
+        }
         return 0;
     }
 
