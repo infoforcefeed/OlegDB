@@ -299,15 +299,14 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
     size_t _klen = strnlen(_key, KEY_SIZE);
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
+    free(_key);
 
     if (bucket != NULL) {
         if (dsize != NULL)
             memcpy(dsize, &bucket->data_size, sizeof(size_t));
-        free(_key);
         return bucket->data_ptr;
     }
 
-    free(_key);
     return NULL;
 }
 
@@ -411,7 +410,20 @@ int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *valu
 }
 
 int ol_set_expire(ol_database *db, const char *key, size_t klen, const time_t time) {
-    return 0;
+    uint32_t hash;
+    char *_key = _ol_trunc(key, klen);
+    size_t _klen = strnlen(_key, KEY_SIZE);
+
+    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
+    ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
+    free(_key);
+
+    if (bucket != NULL) {
+        bucket->expiration = time;
+        return 0;
+    }
+
+    return -1;
 }
 
 int ol_scoop(ol_database *db, const char *key, size_t klen) {
