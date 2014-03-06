@@ -40,6 +40,7 @@
 typedef struct {
     ErlDrvPort port;
     ol_database *db;
+    char db_loc[255];
 } oleg_data;
 
 /* This should match the object in olegdb.htl */
@@ -52,13 +53,13 @@ typedef struct {
     int version;
     char content_type[255];
     unsigned char *data;
-    long function;
 } ol_record;
 
 static ErlDrvData oleg_start(ErlDrvPort port, char *buff) {
     oleg_data *d = (oleg_data*)driver_alloc(sizeof(oleg_data));
     d->port = port;
     d->db = NULL;
+    d->db_loc[0] = '\0';
     return (ErlDrvData)d;
 }
 
@@ -68,6 +69,11 @@ static void oleg_stop(ErlDrvData data) {
         ol_close(d->db);
     }
     driver_free(data);
+}
+
+static void _gen_atom(ei_x_buff *to_send, const char *str) {
+    ei_x_new_with_version(to_send);
+    ei_x_encode_atom(to_send, str);
 }
 
 /* Converts a string of binary data from erlang into something we can use */
@@ -83,14 +89,6 @@ static ol_record *read_record(char *buf, int index) {
     /* TODO: Error checking in here somewhere. */
     if (ei_decode_version(buf, &index, &new_obj->version))
         ol_log_msg(LOG_WARN, "Could not decode version.\n");
-
-    if (ei_decode_tuple_header(buf, &index, &arity))
-        ol_log_msg(LOG_WARN, "Could not decode tuple header.\n");
-    if (arity != 2)
-        ol_log_msg(LOG_WARN, "Arity was not as expected.\n");
-
-    if (ei_decode_long(buf, &index, &new_obj->function))
-        ol_log_msg(LOG_WARN, "Could not get function.\n");
 
     /* Gives us how many items are in the tuple */
     if (ei_decode_tuple_header(buf, &index, &arity))
@@ -130,20 +128,47 @@ static ol_record *read_record(char *buf, int index) {
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     oleg_data *d = (oleg_data*)data;
     int res = 0;
+    int fn = cmd[0];
     ol_record *obj = NULL;
 
+    if (fn == 0) {
+        int tmp_index = 1;
+        int version = 0;
+
+        if (ei_decode_version(cmd, &tmp_index, &version))
+            ol_log_msg(LOG_WARN, "Could not decode version.\n");
+
+        if (ei_decode_string(cmd, &tmp_index, d->db_loc))
+            ol_log_msg(LOG_WARN, "Could not get database location.\n");
+
+        /* Send back 'ok' */
+        ei_x_buff to_send;
+        _gen_atom(&to_send, "ok");
+        driver_output(d->port, to_send.buff, to_send.index);
+        ei_x_free(&to_send);
+
+        return;
+    }
+
     /* Turn Erlang into Oleg */
-    obj = read_record(cmd, 0);
+    obj = read_record(cmd, 1);
 
     /* Open up a db if we don't have on already */
     if (d->db == NULL) {
         ol_database *db;
-        db = ol_open("/tmp", obj->database_name, OL_F_APPENDONLY);
-
+        /* Check to see if someone called ol_init */
+        if (d->db_loc[0] == '\0') {
+            ei_x_buff to_send;
+            _gen_atom(&to_send, "no_db_location");
+            driver_output(d->port, to_send.buff, to_send.index);
+            ei_x_free(&to_send);
+            return;
+        }
+        db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY);
         d->db = db;
     }
 
-    if (obj->function == 1) {
+    if (fn == 1) {
         /* ol_jar */
         res = ol_jar_ct(d->db, obj->key, obj->klen, obj->data, obj->data_len,
                obj->content_type, obj->ct_len);
@@ -152,13 +177,13 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         ei_x_new_with_version(&to_send);
 
         if (res != 0)
-            ei_x_encode_atom(&to_send, "error");
+            _gen_atom(&to_send, "error");
         else
-            ei_x_encode_atom(&to_send, "ok");
+            _gen_atom(&to_send, "ok");
 
         driver_output(d->port, to_send.buff, to_send.index);
         ei_x_free(&to_send);
-    } else if (obj->function == 2) {
+    } else if (fn == 2) {
         /* ol_unjar */
         size_t val_size;
         /* TODO: Fix this when we have one clean function to retrieve content type
@@ -178,7 +203,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         }
         driver_output(d->port, to_send.buff, to_send.index);
         ei_x_free(&to_send);
-    } else if (obj->function == 3) {
+    } else if (fn == 3) {
         /* ol_scoop */
         int ret = ol_scoop(d->db, obj->key, obj->klen);
         ei_x_buff to_send;
@@ -193,8 +218,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     } else {
         /* Send something back so we're not blocking. */
         ei_x_buff to_send;
-        ei_x_new_with_version(&to_send);
-        ei_x_encode_atom(&to_send, "not_found");
+        _gen_atom(&to_send, "not_found");
         driver_output(d->port, to_send.buff, to_send.index);
         ei_x_free(&to_send);
     }
