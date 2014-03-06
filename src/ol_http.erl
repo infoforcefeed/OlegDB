@@ -54,7 +54,7 @@ post_response() ->
     "Connection: close\r\n"
     "Content-Length: 7\r\n"
     "\r\n"
-    "MUDADA\n">>.
+    "無駄\n">>.
 
 deleted_response() ->
     <<"HTTP/1.1 200 OK\r\n"

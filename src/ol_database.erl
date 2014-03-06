@@ -20,7 +20,7 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %%% THE SOFTWARE.
 -module(ol_database).
--export([start/0, init/0, ol_jar/1, ol_unjar/1, ol_scoop/1]).
+-export([start/0, init/1, ol_init/1, ol_jar/1, ol_unjar/1, ol_scoop/1]).
 
 -include("olegdb.hrl").
 -define(SHAREDLIB, "libolegserver").
@@ -32,16 +32,23 @@ start() ->
         {error, already_loaded} -> ok;
         {error, ErrorDesc} -> exit(erl_ddll:format_error(ErrorDesc))
     end,
-    spawn(fun() -> ?MODULE:init() end).
+    %% Spawn of the looper
+    Me = self(),
+    spawn(fun() -> ?MODULE:init(Me) end),
+    receive
+        spawned -> ok
+    end.
 
-init() ->
+init(Papa) ->
     register(complex, self()),
     Port = open_port({spawn, ?SHAREDLIB}, [binary]),
+    Papa ! spawned,
     loop(Port).
 
-encode({ol_jar, X}) -> term_to_binary({1, X});
-encode({ol_unjar, Y}) -> term_to_binary({2, Y});
-encode({ol_scoop, Z}) -> term_to_binary({3, Z});
+encode({ol_init, X})  -> [0, term_to_binary(X)];
+encode({ol_jar, X})   -> [1, term_to_binary(X)];
+encode({ol_unjar, X}) -> [2, term_to_binary(X)];
+encode({ol_scoop, X}) -> [3, term_to_binary(X)];
 encode(_) ->
     io:format("Don't know how to decode that.~n"),
     exit(unknown_call).
@@ -79,6 +86,9 @@ call_port(Msg) ->
         {complex, Result} ->
             Result
     end.
+
+ol_init(DbLocation) ->
+    call_port({ol_init, DbLocation}).
 
 ol_jar(OlRecord) ->
     if

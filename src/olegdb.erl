@@ -130,9 +130,13 @@ mama() ->
     end.
 
 main() -> main([]).
-main(Args) ->
+main([]) ->
+    io:format("You must specify a location to store aol/dump files.~n"),
+    exit(not_enough_args);
+main([DbLocation|Args]) ->
     io:format("[-] Starting server.~n"),
     ol_database:start(),
+    ol_database:ol_init(DbLocation),
     case Args of
         [] -> server_manager(self());
         [Port] ->
