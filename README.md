@@ -78,6 +78,7 @@ Roadmap
 * Lists/Queues
 * pub/sub with websockets
 * Speak Redis/Memcached protocol subsets
+* Splay Trees
 
 0.3
 ---

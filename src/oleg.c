@@ -56,7 +56,7 @@ bool _ol_is_enabled(int feature, int *feature_set) {
     return (*feature_set & feature);
 }
 
-ol_database *ol_open(char *path, char *name){
+ol_database *ol_open(char *path, char *name, int features){
     debug("Opening \"%s\" database", name);
     ol_database *new_db = malloc(sizeof(struct ol_database));
 
@@ -102,6 +102,13 @@ ol_database *ol_open(char *path, char *name){
     new_db->aol_file = calloc(1, 512);
     check_mem(new_db->aol_file);
     new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
+    new_db->feature_set = features;
+    new_db->state = OL_S_STARTUP;
+    if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
+        ol_aol_init(new_db);
+        check(ol_aol_restore(new_db) == 0, "Error restoring from AOL file");
+    }
+    new_db->state = OL_S_AOKAY;
 
     return new_db;
 
@@ -144,6 +151,7 @@ int _ol_close(ol_database *db){
 
     free(db->hashes);
     free(db->dump_file);
+    free(db->aol_file);
     db->feature_set = 0;
     free(db);
     if (freed != rcrd_cnt) {
@@ -288,7 +296,7 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
     uint32_t hash;
 
     char *_key = _ol_trunc(key, klen);
-    size_t _klen = strlen(_key);
+    size_t _klen = strnlen(_key, KEY_SIZE);
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
 
@@ -310,7 +318,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     /* Free the _key as soon as possible */
     char *_key = _ol_trunc(key, klen);
-    size_t _klen = strlen(_key);
+    size_t _klen = strnlen(_key, KEY_SIZE);
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
 
@@ -321,7 +329,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         if (memcpy(data, value, vsize) != data)
             return 4;
 
-        char *ct_real = realloc(bucket->content_type, ctsize);
+        char *ct_real = realloc(bucket->content_type, ctsize+1);
         if (memcpy(ct_real, ct, ctsize) != ct_real)
             return 5;
         ct_real[ctsize] = '\0';
@@ -331,6 +339,12 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         bucket->content_type = ct_real;
         bucket->data_size = vsize;
         bucket->data_ptr = data;
+
+        if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
+                db->state != OL_S_STARTUP) {
+            ol_aol_write_cmd(db, "JAR", bucket);
+        }
+
         return 0;
     }
     /* Looks like we don't have an old hash */
@@ -374,12 +388,14 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     ret = _ol_set_bucket(db, new_bucket);
 
-    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+    if(ret > 0)
+        ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);
+
+    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
+            db->state != OL_S_STARTUP) {
         ol_aol_write_cmd(db, "JAR", new_bucket);
     }
 
-    if(ret > 0)
-        ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);
 
     return 0;
 }
@@ -398,7 +414,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
     /* you know... like scoop some data from the jar and eat it? All gone. */
     uint32_t hash;
     char *_key = _ol_trunc(key, klen);
-    size_t _klen = strlen(key);
+    size_t _klen = strnlen(_key, KEY_SIZE);
 
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     int index = _ol_calc_idx(db->cur_ht_size, hash);
@@ -417,7 +433,8 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             } else {
                 db->hashes[index] = NULL;
             }
-            if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+            if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
+                    db->state != OL_S_STARTUP) {
                 ol_aol_write_cmd(db, "SCOOP", bucket);
             }
             _ol_free_bucket(bucket);
@@ -447,7 +464,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
 char *ol_content_type(ol_database *db, const char *key, size_t klen) {
     uint32_t hash;
     char *_key = _ol_trunc(key, klen);
-    size_t _klen = strlen(_key);
+    size_t _klen = strnlen(_key, KEY_SIZE);
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
     free(_key);

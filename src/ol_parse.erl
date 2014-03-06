@@ -25,43 +25,40 @@
 -define(KEY_SIZE, 32). % Should match the one in include/oleg.h
 
 parse_db_name_and_key(Data) ->
-    case binary:split(Data, [<<"\r\n">>]) of
-        [<<"GET ", Rest/binary>>|_] -> parse_url(Rest);
-        [<<"POST ", Rest/binary>>|_] -> parse_url(Rest);
-        [<<"DELETE ", Rest/binary>>|_]-> parse_url(Rest);
-        Chunk -> {error, "Didn't understand your verb.", Chunk}
+    [FirstLine|_] = binary:split(Data, [<<"\r\n">>]),
+    % Actually Verb Url HttpVersion\r\n:
+    [Verb, Url|_] = binary:split(FirstLine, [<<" ">>], [global]),
+    ParsedUrl = parse_url(Url),
+    case Verb of
+        <<"GET">>    -> {get, ParsedUrl};
+        <<"POST">>   -> {post, ParsedUrl};
+        <<"DELETE">> -> {delete, ParsedUrl};
+        Chunk ->
+            {error, <<"Didn't understand your verb.">>, Chunk}
     end.
 
-%% Truncating the key here saves some memory management in The
-%% C backend.
-truncate_key(Key) ->
-    if
-        byte_size(Key) > ?KEY_SIZE ->
-            binary:part(Key, 0, ?KEY_SIZE);
-        true ->
-            Key
-    end.
-
-parse_url(FirstLine) ->
-    [URL|_] = binary:split(FirstLine, [<<" ">>]),
-    Split = binary:split(URL, [<<"/">>], [global]),
+parse_url(Url) ->
+    Split = binary:split(Url, [<<"/">>], [global]),
     %io:format("S: ~p~n", [Split]),
     case Split of
-        [<<>>, <<>>] -> {error, "No database or key specified."};
+        [<<>>, <<>>] -> {error, <<"No database or key specified.">>};
         % Url was like /users/1 or /pictures/thing
-        [_, DB_Name, Key |_] -> {ok, DB_Name, truncate_key(Key)};
+        [_, <<DB_Name/binary>>, <<Key/binary>> |_] -> {ok, DB_Name, Key};
+        % Url was like //key. Bad!
+        [_, <<>>, <<Key/binary>> |_] -> {ok, Key};
         % The url was like /test or /what, so just assume the default DB.
-        [_, Key |_] -> {ok, truncate_key(Key)}
+        [_, <<Key/binary>> |_] -> {ok, Key}
     end.
 
 parse_http(Data) ->
     case parse_db_name_and_key(Data) of
-        {ok, DB_Name, Key} ->
-            {ok, parse_header(Data, #ol_record{database=DB_Name,
-                                          key=Key})};
-        {ok, Key} ->
-            {ok, parse_header(Data, #ol_record{key=Key})};
-        {error, ErrMsg} -> {error, ErrMsg}
+        {ReqType, {ok, DB_Name, Key}} ->
+            {ok, ReqType, parse_header(Data,
+                    #ol_record{database=DB_Name,key=Key}
+                )};
+        {ReqType, {ok, Key}} ->
+            {ok, ReqType, parse_header(Data, #ol_record{key=Key})};
+        X -> X
     end.
 
 parse_header(Data, Record) ->

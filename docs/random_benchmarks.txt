@@ -71,14 +71,18 @@ Running 30s test @ http://localhost:8080/test
 Requests/sec:    931.65
 Transfer/sec:    151.11KB
 
-# For comparison, Kyoto Tycoon running with the same data on my quad-core laptop:
+# After some improvements:
 (master)
-λ:~/src/wrk ./wrk -t4 -c400 -d30s http://localhost:1978/test
-Running 30s test @ http://localhost:1978/test
+λ:~/src/wrk curl -X POST -H "Content-Type: text/plain" -d "This is a test of the broadcasting system." http://localhost:8080//test2
+MUDADA
+(master)
+λ:~/src/wrk ./wrk -t4 -c400 -d30s http://localhost:8080/test2
+Running 30s test @ http://localhost:8080/test2
   4 threads and 400 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency     9.11ms    7.57ms 268.19ms   99.00%
-    Req/Sec    11.94k     1.91k   20.67k    75.48%
-  1356974 requests in 30.00s, 200.59MB read
-Requests/sec:  45236.27
-Transfer/sec:      6.69MB
+    Latency    23.84s     6.97s   26.73s    92.12%
+    Req/Sec   480.65    619.06     6.11k    91.12%
+  56919 requests in 30.00s, 8.69MB read
+  Socket errors: connect 0, read 0, write 0, timeout 2872
+Requests/sec:   1897.02
+Transfer/sec:    296.41KB

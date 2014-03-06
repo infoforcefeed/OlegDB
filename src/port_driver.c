@@ -52,6 +52,7 @@ typedef struct {
     int version;
     char content_type[255];
     unsigned char *data;
+    long function;
 } ol_record;
 
 static ErlDrvData oleg_start(ErlDrvPort port, char *buff) {
@@ -82,6 +83,15 @@ static ol_record *read_record(char *buf, int index) {
     /* TODO: Error checking in here somewhere. */
     if (ei_decode_version(buf, &index, &new_obj->version))
         ol_log_msg(LOG_WARN, "Could not decode version.\n");
+
+    if (ei_decode_tuple_header(buf, &index, &arity))
+        ol_log_msg(LOG_WARN, "Could not decode tuple header.\n");
+    if (arity != 2)
+        ol_log_msg(LOG_WARN, "Arity was not as expected.\n");
+
+    if (ei_decode_long(buf, &index, &new_obj->function))
+        ol_log_msg(LOG_WARN, "Could not get function.\n");
+
     /* Gives us how many items are in the tuple */
     if (ei_decode_tuple_header(buf, &index, &arity))
         ol_log_msg(LOG_WARN, "Could not decode tuple header.\n");
@@ -119,29 +129,21 @@ static ol_record *read_record(char *buf, int index) {
 
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     oleg_data *d = (oleg_data*)data;
-    char fn = cmd[0];
     int res = 0;
     ol_record *obj = NULL;
 
     /* Turn Erlang into Oleg */
-    obj = read_record(cmd, 1);
+    obj = read_record(cmd, 0);
 
     /* Open up a db if we don't have on already */
     if (d->db == NULL) {
         ol_database *db;
-        db = ol_open("/tmp", obj->database_name);
-        db->enable(OL_F_APPENDONLY, &db->feature_set);
-        ol_aol_init(db);
-
-        if (ol_aol_restore(db) != 0) {
-            ol_log_msg(LOG_ERR, "Error during AOL restore...");
-            ol_close(db);
-        }
+        db = ol_open("/tmp", obj->database_name, OL_F_APPENDONLY);
 
         d->db = db;
     }
 
-    if (fn == 1) {
+    if (obj->function == 1) {
         /* ol_jar */
         res = ol_jar_ct(d->db, obj->key, obj->klen, obj->data, obj->data_len,
                obj->content_type, obj->ct_len);
@@ -156,7 +158,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
         driver_output(d->port, to_send.buff, to_send.index);
         ei_x_free(&to_send);
-    } else if (fn == 2) {
+    } else if (obj->function == 2) {
         /* ol_unjar */
         size_t val_size;
         /* TODO: Fix this when we have one clean function to retrieve content type
@@ -176,7 +178,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         }
         driver_output(d->port, to_send.buff, to_send.index);
         ei_x_free(&to_send);
-    } else if (fn == 3) {
+    } else if (obj->function == 3) {
         /* ol_scoop */
         int ret = ol_scoop(d->db, obj->key, obj->klen);
         ei_x_buff to_send;

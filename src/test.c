@@ -27,7 +27,7 @@
 #include "logging.h"
 
 int test_open_close(void) {
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
     int ret = ol_close(db);
     if (ret > 0){
@@ -40,7 +40,7 @@ int test_open_close(void) {
 
 int test_bucket_max(void) {
     int expected_bucket_max = HASH_MALLOC / 8;
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
 
     ol_log_msg(LOG_INFO, "Expected max is: %i", expected_bucket_max);
     int generated_bucket_max = ol_ht_bucket_max(db->cur_ht_size);
@@ -55,7 +55,7 @@ int test_bucket_max(void) {
 }
 
 int test_jar(void) {
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     int i;
@@ -94,7 +94,7 @@ int test_jar(void) {
 }
 
 int test_unjar_ds(void) {
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[64] = "FANCY KEY IS YO MAMA";
@@ -134,7 +134,7 @@ int test_unjar_ds(void) {
 }
 int test_unjar(void) {
     /* TODO: This test should actually make sure all of the data is consistent */
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[64] = "muh_hash_tho";
@@ -166,7 +166,7 @@ int test_unjar(void) {
 }
 
 int test_scoop(void) {
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[64] = "muh_hash_tho";
@@ -198,7 +198,7 @@ int test_scoop(void) {
 }
 
 int test_uptime(void) {
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     sleep(3);
@@ -216,7 +216,7 @@ int test_uptime(void) {
 }
 
 int test_update(void) {
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key[64] = "muh_hash_thoalk";
@@ -287,7 +287,7 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
 }
 
 int test_dump_forking(void) {
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     int ret;
@@ -308,7 +308,7 @@ int test_dump_forking(void) {
     /* Close the DB to try and load it */
     ol_close(db);
 
-    db = ol_open(DB_PATH, DB_NAME);
+    db = ol_open(DB_PATH, DB_NAME, 0);
 
     char tmp_path[512];
     db->get_db_file_name(db, "dump", tmp_path);
@@ -342,7 +342,7 @@ int test_dump_forking(void) {
 }
 
 int test_ct(void) {
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     char key1[] = "test_key", key2[] = "test_key2";
@@ -401,7 +401,7 @@ int test_ct(void) {
 }
 
 int test_dump(void) {
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     int ret;
@@ -426,7 +426,7 @@ int test_dump(void) {
 
     ol_close(db);
 
-    db = ol_open(DB_PATH, DB_NAME);
+    db = ol_open(DB_PATH, DB_NAME, 0);
 
     char tmp_path[512];
     db->get_db_file_name(db, "dump", tmp_path);
@@ -460,7 +460,7 @@ int test_dump(void) {
 }
 
 int test_feature_flags(void) {
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
 
     db->enable(OL_F_APPENDONLY, &db->feature_set);
@@ -483,7 +483,7 @@ int test_feature_flags(void) {
 }
 
 int test_aol(void) {
-    ol_database *db = ol_open(DB_PATH, DB_NAME);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
 
@@ -492,7 +492,7 @@ int test_aol(void) {
     unsigned char to_insert[] = "123456789\nthis is a test!";
     ol_log_msg(LOG_INFO, "Inserting %i records.", max_records);
     for (i = 0; i < max_records; i++) { /* 8======D */
-        char key[] = "crazy hash";
+        char key[64] = "crazy hash";
         char append[10] = "";
 
         sprintf(append, "%i", i);
@@ -530,15 +530,7 @@ int test_aol(void) {
 
     ol_close(db);
 
-    db = ol_open(DB_PATH, DB_NAME);
-    db->enable(OL_F_APPENDONLY, &db->feature_set);
-    ol_aol_init(db);
-
-    if (ol_aol_restore(db) < 1) {
-        ol_log_msg(LOG_ERR, "Error during AOL restore...");
-        ol_close(db);
-        return 5;
-    }
+    db = ol_open(DB_PATH, DB_NAME, OL_F_APPENDONLY);
 
     if (db->rcrd_cnt != max_records - 1) {
         ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);

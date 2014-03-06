@@ -35,7 +35,7 @@ int ol_aol_init(ol_database *db) {
     if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         debug("Opening append only log");
         debug("Append only log: %s", db->aol_file);
-        db->aolfd = fopen(db->aol_file, "a+");
+        db->aolfd = fopen(db->aol_file, "ab+");
         check(db->aolfd != NULL, "Error opening append only file");
     }
 
@@ -44,22 +44,29 @@ error:
     return -1;
 }
 
-int ol_aol_fsync(int fd) {
-    int ret;
-    ret = fsync(fd);
-    return ret;
+int ol_aol_fsync(FILE *fd) {
+    check(fflush(fd) == 0, "Could not fflush.");
+    check(fsync(fileno(fd)) == 0, "Could not fsync");
+    return 0;
+error:
+    return -1;
 }
 
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     int ret;
 
     if (strncmp(cmd, "JAR", 3) == 0) {
+        /* I'LL RIGOR YER MORTIS */
         debug("Writing: \"%.*s\"", (int)bct->klen, bct->key);
-        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%.*s:%zu:%.*s:%zu:%.*s\n",
+        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%.*s:%zu:%.*s:%zu:",
                 strlen(cmd), cmd,
                 bct->klen, (int)bct->klen, bct->key,
                 bct->ctype_size, (int)bct->ctype_size, bct->content_type,
-                bct->data_size, (int)bct->data_size, bct->data_ptr);
+                bct->data_size);
+        check(ret > -1, "Error writing to file.");
+        ret = fwrite(bct->data_ptr, bct->data_size, 1, db->aolfd);
+        check(ret > -1, "Error writing to file.");
+        ret = fprintf(db->aolfd, "\n");
     } else if (strncmp(cmd, "SCOOP", 5) == 0) {
         ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s\n", strlen(cmd), cmd,
                 strlen(bct->key), bct->key);
@@ -71,7 +78,7 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     check(ret > -1, "Error writing to file.");
 
     /* Force the OS to flush write to hardware */
-    check(ol_aol_fsync(fileno(db->aolfd)) == 0, "Could not fsync. Panic!");
+    check(ol_aol_fsync(db->aolfd) == 0, "Could not fsync. Panic!");
     return 0;
 error:
     return -1;
