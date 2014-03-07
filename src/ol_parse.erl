@@ -32,6 +32,7 @@ parse_db_name_and_key(Data) ->
     case Verb of
         <<"GET">>    -> {get, ParsedUrl};
         <<"POST">>   -> {post, ParsedUrl};
+        <<"HEAD">>   -> {head, ParsedUrl};
         <<"DELETE">> -> {delete, ParsedUrl};
         Chunk ->
             {error, <<"Didn't understand your verb.">>, Chunk}

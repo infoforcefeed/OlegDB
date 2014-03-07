@@ -91,6 +91,13 @@ route(Bits, Socket) ->
                             ol_http:get_response(ContentType, Data);
                         _ -> ol_http:not_found_response()
                     end;
+                head ->
+                    %io:format("[-] HEAD ~p~n", [Header#ol_record.key]),
+                    case ol_database:ol_content_type(Header) of
+                        {ok, ContentType} ->
+                            ol_http:content_type_response(ContentType);
+                        _ -> ol_http:not_found_response()
+                    end;
                 post ->
                     %io:format("[-] Posting to ~p~n", [Header#ol_record.key]),
                     NewHeader = ol_util:read_remaining_data(Header, Socket),

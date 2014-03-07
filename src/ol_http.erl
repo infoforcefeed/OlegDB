@@ -25,6 +25,7 @@
          post_response/0,
          deleted_response/0,
          continue_you_shit_response/0,
+         content_type_response/1,
          error_response/1
         ]).
 
@@ -70,6 +71,14 @@ continue_you_shit_response() ->
     "Server: OlegDB/fresh_cuts_n_jams\r\n"
     "Content-Length: 0\r\n"
     "\r\n">>.
+
+content_type_response(ContentType) ->
+    io_lib:format(
+      <<"HTTP/1.1 200 OK\r\n"
+        "Server: OlegDB/fresh_cuts_n_jams\r\n"
+        "Content-Length: 0\r\n"
+        "Content-Type: ~s\r\n"
+        "\r\n">>, [ContentType]).
 
 error_response(Data) ->
     io_lib:format(

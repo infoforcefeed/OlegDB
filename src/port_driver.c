@@ -226,7 +226,20 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
             ei_x_encode_atom(&to_send, "not_found");
         driver_output(d->port, to_send.buff, to_send.index);
         ei_x_free(&to_send);
-
+    } else if (fn == 4) {
+        /* ol_content_type */
+        char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
+        ei_x_buff to_send;
+        ei_x_new_with_version(&to_send);
+        if (data != NULL) {
+            ei_x_encode_tuple_header(&to_send, 2);
+            ei_x_encode_atom(&to_send, "ok");
+            ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
+        } else {
+            ei_x_encode_atom(&to_send, "not_found");
+        }
+        driver_output(d->port, to_send.buff, to_send.index);
+        ei_x_free(&to_send);
     } else {
         /* Send something back so we're not blocking. */
         ei_x_buff to_send;
