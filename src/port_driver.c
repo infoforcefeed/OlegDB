@@ -46,7 +46,7 @@ typedef struct {
 /* This should match the object in olegdb.htl */
 typedef struct {
     char database_name[DB_NAME_SIZE];
-    char key[KEY_SIZE];
+    char *key;
     size_t klen;
     size_t ct_len;
     size_t data_len;
@@ -102,9 +102,19 @@ static ol_record *read_record(char *buf, int index) {
     if (ei_decode_binary(buf, &index, new_obj->database_name, &len))
         ol_log_msg(LOG_WARN, "Could not get database name.\n");
     new_obj->database_name[len] = '\0';
+
+    int key_size = -1;
+    int erl_type = -1;
+    if (ei_get_type(buf, &index, &erl_type, &key_size))
+        ol_log_msg(LOG_WARN, "Could not get key size.\n");
+    new_obj->key = malloc(key_size);
+
     if (ei_decode_binary(buf, &index, new_obj->key, &len))
         ol_log_msg(LOG_WARN, "Could not get key.\n");
     new_obj->klen = len;
+    debug("Key: %s", new_obj->key);
+    debug("get_type klen: %zu", new_obj->klen);
+
     if (ei_decode_binary(buf, &index, new_obj->content_type, &len))
         ol_log_msg(LOG_WARN, "Could not get content-type.");
     new_obj->ct_len = len;
@@ -131,6 +141,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     int fn = cmd[0];
     ol_record *obj = NULL;
 
+    debug("Command from server: %i", fn);
     if (fn == 0) {
         int tmp_index = 1;
         int version = 0;
@@ -150,20 +161,21 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         return;
     }
 
+    /* Check to see if someone called ol_init */
+    if (d->db_loc[0] == '\0') {
+        ei_x_buff to_send;
+        _gen_atom(&to_send, "no_db_location");
+        driver_output(d->port, to_send.buff, to_send.index);
+        ei_x_free(&to_send);
+        return;
+    }
+
     /* Turn Erlang into Oleg */
     obj = read_record(cmd, 1);
 
     /* Open up a db if we don't have on already */
     if (d->db == NULL) {
         ol_database *db;
-        /* Check to see if someone called ol_init */
-        if (d->db_loc[0] == '\0') {
-            ei_x_buff to_send;
-            _gen_atom(&to_send, "no_db_location");
-            driver_output(d->port, to_send.buff, to_send.index);
-            ei_x_free(&to_send);
-            return;
-        }
         db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY);
         d->db = db;
     }
@@ -227,6 +239,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         if (obj->data) driver_free(obj->data);
         driver_free(obj);
     }
+    free(obj->key);
 }
 
 /* Various callbacks */

@@ -190,12 +190,15 @@ int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
     return index;
 }
 
+/* TODO: Refactor this to not allocate a new str, but to fill out a passed in
+ * str. This keeps memory management to the parent function. */
 static inline char *_ol_trunc(const char *key, size_t klen) {
     /* Silently truncate because #yolo */
     size_t real_key_len = klen > KEY_SIZE ? KEY_SIZE : klen;
     char *_key = malloc(real_key_len+1);
     strncpy(_key, key, real_key_len);
     _key[real_key_len] = '\0';
+    debug("New key: %s Klen: %zu", _key, strnlen(_key, KEY_SIZE));
     return _key;
 }
 
