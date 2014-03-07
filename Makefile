@@ -17,6 +17,7 @@ ERL_DIR=$(shell echo 'io:format("~s~n",[code:root_dir()]),init:stop().' | erl | 
 ERLI_DIR=$(shell echo 'io:format("~s~n",[code:lib_dir(erl_interface)]),init:stop().' | erl | sed -n '/^1>/s/^1> //p')
 ERLINCLUDES=-I$(ERL_DIR)/usr/include/ -I$(ERLI_DIR)/include/
 ERLLIBS=-L$(ERL_DIR)/usr/lib/ -L$(ERLI_DIR)/lib/
+ERL_ODB_INSTALL_DIR=$(ERL_DIR)/lib/olegdb-$(VERSION)
 INCLUDES=-I./include $(ERLINCLUDES)
 
 MATH_LINKER=
@@ -51,6 +52,11 @@ $(LIB_DIR)liboleg.so: murmur3.o oleg.o dump.o logging.o aol.o port_driver.o
 server: $(BIN_DIR)ol_database.beam $(BIN_DIR)ol_http.beam \
 	$(BIN_DIR)ol_parse.beam $(BIN_DIR)ol_util.beam $(BIN_DIR)olegdb.beam
 
+uninstall:
+	rm -rf $(INSTALL_LIB)/liboleg*
+	rm -rf $(INSTALL_BIN)/olegdb
+	rm -rf $(ERL_ODB_INSTALL_DIR)
+
 install: ERL_LIB_LOOKFOR=-DLIBLOCATION=\"$(INSTALL_LIB)\"
 install: liboleg server
 	@mkdir -p $(INSTALL_LIB)
@@ -61,6 +67,13 @@ install: liboleg server
 	install $(LIB_DIR)libolegserver.so $(INSTALL_LIB)libolegserver.so.$(VERSION)
 	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so
 	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so.$(SOVERSION)
+	@mkdir -p $(ERL_ODB_INSTALL_DIR)/src
+	@mkdir -p $(ERL_ODB_INSTALL_DIR)/include
+	@mkdir -p $(ERL_ODB_INSTALL_DIR)/ebin
+	install $(BIN_DIR)*.beam $(ERL_ODB_INSTALL_DIR)/ebin
+	install ./include/*.hrl $(ERL_ODB_INSTALL_DIR)/include
+	install ./src/*.erl $(ERL_ODB_INSTALL_DIR)/src
+	cp ./run_server.sh $(INSTALL_BIN)/olegdb
 
 test: all
 	./run_tests.sh
