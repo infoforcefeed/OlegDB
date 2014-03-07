@@ -50,13 +50,13 @@ To run tests:
 To run the erlang server:
 
 ```bash
-./run_server.sh <db_location>
+olegdb <db_location>
 ```
 
 You can optionally specify a port, host or both. But not just a host.
 
 ```bash
-./run_server.sh <db_location> [host] [port]
+olegdb <db_location> [host] [port]
 ```
 
 curl2sudo® install script coming soon.
