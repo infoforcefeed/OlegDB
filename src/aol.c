@@ -59,6 +59,24 @@ static inline void _serialize_time(struct tm *time, char *buf) {
 
 static inline void _deserialize_time(struct tm *time, char *buf) {
     /* Example 8601 datestamp: 2014-03-08T11:17:39Z */
+    char year[4], month[2], day[2];
+    char hour[2], min[2], sec[2];
+
+    memcpy(&year, &buf[0], 4);
+    memcpy(&month, &buf[5], 2);
+    memcpy(&day, &buf[8], 2);
+
+    memcpy(&hour, &buf[11], 2);
+    memcpy(&min, &buf[14], 2);
+    memcpy(&sec, &buf[17], 2);
+
+    time->tm_year = atoi(year);
+    time->tm_mon = atoi(month) - 1;
+    time->tm_mday = atoi(day);
+
+    time->tm_hour = atoi(hour);
+    time->tm_min = atoi(min);
+    time->tm_sec = atoi(sec);
 }
 
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
