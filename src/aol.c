@@ -54,11 +54,11 @@ error:
 }
 
 static inline void _serialize_time(struct tm *time, char *buf) {
-    strftime(buf, 20, "%FT%TZ", time);
-    buf[20] = '\0';
+    strftime(buf, 21, "%FT%TZ", time);
 }
 
 static inline void _deserialize_time(struct tm *time, char *buf) {
+    /* Example 8601 datestamp: 2014-03-08T11:17:39Z */
 }
 
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
@@ -85,10 +85,10 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
         char exptime[21] = {'\0'};
         _serialize_time(bct->expiration, exptime);
 
-        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%s\n",
+        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%*s\n",
                 strlen(cmd), cmd,
                 bct->klen, bct->key,
-                strlen(exptime), exptime);
+                strlen(exptime), 20, exptime);
         check(ret > -1, "Error writing to file.");
     } else {
         ol_log_msg(LOG_ERR, "No such command '%s'", cmd);
