@@ -37,6 +37,11 @@ main.o: ./src/main.c
 %.o: ./src/%.c
 	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC $<
 
+FORCE:
+
+$(BIN_DIR)ol_database.beam: ./src/olegdb.erl FORCE
+	erlc $(ERLFLAGS) $<
+
 $(BIN_DIR)%.beam: ./src/%.erl
 	erlc $(ERLFLAGS) $<
 
