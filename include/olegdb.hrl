@@ -20,6 +20,7 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %%% THE SOFTWARE.
 -record(ol_record, {database = <<"oleg">>,
+                    expiration_time=-1,
                     key, % Binary
                     content_type = <<"application/octet-stream">>,
                     value = <<>>,

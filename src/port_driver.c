@@ -51,6 +51,7 @@ typedef struct {
     size_t ct_len;
     size_t data_len;
     int version;
+    long expiration;
     char content_type[255];
     unsigned char *data;
 } ol_record;
@@ -94,7 +95,7 @@ static ol_record *read_record(char *buf, int index) {
     if (ei_decode_tuple_header(buf, &index, &arity))
         ol_log_msg(LOG_WARN, "Could not decode tuple header.\n");
 
-    if (arity != 6)
+    if (arity != 7)
         ol_log_msg(LOG_WARN, "Arity was not as expected.\n");
 
     if (ei_decode_atom(buf, &index, atom))
@@ -103,11 +104,14 @@ static ol_record *read_record(char *buf, int index) {
         ol_log_msg(LOG_WARN, "Could not get database name.\n");
     new_obj->database_name[len] = '\0';
 
+    if (ei_decode_long(buf, &index, &new_obj->expiration))
+        ol_log_msg(LOG_WARN, "Could not get expiration.\n");
+
     int key_size = -1;
     int erl_type = -1;
     if (ei_get_type(buf, &index, &erl_type, &key_size))
         ol_log_msg(LOG_WARN, "Could not get key size.\n");
-    new_obj->key = malloc(key_size);
+    new_obj->key = driver_alloc(key_size);
 
     if (ei_decode_binary(buf, &index, new_obj->key, &len))
         ol_log_msg(LOG_WARN, "Could not get key.\n");
@@ -184,6 +188,14 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         /* ol_jar */
         res = ol_jar_ct(d->db, obj->key, obj->klen, obj->data, obj->data_len,
                obj->content_type, obj->ct_len);
+
+        debug("Expiration: %li", obj->expiration);
+        if (obj->expiration != -1) {
+            struct tm *new_expire;
+            time_t passed_time = (time_t)obj->expiration;
+            new_expire = gmtime(&passed_time);
+            ol_spoil(d->db, obj->key, obj->klen, new_expire);
+        }
         /* TODO: Actually return useful info here. */
         ei_x_buff to_send;
         ei_x_new_with_version(&to_send);
@@ -252,7 +264,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         if (obj->data) driver_free(obj->data);
         driver_free(obj);
     }
-    free(obj->key);
+    driver_free(obj->key);
 }
 
 /* Various callbacks */

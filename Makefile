@@ -39,7 +39,7 @@ main.o: ./src/main.c
 
 FORCE:
 
-$(BIN_DIR)ol_database.beam: ./src/olegdb.erl FORCE
+$(BIN_DIR)ol_database.beam: ./src/ol_database.erl FORCE
 	erlc $(ERLFLAGS) $<
 
 $(BIN_DIR)%.beam: ./src/%.erl
