@@ -83,7 +83,7 @@ parse_header1([Line|Header], {Record, Options}) ->
             % This is only used for 100 requests
             Len = list_to_integer(binary_to_list(CLength)),
             parse_header1(Header, {Record#ol_record{content_length=Len}, Options});
-        <<"X-OlegDB-expires: ", Timestamp/binary>> ->
+        <<"X-OlegDB-use-by: ", Timestamp/binary>> ->
             Time = list_to_integer(binary_to_list(Timestamp)),
             parse_header1(Header, {Record#ol_record{expiration_time=Time}, Options});
         <<"Content-Type: ", CType/binary>> ->
