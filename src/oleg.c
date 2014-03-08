@@ -305,15 +305,13 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
     free(_key);
 
     if (bucket != NULL) {
-        time_t current, made;
+        time_t current = 0, made = 0;
         /* So dumb */
         current = mktime(gmtime(&current));
-        made = mktime(bucket->expiration);
+        if (bucket->expiration != NULL)
+            made = mktime(bucket->expiration);
 
         /* For some reason you can't compare 0 to a time_t. */
-        ol_log_msg(LOG_INFO, "Made, current: %d", difftime(made, current));
-        ol_log_msg(LOG_INFO, "current, made: %d", difftime(current, made));
-        ol_log_msg(LOG_INFO, "Current < made: %i", current < made);
         if (made == 0 || current < made) {
             if (dsize != NULL)
                 memcpy(dsize, &bucket->data_size, sizeof(size_t));
@@ -355,7 +353,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         bucket->content_type = ct_real;
         bucket->data_size = vsize;
         bucket->data_ptr = data;
-        bucket->expiration = 0;
+        bucket->expiration = NULL;
 
         if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
                 db->state != OL_S_STARTUP) {
@@ -375,7 +373,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
     free(_key);
     new_bucket->klen = _klen;
-    new_bucket->expiration = 0;
+    new_bucket->expiration = NULL;
 
     new_bucket->next = NULL;
 
