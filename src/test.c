@@ -507,8 +507,10 @@ int test_aol() {
         return 2;
     }
 
-    time_t now;
-    time(&now);
+    struct tm *now;
+    time_t current_time;
+    time(&current_time);
+    now = gmtime(&current_time);
     /* Expire a key */
     if (ol_spoil(db, "crazy hash1", strlen("crazy hash1"), now) == 0) {
         ol_log_msg(LOG_INFO, "Spoiled record.");
@@ -546,14 +548,16 @@ int test_aol() {
 int test_expiration() {
     ol_database *db = _test_db_open();
     /* Get the current time */
+    struct tm *now;
     time_t current_time;
     time(&current_time);
+    now = gmtime(&current_time);
 
     const char key[] = "testKey";
     unsigned char value[] = "TestValue yo";
 
     check(ol_jar(db, key, strlen(key), value, strlen((char *)value)) == 0, "Could not insert.");
-    check(ol_spoil(db, key, strlen(key), current_time) == 0, "Could not set expiration");
+    check(ol_spoil(db, key, strlen(key), now) == 0, "Could not set expiration");
     check(ol_unjar(db, key, strlen(key)) == NULL, "Key did not expire properly.");
 
     ol_close(db);

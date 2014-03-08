@@ -252,9 +252,9 @@ int ol_uptime(ol_database *db);
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
- * xXx time=The time to set the expiration to. xXx
+ * xXx time=The <b>UTC</b> time to set the expiration to. xXx
  */
-int ol_spoil(ol_database *db, const char *key, size_t klen, const time_t time);
+int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *time);
 
 /* xXx FUNCTION=ol_ht_bucket_max xXx
  * xXx DESCRIPTION=Does some sizeof witchery to return the maximum current size of the database. xXx

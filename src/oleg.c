@@ -305,11 +305,16 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
     free(_key);
 
     if (bucket != NULL) {
-        struct tm *now;
-        time = gmtime(time());
+        time_t current, made;
+        /* So dumb */
+        current = mktime(gmtime(&current));
+        made = mktime(bucket->expiration);
 
         /* For some reason you can't compare 0 to a time_t. */
-        if (bucket->expiration == 0 || now < bucket->expiration) {
+        ol_log_msg(LOG_INFO, "Made, current: %d", difftime(made, current));
+        ol_log_msg(LOG_INFO, "current, made: %d", difftime(current, made));
+        ol_log_msg(LOG_INFO, "Current < made: %i", current < made);
+        if (made == 0 || current < made) {
             if (dsize != NULL)
                 memcpy(dsize, &bucket->data_size, sizeof(size_t));
             return bucket->data_ptr;
@@ -422,7 +427,7 @@ int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *valu
     return _ol_jar(db, key, klen, value, vsize, content_type, content_type_size);
 }
 
-int ol_spoil(ol_database *db, const char *key, size_t klen, const time_t time) {
+int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *time) {
     uint32_t hash;
     char *_key = _ol_trunc(key, klen);
     size_t _klen = strnlen(_key, KEY_SIZE);

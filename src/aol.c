@@ -53,6 +53,14 @@ error:
     return -1;
 }
 
+static inline void _serialize_time(struct tm *time, char *buf) {
+    strftime(buf, 20, "%FT%TZ", time);
+    buf[20] = '\0';
+}
+
+static inline void _deserialize_time(struct tm *time, char *buf) {
+}
+
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     int ret;
 
@@ -74,7 +82,9 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
                 bct->klen, bct->key);
         check(ret > -1, "Error writing to file.");
     } else if (strncmp(cmd, "SPOIL", 5) == 0) {
-        char *exptime = ctime(&bct->expiration);
+        char exptime[21] = {'\0'};
+        _serialize_time(bct->expiration, exptime);
+
         ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%s\n",
                 strlen(cmd), cmd,
                 bct->klen, bct->key,
@@ -163,8 +173,12 @@ int ol_aol_restore(ol_database *db) {
         } else if (strncmp(command->data, "SPOIL", 5) == 0) {
             ol_string *spoil;
             spoil = _ol_read_data(fd);
+
+            struct tm time;
+            _deserialize_time(&time, spoil->data);
+
             check(spoil, "Error reading");
-            ol_spoil(db, k->data, k->dlen, (time_t)spoil);
+            ol_spoil(db, k->data, k->dlen, &time);
         }
 
         free(command->data);
