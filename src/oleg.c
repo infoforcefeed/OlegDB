@@ -305,8 +305,8 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
     free(_key);
 
     if (bucket != NULL) {
-        time_t now;
-        time(&now);
+        struct tm *now;
+        time = gmtime(time());
 
         /* For some reason you can't compare 0 to a time_t. */
         if (bucket->expiration == 0 || now < bucket->expiration) {

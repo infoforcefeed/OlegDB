@@ -106,7 +106,7 @@ typedef struct ol_bucket {
     size_t            data_size;
     uint32_t          hash;
     struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
-    time_t            expiration;
+    struct tm         *expiration;
 } ol_bucket;
 
 /* xXx STRUCT=ol_database xXx
