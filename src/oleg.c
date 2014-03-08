@@ -35,6 +35,15 @@
 #include "murmur3.h"
 #include "errhandle.h"
 
+/* Fix for the GNU extension strnlen not being available on some platforms */
+#if defined(__MINGW32_VERSION) || (defined(__APPLE__) && \
+    __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1070)
+size_t strnlen(char *text, size_t maxlen) {
+    const char *last = memchr(text, '\0', maxlen);
+    return last ? (size_t) (last - text) : maxlen;
+}
+#endif
+
 
 inline int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
