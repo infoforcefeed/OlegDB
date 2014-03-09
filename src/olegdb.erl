@@ -111,10 +111,12 @@ route(Bits, Socket) ->
                         ok -> ol_http:deleted_response();
                         _ -> ol_http:not_found_response()
                     end;
-                DontKnow ->
-                    ol_http:error_response(DontKnow)
+                {error, ErrMsg} ->
+                    ol_http:error_response(ErrMsg)
             end;
-        {error, ErrMsg} -> ol_http:error_response(ErrMsg)
+        {_, {error, ErrMsg}} ->
+            io:format("[-] Error ~p~n", [ErrMsg]),
+            ol_http:error_response(ErrMsg)
     end.
 
 hundred_handler(Header, Socket) ->
