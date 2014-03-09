@@ -106,7 +106,7 @@ typedef struct ol_bucket {
     size_t            data_size;
     uint32_t          hash;
     struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
-    struct tm         *expiration;
+    struct tm         expiration;
 } ol_bucket;
 
 /* xXx STRUCT=ol_database xXx
@@ -229,6 +229,15 @@ int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *valu
  * xXx klen=The length of the key. xXx
  */
 char *ol_content_type(ol_database *db, const char *key, size_t klen);
+
+/* xXx FUNCTION=ol_expiration xXx
+ * xXx DESCRIPTION=Retrieves the expiration time for a given key from the database. xXx
+ * xXx RETURNS=Stored struct tm *representing the time that this key will expire, or NULL if not found. xXx
+ * xXx *db=Database to retrieve value from. xXx
+ * xXx *key=The key to use. xXx
+ * xXx klen=The length of the key. xXx
+ */
+struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen);
 
 /* xXx FUNCTION=ol_scoop xXx
  * xXx DESCRIPTION=Removes an object from the database. Get that crap out of the mayo jar. xXx

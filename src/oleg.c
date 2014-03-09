@@ -322,11 +322,11 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
         time(&current);
         gmtime_r(&current, &utctime);
         current = mktime(&utctime);
-        if (bucket->expiration != NULL)
-            made = mktime(bucket->expiration);
+        if (bucket->expiration != 0)
+            made = mktime(&bucket->expiration);
 
         /* For some reason you can't compare 0 to a time_t. */
-        if (bucket->expiration == NULL || current < made) {
+        if (bucket->expiration == 0 || current < made) {
             if (dsize != NULL)
                 memcpy(dsize, &bucket->data_size, sizeof(size_t));
             return bucket->data_ptr;
@@ -367,7 +367,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         bucket->content_type = ct_real;
         bucket->data_size = vsize;
         bucket->data_ptr = data;
-        bucket->expiration = NULL;
+        bucket->expiration = {0};
 
         if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
                 db->state != OL_S_STARTUP) {
@@ -387,7 +387,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
     free(_key);
     new_bucket->klen = _klen;
-    new_bucket->expiration = NULL;
+    new_bucket->expiration = {0};
 
     new_bucket->next = NULL;
 
@@ -449,7 +449,7 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *time) {
     free(_key);
 
     if (bucket != NULL) {
-        bucket->expiration = time;
+        memcpy(bucket->expiration, time, sizeof(struct tm));
         if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
                 db->state != OL_S_STARTUP) {
             ol_aol_write_cmd(db, "SPOIL", bucket);
@@ -521,6 +521,20 @@ char *ol_content_type(ol_database *db, const char *key, size_t klen) {
 
     if (bucket != NULL)
         return bucket->content_type;
+
+    return NULL;
+}
+
+struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
+    uint32_t hash;
+    char *_key = _ol_trunc(key, klen);
+    size_t _klen = strnlen(_key, KEY_SIZE);
+    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
+    ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
+    free(_key);
+
+    if (bucket != NULL && bucket->expiration != NULL)
+        return &bucket->expiration;
 
     return NULL;
 }

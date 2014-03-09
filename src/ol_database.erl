@@ -25,7 +25,7 @@
          ol_init/1,
          ol_jar/1,
          ol_unjar/1,
-         ol_content_type/1,
+         ol_bucket_meta/1,
          ol_scoop/1]).
 
 -include("olegdb.hrl").
@@ -55,7 +55,7 @@ encode({ol_init, X})  -> [0, term_to_binary(X)];
 encode({ol_jar, X})   -> [1, term_to_binary(X)];
 encode({ol_unjar, X}) -> [2, term_to_binary(X)];
 encode({ol_scoop, X}) -> [3, term_to_binary(X)];
-encode({ol_content_type, X}) -> [4, term_to_binary(X)];
+encode({ol_bucket_meta, X}) -> [4, term_to_binary(X)];
 encode(_) ->
     io:format("Don't know how to decode that.~n"),
     exit(unknown_call).
@@ -110,5 +110,5 @@ ol_unjar(OlRecord) ->
 ol_scoop(OlRecord) ->
     call_port({ol_scoop, OlRecord}).
 
-ol_content_type(OlRecord) ->
-    call_port({ol_content_type, OlRecord}).
+ol_bucket_meta(OlRecord) ->
+    call_port({ol_bucket_meta, OlRecord}).

@@ -239,13 +239,23 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         driver_output(d->port, to_send.buff, to_send.index);
         ei_x_free(&to_send);
     } else if (fn == 4) {
-        /* ol_content_type */
+        /* ol_bucket_meta */
         char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
         ei_x_buff to_send;
         ei_x_new_with_version(&to_send);
-        if (data != NULL) {
-            ei_x_encode_tuple_header(&to_send, 2);
-            ei_x_encode_atom(&to_send, "ok");
+        if (content_type_retrieved != NULL) {
+            struct tm *time_retrieved = NULL;
+            time_retrieved = ol_expiration_time(d->db, obj->key, obj->klen);
+
+            /* If we have an expiration time, send it back with the content type. */
+            if (time_retrieved != NULL) {
+                ei_x_encode_tuple_header(&to_send, 3);
+                ei_x_encode_atom(&to_send, "ok");
+                ei_x_encode_long(&to_send, (long)mktime(time_retrieved));
+            } else {
+                ei_x_encode_tuple_header(&to_send, 2);
+                ei_x_encode_atom(&to_send, "ok");
+            }
             ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
         } else {
             ei_x_encode_atom(&to_send, "not_found");

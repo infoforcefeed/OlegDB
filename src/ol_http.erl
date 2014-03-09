@@ -25,7 +25,8 @@
          post_response/0,
          deleted_response/0,
          continue_you_shit_response/0,
-         content_type_response/1,
+         bucket_meta_response/1,
+         bucket_meta_response/2,
          error_response/1
         ]).
 
@@ -72,7 +73,16 @@ continue_you_shit_response() ->
     "Content-Length: 0\r\n"
     "\r\n">>.
 
-content_type_response(ContentType) ->
+bucket_meta_response(ContentType, Expires) ->
+    io_lib:format(
+      <<"HTTP/1.1 200 OK\r\n"
+        "Server: OlegDB/fresh_cuts_n_jams\r\n"
+        "Content-Length: 0\r\n"
+        "Content-Type: ~p\r\n"
+        "Expires: ~p\r\n"
+        "\r\n">>, [ContentType, Expires]).
+
+bucket_meta_response(ContentType) ->
     io_lib:format(
       <<"HTTP/1.1 200 OK\r\n"
         "Server: OlegDB/fresh_cuts_n_jams\r\n"
