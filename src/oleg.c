@@ -314,14 +314,19 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
     free(_key);
 
     if (bucket != NULL) {
-        time_t current = 0, made = 0;
+        struct tm utctime;
+        time_t current;
+        time_t made;
+
         /* So dumb */
-        current = mktime(gmtime(&current));
+        time(&current);
+        gmtime_r(&current, &utctime);
+        current = mktime(&utctime);
         if (bucket->expiration != NULL)
             made = mktime(bucket->expiration);
 
         /* For some reason you can't compare 0 to a time_t. */
-        if (made == 0 || current < made) {
+        if (bucket->expiration == NULL || current < made) {
             if (dsize != NULL)
                 memcpy(dsize, &bucket->data_size, sizeof(size_t));
             return bucket->data_ptr;

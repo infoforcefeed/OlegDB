@@ -191,10 +191,10 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
         debug("Expiration: %li", obj->expiration);
         if (obj->expiration != -1) {
-            struct tm *new_expire;
+            struct tm new_expire;
             time_t passed_time = (time_t)obj->expiration;
-            new_expire = gmtime(&passed_time);
-            ol_spoil(d->db, obj->key, obj->klen, new_expire);
+            gmtime_r(&passed_time, &new_expire);
+            ol_spoil(d->db, obj->key, obj->klen, &new_expire);
         }
         /* TODO: Actually return useful info here. */
         ei_x_buff to_send;

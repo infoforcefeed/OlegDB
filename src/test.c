@@ -550,16 +550,16 @@ int test_expiration() {
     ol_database *db = _test_db_open();
 
     /* Get the current time */
-    struct tm *now;
+    struct tm now;
     time_t current_time;
     time(&current_time);
-    now = gmtime(&current_time);
+    gmtime_r(&current_time, &now);
 
     const char key[] = "testKey";
     unsigned char value[] = "TestValue yo";
 
     check(ol_jar(db, key, strlen(key), value, strlen((char *)value)) == 0, "Could not insert.");
-    check(ol_spoil(db, key, strlen(key), now) == 0, "Could not set expiration");
+    check(ol_spoil(db, key, strlen(key), &now) == 0, "Could not set expiration");
     check(ol_unjar(db, key, strlen(key)) == NULL, "Key did not expire properly.");
 
     ol_close(db);
