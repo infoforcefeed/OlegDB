@@ -314,15 +314,15 @@ static inline int _has_bucket_expired(const ol_bucket *bucket) {
     /* So dumb */
     time(&current);
     gmtime_r(&current, &utctime);
-    current = mktime(&utctime);
+    current = timegm(&utctime);
     if (bucket->expiration != NULL)
-        made = mktime(bucket->expiration);
+        made = timegm(bucket->expiration);
 
     /* For some reason you can't compare 0 to a time_t. */
     if (bucket->expiration == NULL || current < made) {
-        return 1;
+        return 0;
     }
-    return 0;
+    return 1;
 }
 ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize) {
     uint32_t hash;
@@ -334,7 +334,7 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
     free(_key);
 
     if (bucket != NULL) {
-        if (_has_bucket_expired(bucket)) {
+        if (!_has_bucket_expired(bucket)) {
             if (dsize != NULL)
                 memcpy(dsize, &bucket->data_size, sizeof(size_t));
             return bucket->data_ptr;
@@ -532,7 +532,7 @@ char *ol_content_type(ol_database *db, const char *key, size_t klen) {
     free(_key);
 
     if (bucket != NULL) {
-        if (_has_bucket_expired(bucket)) {
+        if (!_has_bucket_expired(bucket)) {
             return bucket->content_type;
         } else {
             /* It's dead, get rid of it. */
@@ -552,7 +552,7 @@ struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
     free(_key);
 
     if (bucket != NULL && bucket->expiration != NULL) {
-        if (_has_bucket_expired(bucket)) {
+        if (!_has_bucket_expired(bucket)) {
             return bucket->expiration;
         } else {
             /* It's dead, get rid of it. */

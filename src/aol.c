@@ -70,7 +70,7 @@ static inline void _deserialize_time(struct tm *time, char *buf) {
     memcpy(&min, &buf[14], 2);
     memcpy(&sec, &buf[17], 2);
 
-    time->tm_year = atoi(year);
+    time->tm_year = atoi(year) - 1900;
     time->tm_mon = atoi(month) - 1;
     time->tm_mday = atoi(day);
 
