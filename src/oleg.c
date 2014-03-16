@@ -306,6 +306,24 @@ ol_val ol_unjar(ol_database *db, const char *key, size_t klen) {
     return ol_unjar_ds(db, key, klen, NULL);
 }
 
+static inline int _has_bucket_expired(const ol_bucket *bucket) {
+    struct tm utctime;
+    time_t current;
+    time_t made;
+
+    /* So dumb */
+    time(&current);
+    gmtime_r(&current, &utctime);
+    current = mktime(&utctime);
+    if (bucket->expiration != NULL)
+        made = mktime(bucket->expiration);
+
+    /* For some reason you can't compare 0 to a time_t. */
+    if (bucket->expiration == NULL || current < made) {
+        return 1;
+    }
+    return 0;
+}
 ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize) {
     uint32_t hash;
 
@@ -316,19 +334,7 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
     free(_key);
 
     if (bucket != NULL) {
-        struct tm utctime;
-        time_t current;
-        time_t made;
-
-        /* So dumb */
-        time(&current);
-        gmtime_r(&current, &utctime);
-        current = mktime(&utctime);
-        if (bucket->expiration != NULL)
-            made = mktime(bucket->expiration);
-
-        /* For some reason you can't compare 0 to a time_t. */
-        if (bucket->expiration == NULL || current < made) {
+        if (_has_bucket_expired(bucket)) {
             if (dsize != NULL)
                 memcpy(dsize, &bucket->data_size, sizeof(size_t));
             return bucket->data_ptr;
@@ -525,8 +531,14 @@ char *ol_content_type(ol_database *db, const char *key, size_t klen) {
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
     free(_key);
 
-    if (bucket != NULL)
-        return bucket->content_type;
+    if (bucket != NULL) {
+        if (_has_bucket_expired(bucket)) {
+            return bucket->content_type;
+        } else {
+            /* It's dead, get rid of it. */
+            ol_scoop(db, key, klen);
+        }
+    }
 
     return NULL;
 }
@@ -539,8 +551,14 @@ struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
     free(_key);
 
-    if (bucket != NULL && bucket->expiration != NULL)
-        return bucket->expiration;
+    if (bucket != NULL && bucket->expiration != NULL) {
+        if (_has_bucket_expired(bucket)) {
+            return bucket->expiration;
+        } else {
+            /* It's dead, get rid of it. */
+            ol_scoop(db, key, klen);
+        }
+    }
 
     return NULL;
 }
