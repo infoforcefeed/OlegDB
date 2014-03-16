@@ -78,7 +78,7 @@ bucket_meta_response(ContentType, Expires) ->
       <<"HTTP/1.1 200 OK\r\n"
         "Server: OlegDB/fresh_cuts_n_jams\r\n"
         "Content-Length: 0\r\n"
-        "Content-Type: ~p\r\n"
+        "Content-Type: ~s\r\n"
         "Expires: ~p\r\n"
         "\r\n">>, [ContentType, Expires]).
 

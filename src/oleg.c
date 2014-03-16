@@ -126,6 +126,8 @@ error:
 }
 
 static inline void _ol_free_bucket(ol_bucket *ptr) {
+    if (ptr->expiration != NULL)
+        free(ptr->expiration);
     free(ptr->content_type);
     free(ptr->data_ptr);
     free(ptr);
@@ -322,11 +324,11 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
         time(&current);
         gmtime_r(&current, &utctime);
         current = mktime(&utctime);
-        if (bucket->expiration != 0)
-            made = mktime(&bucket->expiration);
+        if (bucket->expiration != NULL)
+            made = mktime(bucket->expiration);
 
         /* For some reason you can't compare 0 to a time_t. */
-        if (bucket->expiration == 0 || current < made) {
+        if (bucket->expiration == NULL || current < made) {
             if (dsize != NULL)
                 memcpy(dsize, &bucket->data_size, sizeof(size_t));
             return bucket->data_ptr;
@@ -367,7 +369,9 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         bucket->content_type = ct_real;
         bucket->data_size = vsize;
         bucket->data_ptr = data;
-        bucket->expiration = {0};
+        if (bucket->expiration != NULL)
+            free(bucket->expiration);
+        bucket->expiration = NULL;
 
         if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
                 db->state != OL_S_STARTUP) {
@@ -387,7 +391,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
     free(_key);
     new_bucket->klen = _klen;
-    new_bucket->expiration = {0};
+    new_bucket->expiration = NULL;
 
     new_bucket->next = NULL;
 
@@ -449,6 +453,8 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *time) {
     free(_key);
 
     if (bucket != NULL) {
+        if (bucket->expiration == NULL)
+            bucket->expiration = malloc(sizeof(struct tm));
         memcpy(bucket->expiration, time, sizeof(struct tm));
         if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
                 db->state != OL_S_STARTUP) {
@@ -534,7 +540,7 @@ struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
     free(_key);
 
     if (bucket != NULL && bucket->expiration != NULL)
-        return &bucket->expiration;
+        return bucket->expiration;
 
     return NULL;
 }

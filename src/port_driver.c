@@ -251,12 +251,13 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
             if (time_retrieved != NULL) {
                 ei_x_encode_tuple_header(&to_send, 3);
                 ei_x_encode_atom(&to_send, "ok");
+                ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
                 ei_x_encode_long(&to_send, (long)mktime(time_retrieved));
             } else {
                 ei_x_encode_tuple_header(&to_send, 2);
                 ei_x_encode_atom(&to_send, "ok");
+                ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
             }
-            ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
         } else {
             ei_x_encode_atom(&to_send, "not_found");
         }
