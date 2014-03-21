@@ -449,7 +449,7 @@ int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *valu
     return _ol_jar(db, key, klen, value, vsize, content_type, content_type_size);
 }
 
-int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *time) {
+int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiration_date) {
     uint32_t hash;
     char *_key = _ol_trunc(key, klen);
     size_t _klen = strnlen(_key, KEY_SIZE);
@@ -461,7 +461,19 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *time) {
     if (bucket != NULL) {
         if (bucket->expiration == NULL)
             bucket->expiration = malloc(sizeof(struct tm));
-        memcpy(bucket->expiration, time, sizeof(struct tm));
+        memcpy(bucket->expiration, expiration_date, sizeof(struct tm));
+        debug("New expiration time: %lu", (long)mktime(bucket->expiration));
+
+#ifdef DEBUG
+        struct tm utctime;
+        time_t current;
+
+        /* So dumb */
+        time(&current);
+        gmtime_r(&current, &utctime);
+        current = timegm(&utctime);
+        debug("Current time: %lu", (long)current);
+#endif
         if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
                 db->state != OL_S_STARTUP) {
             ol_aol_write_cmd(db, "SPOIL", bucket);

@@ -193,7 +193,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         if (obj->expiration != -1) {
             struct tm new_expire;
             time_t passed_time = (time_t)obj->expiration;
-            gmtime_r(&passed_time, &new_expire);
+            localtime_r(&passed_time, &new_expire);
             ol_spoil(d->db, obj->key, obj->klen, &new_expire);
         }
         /* TODO: Actually return useful info here. */

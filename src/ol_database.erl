@@ -98,6 +98,7 @@ ol_init(DbLocation) ->
     call_port({ol_init, DbLocation}).
 
 ol_jar(OlRecord) ->
+    %io:format("[-] Expiration at this point: ~p~n", [OlRecord#ol_record.expiration_time]),
     if
         byte_size(OlRecord#ol_record.value) > 0 ->
             call_port({ol_jar, OlRecord});
