@@ -315,8 +315,10 @@ static inline int _has_bucket_expired(const ol_bucket *bucket) {
     time(&current);
     gmtime_r(&current, &utctime);
     current = timegm(&utctime);
-    if (bucket->expiration != NULL)
-        made = timegm(bucket->expiration);
+    if (bucket->expiration != NULL) {
+        made = timelocal(bucket->expiration);
+        debug("Made Expiration: %lu", (long)made);
+    }
 
     /* For some reason you can't compare 0 to a time_t. */
     if (bucket->expiration == NULL || current < made) {
