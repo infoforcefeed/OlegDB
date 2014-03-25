@@ -46,7 +46,7 @@ start() ->
     end.
 
 init(Papa) ->
-    register(complex, self()),
+    register(olegdb, self()),
     Port = open_port({spawn, ?SHAREDLIB}, [binary]),
     Papa ! spawned,
     loop(Port).
@@ -70,7 +70,7 @@ loop(Port) ->
             receive
                 %% Give the caller our result
                 {Port, {data, Data}} ->
-                    Caller ! {complex, binary_to_term(Data)};
+                    Caller ! {olegdb, binary_to_term(Data)};
                 badarg ->
                     io:format("Badarg ~n"),
                         exit(port_terminated)
@@ -88,9 +88,9 @@ loop(Port) ->
     end.
 
 call_port(Msg) ->
-    complex ! {call, self(), Msg},
+    olegdb ! {call, self(), Msg},
     receive
-        {complex, Result} ->
+        {olegdb, Result} ->
             Result
     end.
 

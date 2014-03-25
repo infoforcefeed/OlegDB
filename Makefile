@@ -78,6 +78,7 @@ install: liboleg server
 	install $(BIN_DIR)*.beam $(ERL_ODB_INSTALL_DIR)/ebin
 	install ./include/*.hrl $(ERL_ODB_INSTALL_DIR)/include
 	install ./src/*.erl $(ERL_ODB_INSTALL_DIR)/src
+	install ./src/*.app.src $(ERL_ODB_INSTALL_DIR)/ebin
 	cp ./run_server.sh $(INSTALL_BIN)/olegdb
 
 test: all

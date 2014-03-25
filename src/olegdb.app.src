@@ -1,0 +1,18 @@
+{application, OlegDB, [
+    {description, "OlegDB, the Layman's Database"},
+    {vsn, "0.1.0"},
+    {modules,
+        [ ol_database
+        , olegdb
+        , ol_http
+        , ol_parse
+        , ol_util
+        ]
+    },
+    {registered, [olegdb]},
+    {env,
+        [ {}
+        ]
+    },
+    {applications, [kernel, stdlib]}
+]}
