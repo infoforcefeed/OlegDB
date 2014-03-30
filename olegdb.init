@@ -15,24 +15,25 @@ HOST=127.0.0.1
 PORT=8080
 PROG=olegdb
 OLEGDB_USER=olegdb
+LOG_FILE=/var/log/olegdb.log
 
 start_olegdb() {
-    echo "Making run"
     mkdir -p "$RUN_DIR"
-    echo "Making data"
     mkdir -p "$DATA_DIR"
-    echo "Chowning"
     chown $OLEGDB_USER:$OLEGDB_USER "$RUN_DIR" -R
     chown $OLEGDB_USER:$OLEGDB_USER "$DATA_DIR" -R
-    if su $OLEGDB_USER -c "$PROG $DATA_DIR $HOST $PORT"; then
+    touch $LOG_FILE
+    chown $OLEGDB_USER:$OLEGDB_USER "$LOG_FILE"
+    if su $OLEGDB_USER -c "$PROG $DATA_DIR $HOST $PORT &>> $LOG_FILE"; then
         return 0
     else
         return -1
     fi
 }
 
-#stop_olegdb() {
-#}
+stop_olegdb() {
+    echo "To do."
+}
 
 case "$1" in
     start)
@@ -46,10 +47,16 @@ case "$1" in
     stop)
         echo "Stopping OlegDB..."
         if stop_olegdb; then
-            echo "Started."
+            echo "Stopped."
         else
-            echo "Could not start OlegDB."
+            echo "Could not stop OlegDB."
         fi
+        ;;
+    restart)
+        echo "Restarting OlegDB..."
+        stop_olegdb
+        start_olegdb
+        echo "Successfully restarted."
         ;;
     *)
         echo "Usage: "`basename $0`" {start|stop}"
