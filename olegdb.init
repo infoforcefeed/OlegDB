@@ -10,6 +10,7 @@
 ### END INIT INFO
 
 RUN_DIR=/run/olegdb
+PID_FILE=$RUN_DIR/pid
 DATA_DIR=/var/lib/olegdb
 HOST=127.0.0.1
 PORT=8080
@@ -32,7 +33,29 @@ start_olegdb() {
 }
 
 stop_olegdb() {
-    echo "To do."
+    if [ -f $PID_FILE ]
+    then
+        PID=`cat $PID_FILE`
+    fi
+    if [ -n "$PID" ]
+    then
+        if kill -0 $PID 2> /dev/null
+        then
+            if kill -TERM $PID 2> /dev/null
+            then
+                echo "OlegDB has stopped it's reign of terror."
+                rm $PID_FILE
+                return 0
+            else
+                echo "OlegDB is unstoppable!"
+                return -1
+            fi
+            echo "OlegDB PID is stale."
+            rm $PID_FILE
+        fi
+    else
+        echo "OlegDB is not running."
+    fi
 }
 
 case "$1" in
