@@ -25,11 +25,8 @@ start_olegdb() {
     chown $OLEGDB_USER:$OLEGDB_USER "$DATA_DIR" -R
     touch $LOG_FILE
     chown $OLEGDB_USER:$OLEGDB_USER "$LOG_FILE"
-    if su $OLEGDB_USER -c "$PROG $DATA_DIR $HOST $PORT &>> $LOG_FILE"; then
-        return 0
-    else
-        return -1
-    fi
+    su $OLEGDB_USER -c "$PROG $DATA_DIR $HOST $PORT &>> $LOG_FILE" &
+    return $?
 }
 
 stop_olegdb() {

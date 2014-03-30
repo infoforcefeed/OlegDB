@@ -62,6 +62,7 @@ uninstall:
 	rm -rf $(INSTALL_LIB)/liboleg*
 	rm -rf $(INSTALL_BIN)/olegdb
 	rm -rf $(ERL_ODB_INSTALL_DIR)
+	rm -rf /etc/init.d/olegdb
 
 install: ERL_LIB_LOOKFOR=-DLIBLOCATION=\"$(INSTALL_LIB)\"
 install: liboleg server
@@ -83,6 +84,7 @@ install: liboleg server
 	install ./src/*.erl $(ERL_ODB_INSTALL_DIR)/src
 	install ./src/*.app.src $(ERL_ODB_INSTALL_DIR)/ebin
 	cp ./run_server.sh $(INSTALL_BIN)olegdb
+	cp ./olegdb.init /etc/init.d/olegdb
 
 test: all
 	./run_tests.sh
