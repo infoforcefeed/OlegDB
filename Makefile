@@ -7,9 +7,10 @@ SOVERSION=0
 BUILD_DIR=$(shell pwd)/build/
 LIB_DIR=$(BUILD_DIR)lib/
 BIN_DIR=$(BUILD_DIR)bin/
-PREFIX?=/usr/local/
+PREFIX?=/usr/local
 INSTALL_LIB=$(PREFIX)/lib/
 INSTALL_BIN=$(PREFIX)/bin/
+INSTALL_INCLUDE=$(PREFIX)/include/
 
 ERL_LIB_LOOKFOR=-DLIBLOCATION=\"./build/lib/\"
 ERLFLAGS=-smp -W1 -Werror -b beam -I./include -o $(BIN_DIR) $(ERL_LIB_LOOKFOR)
@@ -66,12 +67,14 @@ install: ERL_LIB_LOOKFOR=-DLIBLOCATION=\"$(INSTALL_LIB)\"
 install: liboleg server
 	@mkdir -p $(INSTALL_LIB)
 	@mkdir -p $(INSTALL_BIN)
+	@mkdir -p $(INSTALL_INCLUDE)
 	install $(LIB_DIR)liboleg.so $(INSTALL_LIB)liboleg.so.$(VERSION)
 	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so
 	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
 	install $(LIB_DIR)libolegserver.so $(INSTALL_LIB)libolegserver.so.$(VERSION)
 	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so
 	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so.$(SOVERSION)
+	install ./include/*.h $(INSTALL_INCLUDE)
 	@mkdir -p $(ERL_ODB_INSTALL_DIR)/src
 	@mkdir -p $(ERL_ODB_INSTALL_DIR)/include
 	@mkdir -p $(ERL_ODB_INSTALL_DIR)/ebin
@@ -79,7 +82,7 @@ install: liboleg server
 	install ./include/*.hrl $(ERL_ODB_INSTALL_DIR)/include
 	install ./src/*.erl $(ERL_ODB_INSTALL_DIR)/src
 	install ./src/*.app.src $(ERL_ODB_INSTALL_DIR)/ebin
-	cp ./run_server.sh $(INSTALL_BIN)/olegdb
+	cp ./run_server.sh $(INSTALL_BIN)olegdb
 
 test: all
 	./run_tests.sh
