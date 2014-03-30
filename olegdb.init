@@ -1,0 +1,59 @@
+#!/bin/bash -e
+### BEGIN INIT INFO
+# Provides: olegdb
+# Required-Start: $local_fs $network
+# Required-Stop: $local_fs $network
+# Default-Start:  2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Starts, stops and meddles with OlegDB
+# Description: OlegDB is a k/v store and no one will ever read this. 
+### END INIT INFO
+
+RUN_DIR=/run/olegdb
+DATA_DIR=/var/lib/olegdb
+HOST=127.0.0.1
+PORT=8080
+PROG=olegdb
+OLEGDB_USER=olegdb
+
+start_olegdb() {
+    echo "Making run"
+    mkdir -p "$RUN_DIR"
+    echo "Making data"
+    mkdir -p "$DATA_DIR"
+    echo "Chowning"
+    chown $OLEGDB_USER:$OLEGDB_USER "$RUN_DIR" -R
+    chown $OLEGDB_USER:$OLEGDB_USER "$DATA_DIR" -R
+    if su $OLEGDB_USER -c "$PROG $DATA_DIR $HOST $PORT"; then
+        return 0
+    else
+        return -1
+    fi
+}
+
+#stop_olegdb() {
+#}
+
+case "$1" in
+    start)
+        echo "Starting OlegDB..."
+        if start_olegdb; then
+            echo "Started."
+        else
+            echo "Could not start OlegDB."
+        fi
+        ;;
+    stop)
+        echo "Stopping OlegDB..."
+        if stop_olegdb; then
+            echo "Started."
+        else
+            echo "Could not start OlegDB."
+        fi
+        ;;
+    *)
+        echo "Usage: "`basename $0`" {start|stop}"
+        exit -1
+        ;;
+esac
+

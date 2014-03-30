@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+# -*- coding: utf-8 -*-
 import json, requests, urllib
 
 def assert_key_is_good(resp, value, real_key, key):
