@@ -75,7 +75,7 @@ Roadmap
 
 * Persistence
 * Speaks HTTP with a heavy accent
-* 32 byte hard keysize limit
+* 250 byte hard keysize limit
 * Working database
 
 0.2
