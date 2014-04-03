@@ -368,7 +368,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
             return 4;
 
         char *ct_real = realloc(bucket->content_type, ctsize+1);
-        if (memcpy(ct_real, ct, ctsize) != ct_real)
+        if (strncpy(ct_real, ct, ctsize) != ct_real)
             return 5;
         ct_real[ctsize] = '\0';
 
@@ -522,7 +522,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             do {
                 last = bucket;
                 bucket = bucket->next;
-                if (strncmp(bucket->key, key, klen) == 0) {
+                if (strncmp(bucket->key, _key, _klen) == 0) {
                     if (bucket->next != NULL)
                         last->next = bucket->next;
                     _ol_free_bucket(bucket);
