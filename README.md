@@ -77,14 +77,14 @@ Roadmap
 * Speaks HTTP with a heavy accent
 * 250 byte hard keysize limit
 * Working database
+* Non-guaranteed record expiry
 
 0.2
 ---
-* Non-guaranteed record expiry
+* Splay Trees for key iteration and introspection
+* pub/sub or general evented framework
 * Lists/Queues
-* pub/sub with websockets
 * Speak Redis/Memcached protocol subsets
-* Splay Trees
 
 0.3
 ---
