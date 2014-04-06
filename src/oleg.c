@@ -362,6 +362,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     /* Check to see if we have an existing entry with that key */
     if (bucket) {
+        debug("Reallocating bucket.");
         free(_key);
         unsigned char *data = realloc(bucket->data_ptr, vsize);
         if (memcpy(data, value, vsize) != data)
@@ -491,6 +492,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
     uint32_t hash;
     char *_key = _ol_trunc(key, klen);
     size_t _klen = strnlen(_key, KEY_SIZE);
+    size_t larger_key = 0;
 
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     int index = _ol_calc_idx(db->cur_ht_size, hash);
@@ -502,8 +504,8 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
 
     if (db->hashes[index] != NULL) {
         ol_bucket *bucket = db->hashes[index];
-
-        if (strncmp(bucket->key, _key, _klen) == 0){
+        larger_key = bucket->klen > _klen ? bucket->klen : _klen;
+        if (strncmp(bucket->key, _key, larger_key) == 0) {
             if (bucket->next != NULL) {
                 db->hashes[index] = bucket->next;
             } else {
