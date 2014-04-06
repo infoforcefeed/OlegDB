@@ -131,6 +131,7 @@ static inline void _ol_free_bucket(ol_bucket *ptr) {
     free(ptr->content_type);
     free(ptr->data_ptr);
     free(ptr);
+    ptr = NULL;
 }
 int _ol_close(ol_database *db){
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
@@ -229,7 +230,9 @@ ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char
     int index = _ol_calc_idx(db->cur_ht_size, hash);
     size_t larger_key = 0;
     if (db->hashes[index] != NULL) {
-        ol_bucket *tmp_bucket = db->hashes[index];
+        ol_bucket *tmp_bucket, *original_bucket;
+        /* original_bucket is only here for debugging purposes. */
+        original_bucket = tmp_bucket = db->hashes[index];
         larger_key = tmp_bucket->klen > klen ? tmp_bucket->klen : klen;
         if (strncmp(tmp_bucket->key, key, larger_key) == 0) {
             return tmp_bucket;
@@ -524,7 +527,8 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             do {
                 last = bucket;
                 bucket = bucket->next;
-                if (strncmp(bucket->key, _key, _klen) == 0) {
+                larger_key = bucket->klen > klen ? bucket->klen : klen;
+                if (strncmp(bucket->key, _key, larger_key) == 0) {
                     if (bucket->next != NULL)
                         last->next = bucket->next;
                     _ol_free_bucket(bucket);

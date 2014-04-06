@@ -5,8 +5,9 @@ import json, calendar, requests, time, urllib, os, random, zlib
 def main():
     while True:
         random_length = random.random() * 10000
-        random_str = os.urandom(int(random_length))
-        compressed = zlib.compress(random_str)
+        compressed = "".join(["A" for i in range(0, int(random_length))])
+        #random_str = os.urandom(int(random_length))
+        #compressed = zlib.compress(random_str)
 
         random_key_str = os.urandom(10)
         quoted = urllib.quote(random_key_str)
