@@ -100,6 +100,67 @@ int test_jar() {
     return 0;
 }
 
+int test_lots_of_deletes() {
+    ol_database *db = _test_db_open();
+
+    int i;
+    int max_records = RECORD_COUNT;
+    unsigned char to_insert[] = "123456789AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    for (i = 0; i < max_records; i++) { /* 8======D */
+        char key[KEY_SIZE] = "A";
+        char append[32] = "";
+
+        sprintf(append, "%i", i);
+        strcat(key, append);
+
+        size_t len = strlen((char *)to_insert);
+        int insert_result = ol_jar(db, key, strlen(key), to_insert, len);
+
+        if (insert_result > 0) {
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 2;
+        }
+
+        if (db->rcrd_cnt != i+1) {
+            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 3;
+        }
+    }
+    ol_log_msg(LOG_INFO, "Records inserted: %i.", db->rcrd_cnt);
+    ol_log_msg(LOG_INFO, "Saw %d collisions.", db->key_collisions);
+
+    for (i = 0; i < max_records; i++) { /* 8======D */
+        char key[KEY_SIZE] = "A";
+        char append[32] = "";
+
+        sprintf(append, "%i", i);
+        strcat(key, append);
+
+        int delete_result = ol_scoop(db, key, strlen(key));
+
+        if (delete_result > 0) {
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", delete_result);
+            ol_close(db);
+            return 2;
+        }
+
+        if (db->rcrd_cnt != max_records - i - 1) {
+            ol_log_msg(LOG_INFO, "Record count: %i max_records - i: %i", db->rcrd_cnt, max_records - i);
+            ol_log_msg(LOG_ERR, "Record count is not lower. Error code: %i", delete_result);
+            ol_close(db);
+            return 3;
+        }
+    }
+
+    if (ol_close(db) != 0) {
+        ol_log_msg(LOG_ERR, "Couldn't free all memory.\n");
+        return 1;
+    }
+    return 0;
+}
+
 int test_unjar_ds() {
     ol_database *db = _test_db_open();
 

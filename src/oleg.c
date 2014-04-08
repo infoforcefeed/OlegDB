@@ -466,6 +466,8 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
     if (bucket != NULL) {
         if (bucket->expiration == NULL)
             bucket->expiration = malloc(sizeof(struct tm));
+        else
+            debug("Hmmm, bucket->expiration wasn't null.");
         memcpy(bucket->expiration, expiration_date, sizeof(struct tm));
         debug("New expiration time: %lu", (long)mktime(bucket->expiration));
 
@@ -521,7 +523,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             free(_key);
             db->rcrd_cnt -= 1;
             return 0;
-        } else if (bucket->next != NULL) {
+        } else { /* Keys weren't the same, traverse the bucket LL */
             ol_bucket *last;
             do {
                 last = bucket;
@@ -555,7 +557,9 @@ char *ol_content_type(ol_database *db, const char *key, size_t klen) {
             return bucket->content_type;
         } else {
             /* It's dead, get rid of it. */
-            ol_scoop(db, key, klen);
+            int res = ol_scoop(db, key, klen);
+            if (res > 0)
+                debug("Could not delete a bucket!");
         }
     }
 
@@ -575,7 +579,9 @@ struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
             return bucket->expiration;
         } else {
             /* It's dead, get rid of it. */
-            ol_scoop(db, key, klen);
+            int res = ol_scoop(db, key, klen);
+            if (res > 0)
+                debug("Could not delete a bucket!");
         }
     }
 

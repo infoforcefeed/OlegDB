@@ -19,6 +19,7 @@ def main():
             headers={
                 "Content-Type": "text/html",
                 "X-OlegDB-use-by": expiration})
+        duff = requests.head(connection_str) # For code coverage
         resp = requests.get(connection_str, stream=True)
         raw = resp.raw.read()
         try:

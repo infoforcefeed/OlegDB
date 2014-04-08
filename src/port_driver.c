@@ -214,10 +214,10 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
          * and data at the same time.
          */
         unsigned char *data = ol_unjar_ds(d->db, obj->key, obj->klen, &val_size);
-        char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
         ei_x_buff to_send;
         ei_x_new_with_version(&to_send);
         if (data != NULL) {
+            char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
             ei_x_encode_tuple_header(&to_send, 3);
             ei_x_encode_atom(&to_send, "ok");
             ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
