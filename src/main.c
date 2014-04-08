@@ -50,5 +50,5 @@ int main(int argc, char *argv[]) {
     ol_log_msg(LOG_INFO, "Tests passed: %i.\n", results[0]);
 
     printf("No.\n");
-    return 0;
+    return results[1];
 }
