@@ -641,6 +641,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_open_close);
     ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
+    ol_run_test(test_lots_of_deletes);
     ol_run_test(test_unjar);
     ol_run_test(test_unjar_ds);
     ol_run_test(test_scoop);
