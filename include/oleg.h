@@ -111,7 +111,7 @@ typedef struct ol_bucket {
 
 /* xXx STRUCT=ol_database xXx
 * xXx DESCRIPTION=The object representing a database. xXx
-* xXx get_db_file_name=A function pointer that returns the path/name.db to reduec code duplication. Used for writing and reading of dump files. xXx
+* xXx get_db_file_name=A function pointer that returns the path to the location of the db file to reduce code duplication. Used for writing and reading of dump files. xXx
 * xXx enable=Helper function to enable a feature for the database instance passed in. xXx
 * xXx disable=Helper function to disable a database feature. xXx
 * xXx is_enabled=Helper function that checks weather or not a feature is enabled. xXx
@@ -178,7 +178,7 @@ int ol_close(ol_database *database);
 int ol_close_save(ol_database *database);
 
 /* xXx FUNCTION=ol_unjar xXx
- * xXx DESCRIPTION=Unjar a value from the mayo. Calls ol_unjar_ks with a dsize of null. xXx
+ * xXx DESCRIPTION=This is OlegDB's canonical 'get' function. Unjar a value from the mayo (database). Calls ol_unjar_ds with a dsize of null. xXx
  * xXx RETURNS=A pointer to an ol_val object, or NULL if the object was not found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
@@ -186,18 +186,18 @@ int ol_close_save(ol_database *database);
  */
 ol_val ol_unjar(ol_database *db, const char *key, size_t klen);
 
-/* xXx FUNCTION=ol_unjar_ks xXx
- * xXx DESCRIPTION=Unjar a value from the mayo. Makes ksize a reference to the size of the data returned. xXx
+/* xXx FUNCTION=ol_unjar_ds xXx
+ * xXx DESCRIPTION=This function retrieves a value from the database. It also writes the size of the data to dsize. xXx
  * xXx RETURNS=A pointer to an ol_val object, or NULL if the object was not found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key to use. xXx
- * xXx *dsize=The key to use. xXx
+ * xXx *dsize=Optional parameter that will be filled out with the size of the data, if null is not passed in. xXx
  */
 ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize);
 
 /* xXx FUNCTION=ol_jar xXx
- * xXx DESCRIPTION=Put a value into the mayo. It's easy to piss in a bucket, it's not easy to piss in 19 jars. Uses default content type. xXx
+ * xXx DESCRIPTION=This is OlegDB's canonical 'get' function. Put a value into the mayo (the database). It's easy to piss in a bucket, it's not easy to piss in 19 jars. Uses default content type. xXx
  * xXx RETURNS=0 on sucess. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
@@ -208,11 +208,11 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
 int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value, size_t vsize);
 
 /* xXx FUNCTION=ol_jar_ct xXx
- * xXx DESCRIPTION=Put a value into the mayo. It's easy to piss in a bucket, it's not easy to piss in 19 jars. Allows you to specify content type. xXx
+ * xXx DESCRIPTION=Wrapped by ol_jar, this function will set a value in the database. It differs only in that it allows you to specify a content type to store in addition to the value. xXx
  * xXx RETURNS=0 on sucess. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
- * xXx klen=The key to use. xXx
+ * xXx klen=The length of the key. xXx
  * xXx *value=The value to insert. xXx
  * xXx vsize=The size of the value in bytes. xXx
  * xXx *content_type=The content type to store, or really anything. Store your middle name if you want to. xXx
