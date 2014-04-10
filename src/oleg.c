@@ -210,7 +210,6 @@ static inline char *_ol_trunc(const char *key, size_t klen) {
     char *_key = malloc(real_key_len+1);
     strncpy(_key, key, real_key_len);
     _key[real_key_len] = '\0';
-    debug("New key: %s Klen: %zu", _key, strnlen(_key, KEY_SIZE));
     return _key;
 }
 
