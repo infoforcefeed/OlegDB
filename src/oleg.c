@@ -488,7 +488,7 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
         return 0;
     }
 
-    return -1;
+    return 1;
 }
 
 int ol_scoop(ol_database *db, const char *key, size_t klen) {
