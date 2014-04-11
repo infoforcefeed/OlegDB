@@ -94,10 +94,10 @@ route(Bits, Socket) ->
                 head ->
                     %io:format("[-] HEAD ~p~n", [Header#ol_record.key]),
                     case ol_database:ol_bucket_meta(Header) of
-                        {ok, ContentType} ->
-                            ol_http:bucket_meta_response(ContentType);
-                        {ok, ContentType, Expires} ->
-                            ol_http:bucket_meta_response(ContentType, Expires);
+                        {ok, ContentType, RcrdCnt} ->
+                            ol_http:bucket_meta_response(ContentType, RcrdCnt);
+                        {ok, ContentType, RcrdCnt, Expires} ->
+                            ol_http:bucket_meta_response(ContentType, RcrdCnt, Expires);
                         _ -> ol_http:not_found_response()
                     end;
                 post ->
