@@ -34,6 +34,8 @@
 #include "dump.h"
 #include "murmur3.h"
 #include "errhandle.h"
+#include "rehash.h"
+#include "utils.h"
 
 /* Fix for the GNU extension strnlen not being available on some platforms */
 #if defined(__MINGW32_VERSION) || (defined(__APPLE__) && \
@@ -125,14 +127,6 @@ error:
     return NULL;
 }
 
-static inline void _ol_free_bucket(ol_bucket *ptr) {
-    if (ptr->expiration != NULL)
-        free(ptr->expiration);
-    free(ptr->content_type);
-    free(ptr->data_ptr);
-    free(ptr);
-    ptr = NULL;
-}
 int _ol_close(ol_database *db){
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
     int i;
@@ -195,13 +189,6 @@ error:
     return 1;
 }
 
-int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
-    int index;
-    /* Powers of two, baby! */
-    index = hash & (ol_ht_bucket_max(ht_size) - 1);
-    return index;
-}
-
 /* TODO: Refactor this to not allocate a new str, but to fill out a passed in
  * str. This keeps memory management to the parent function. */
 static inline char *_ol_trunc(const char *key, size_t klen) {
@@ -211,18 +198,6 @@ static inline char *_ol_trunc(const char *key, size_t klen) {
     strncpy(_key, key, real_key_len);
     _key[real_key_len] = '\0';
     return _key;
-}
-
-ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
-    ol_bucket *tmp_bucket = bucket;
-    int depth = 0;
-    while (tmp_bucket->next != NULL) {
-        tmp_bucket = tmp_bucket->next;
-        depth++;
-        if (depth > 100)
-            ol_log_msg(LOG_WARN, "Depth of bucket stack is crazy, help");
-    }
-    return tmp_bucket;
 }
 
 ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char *key, size_t klen) {
@@ -259,48 +234,6 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
     }
     db->rcrd_cnt++;
     return 0;
-}
-
-static inline void _ol_rehash_insert_bucket(
-        ol_bucket **tmp_hashes, const size_t to_alloc, ol_bucket *bucket) {
-    int new_index;
-    new_index = _ol_calc_idx(to_alloc, bucket->hash);
-    if (tmp_hashes[new_index] != NULL) {
-        /* Enforce that this is the last bucket, KILL THE ORPHANS */
-        ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(
-                tmp_hashes[new_index]);
-        last_bucket->next = bucket;
-    } else {
-        tmp_hashes[new_index] = bucket;
-    }
-}
-
-int _ol_grow_and_rehash_db(ol_database *db) {
-    int i;
-    ol_bucket *bucket;
-    ol_bucket **tmp_hashes = NULL;
-
-    size_t to_alloc = db->cur_ht_size * 2;
-    debug("Growing DB to %zu bytes.", to_alloc);
-    tmp_hashes = calloc(1, to_alloc);
-    check_mem(tmp_hashes);
-
-    int iterations = ol_ht_bucket_max(db->cur_ht_size);
-    for (i = 0; i < iterations; i++) {
-        bucket = db->hashes[i];
-        if (bucket != NULL) {
-            /* Rehash the bucket itself. */
-            _ol_rehash_insert_bucket(tmp_hashes, to_alloc, bucket);
-        }
-    }
-    free(db->hashes);
-    db->hashes = tmp_hashes;
-    db->cur_ht_size = to_alloc;
-    debug("Current hash table size is now: %zu bytes.", to_alloc);
-    return 0;
-
-error:
-    return -1;
 }
 
 ol_val ol_unjar(ol_database *db, const char *key, size_t klen) {
