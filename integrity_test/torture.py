@@ -3,6 +3,7 @@
 import json, calendar, requests, time, urllib, os, random, zlib
 
 def main():
+    known_count = 0
     while True:
         random_length = random.random() * 10000
         compressed = "".join(["A" for i in range(0, int(random_length))])
@@ -20,6 +21,8 @@ def main():
                 "Content-Type": "text/html",
                 "X-OlegDB-use-by": expiration})
         duff = requests.head(connection_str) # For code coverage
+        if duff.status_code != 404:
+            known_count = duff.headers['x-olegdb-rcrd-cnt']
         resp = requests.get(connection_str, stream=True)
         raw = resp.raw.read()
         try:
@@ -28,6 +31,7 @@ def main():
             print "Assertion error: {} does not equal {}".format(hash(raw), hash(compressed))
             print "Raw: {}".format(raw)
             print "Response status: {}".format(resp.status_code)
+            print "Last known count: {}".format(known_count)
 
 if __name__ == '__main__':
     main()
