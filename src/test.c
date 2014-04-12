@@ -613,8 +613,10 @@ int test_expiration() {
     /* Get the current time */
     struct tm now;
     time_t current_time;
+
     time(&current_time);
-    gmtime_r(&current_time, &now);
+    localtime_r(&current_time, &now);
+    ol_log_msg(LOG_INFO, "Current time: %lu", current_time);
 
     const char key[] = "testKey";
     unsigned char value[] = "TestValue yo";
