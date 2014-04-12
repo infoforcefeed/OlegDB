@@ -249,14 +249,16 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
             /* If we have an expiration time, send it back with the content type. */
             if (time_retrieved != NULL) {
-                ei_x_encode_tuple_header(&to_send, 3);
+                ei_x_encode_tuple_header(&to_send, 4);
                 ei_x_encode_atom(&to_send, "ok");
                 ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
                 ei_x_encode_long(&to_send, (long)timelocal(time_retrieved));
+                ei_x_encode_long(&to_send, (long)d->db->rcrd_cnt);
             } else {
-                ei_x_encode_tuple_header(&to_send, 2);
+                ei_x_encode_tuple_header(&to_send, 3);
                 ei_x_encode_atom(&to_send, "ok");
                 ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
+                ei_x_encode_long(&to_send, (long)d->db->rcrd_cnt);
             }
         } else {
             ei_x_encode_atom(&to_send, "not_found");
