@@ -43,7 +43,7 @@ static inline ol_splay_tree_node *_ols_subtree_minimum(ol_splay_tree_node *node)
     return node;
 }
 
-static inline ol_splay_tree_node *_ols_subtree_maximum(const ol_splay_tree_node *node) {
+static inline ol_splay_tree_node *_ols_subtree_maximum(ol_splay_tree_node *node) {
     while (node->left != NULL) {
         node = node->right;
     }
