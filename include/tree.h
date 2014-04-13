@@ -34,6 +34,7 @@ typedef struct ol_splay_tree_node {
 /* The actual splay tree object */
 typedef struct ol_splay_tree {
     ol_splay_tree_node *root;
+    int rcrd_cnt;
 } ol_splay_tree;
 
 /* Insert and splay the tree */
