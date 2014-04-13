@@ -37,7 +37,7 @@ typedef struct ol_splay_tree {
 } ol_splay_tree;
 
 /* Insert and splay the tree */
-int ol_splay_insert(const ol_splay_tree *tree, ol_bucket *bucket);
+int ols_insert(const ol_splay_tree *tree, ol_bucket *bucket);
 /* Delete and splay the tree */
-int ol_splay_delete(const ol_splay_tree *tree, ol_bucket *bucket);
-ol_bucket *ol_splay_find(const ol_splay_tree *tree);
+int ols_delete(const ol_splay_tree *tree, ol_bucket *bucket);
+ol_bucket *ols_find(const ol_splay_tree *tree);
