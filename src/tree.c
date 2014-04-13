@@ -20,77 +20,10 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
+#include <string.h>
+#include <stdlib.h>
 #include "oleg.h"
 #include "tree.h"
-
-int ols_insert(const ol_splay_tree *tree, ol_bucket *bucket) {
-    ol_splay_tree_node *current_node = root;
-    ol_splay_tree_node *previous_node = NULL;
-    size_t larger_key = 0;
-
-    while (current_node) {
-        previous_node = current_node;
-        larger_key = bucket->klen > current_node->bucket->klen ?
-            bucket->klen : current_node->bucket->klen;
-        if (strncmp(bucket->key, current_node->bucket->key, larger_key))
-            current_node = current_node->right;
-        else
-            current_node = current_node->left;
-    }
-
-    current_node = malloc(sizeof(ol_splay_tree_node));
-    current_node->left = NULL;
-    current_node->right = NULL;
-    current_node->parent = NULL;
-    current_node->bucket = bucket;
-    /* Put that shit into the tree */
-    current_node->parent = previous_node;
-
-    larger_key = current_node->bucket->klen > previous_node->bucket->klen ?
-        current_node->bucket->klen : previous_node->bucket->klen;
-    if (!previous_node)
-        tree->root = current_node;
-    else if (strncmp(previous_node->bucket->key, current_node->bucket->key, larger_key))
-        previous_node->right = current_node;
-    else
-        current_node->left = current_node;
-
-    _ols_splay(tree, current_node);
-    tree->rcrd_cnt++;
-
-    return 0;
-}
-int ols_delete(const ol_splay_tree *tree, ol_bucket *bucket) {
-    ol_splay_tree_node *node = ols_find(key);
-    if (!node)
-        return 1;
-
-    _ols_splay(tree, node);
-
-    if (!node->left)
-        _ols_replace(node, node->right);
-    else if (!node->right)
-        _ols_replace(node, node->left);
-    else {
-        ol_splay_tree_node *found_node = _ols_subtree_minimum(node->right);
-        if (found_node->parent != node) {
-            _ols_replace(found_node, found_node->right );
-            found_node->right = node->right;
-            found_node->right->parent = found_node;
-        }
-        _ols_replace(node, found_node);
-        found_node->left = node->left;
-        found_node->left->parent = node;
-    }
-
-    free(node);
-    tree->rcrd_cnt--;
-    return 0;
-}
-
-ol_bucket *ols_find(const ol_splay_tree *tree) {
-    return NULL;
-}
 
 static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
     ol_splay_tree_node *right_child = node->right;
@@ -183,4 +116,73 @@ static inline ol_splay_tree_node *_ols_subtree_maximum(ol_splay_tree_node *node)
         node = node->right;
     }
     return node;
+}
+
+int ols_insert(ol_splay_tree *tree, ol_bucket *bucket) {
+    ol_splay_tree_node *current_node = tree->root;
+    ol_splay_tree_node *previous_node = NULL;
+    size_t larger_key = 0;
+
+    while (current_node) {
+        previous_node = current_node;
+        larger_key = bucket->klen > current_node->bucket->klen ?
+            bucket->klen : current_node->bucket->klen;
+        if (strncmp(bucket->key, current_node->bucket->key, larger_key))
+            current_node = current_node->right;
+        else
+            current_node = current_node->left;
+    }
+
+    current_node = malloc(sizeof(ol_splay_tree_node));
+    current_node->left = NULL;
+    current_node->right = NULL;
+    current_node->parent = NULL;
+    current_node->bucket = bucket;
+    /* Put that shit into the tree */
+    current_node->parent = previous_node;
+
+    larger_key = current_node->bucket->klen > previous_node->bucket->klen ?
+        current_node->bucket->klen : previous_node->bucket->klen;
+    if (!previous_node)
+        tree->root = current_node;
+    else if (strncmp(previous_node->bucket->key, current_node->bucket->key, larger_key))
+        previous_node->right = current_node;
+    else
+        current_node->left = current_node;
+
+    _ols_splay(tree, current_node);
+    tree->rcrd_cnt++;
+
+    return 0;
+}
+int ols_delete(ol_splay_tree *tree, ol_bucket *bucket) {
+    ol_splay_tree_node *node = ols_find(tree, bucket->key, bucket->klen);
+    if (!node)
+        return 1;
+
+    _ols_splay(tree, node);
+
+    if (!node->left)
+        _ols_replace(tree, node, node->right);
+    else if (!node->right)
+        _ols_replace(tree, node, node->left);
+    else {
+        ol_splay_tree_node *found_node = _ols_subtree_minimum(node->right);
+        if (found_node->parent != node) {
+            _ols_replace(tree, found_node, found_node->right );
+            found_node->right = node->right;
+            found_node->right->parent = found_node;
+        }
+        _ols_replace(tree, node, found_node);
+        found_node->left = node->left;
+        found_node->left->parent = node;
+    }
+
+    free(node);
+    tree->rcrd_cnt--;
+    return 0;
+}
+
+ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen) {
+    return NULL;
 }
