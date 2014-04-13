@@ -38,8 +38,8 @@ typedef struct ol_splay_tree {
 } ol_splay_tree;
 
 /* Insert and splay the tree */
-int ols_insert(const ol_splay_tree *tree, ol_bucket *bucket);
+int ols_insert(ol_splay_tree *tree, ol_bucket *bucket);
 /* Delete and splay the tree */
-int ols_delete(const ol_splay_tree *tree, ol_bucket *bucket);
+int ols_delete(ol_splay_tree *tree, ol_bucket *bucket);
 /* Find an object in the tree. Returns NULL on failure to launch. */
-ol_bucket *ols_find(const ol_splay_tree *tree);
+ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen);
