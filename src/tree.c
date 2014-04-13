@@ -24,9 +24,43 @@
 #include "tree.h"
 
 static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
+    ol_splay_tree_node *right_child = node->right;
+    node->right = right_child->left;
+
+    if (right_child->left)
+        right_child->left->parent = node;
+
+    right_child->parent = node->parent;
+
+    if (!node->parent)
+        tree->root = right_child;
+    else if (node == node->parent->left)
+        node->parent->left = right_child;
+    else
+        node->parent->right = right_child;
+
+    right_child->left = node;
+    node->parent = right_child;
 }
 
 static inline void _ols_right_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
+    ol_splay_tree_node *left_child = node->left;
+    node->left = left_child->right;
+
+    if (left_child->right)
+        left_child->right->parent = node;
+
+    left_child->parent = node->parent;
+
+    if (!node->parent)
+        tree->root = left_child;
+    else if (node == node->parent->right)
+        node->parent->right = left_child;
+    else
+        node->parent->left = left_child;
+
+    left_child->right = node;
+    node->parent = left_child;
 }
 
 static inline void _ols_splay(ol_splay_tree *tree, ol_splay_tree_node *node) {
@@ -34,22 +68,22 @@ static inline void _ols_splay(ol_splay_tree *tree, ol_splay_tree_node *node) {
     while (node->parent) {
         if (!node->parent->parent) {
             if (node->parent->left == node)
-                right_rotate(tree, node->parent);
+                _ols_right_rotate(tree, node->parent);
             else
-                left_rotate(tree, node->parent);
+                _ols_left_rotate(tree, node->parent);
         } else if (node->parent->left == node && node->parent->parent->left == node->parent) {
-            right_rotate(tree, node->parent->parent);
-            right_rotate(tree, node->parent);
+            _ols_right_rotate(tree, node->parent->parent);
+            _ols_right_rotate(tree, node->parent);
         } else if (node->parent->right == node && node->parent->parent->right == node->parent) {
-            left_rotate(tree, node->parent->parent);
-            left_rotate(tree, node->parent);
+            _ols_left_rotate(tree, node->parent->parent);
+            _ols_left_rotate(tree, node->parent);
         } else if(node->parent->left == node && node->parent->parent->right == node->parent) {
-            right_rotate(tree, node->parent);
-            left_rotate(tree, node->parent);
+            _ols_right_rotate(tree, node->parent);
+            _ols_left_rotate(tree, node->parent);
         } else {
             /* If node is a right node and node's parent is a left node */
-            left_rotate(tree, node->parent);
-            right_rotate(tree, node->parent);
+            _ols_left_rotate(tree, node->parent);
+            _ols_right_rotate(tree, node->parent);
         }
     }
 }
