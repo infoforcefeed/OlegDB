@@ -201,6 +201,7 @@ static inline char *_ol_trunc(const char *key, size_t klen) {
 }
 
 ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char *key, size_t klen) {
+    /* Note: Keys should already be safely truncated at this point. */
     int index = _ol_calc_idx(db->cur_ht_size, hash);
     size_t larger_key = 0;
     if (db->hashes[index] != NULL) {
@@ -210,6 +211,8 @@ ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char
         if (strncmp(tmp_bucket->key, key, larger_key) == 0) {
             return tmp_bucket;
         } else if (tmp_bucket->next != NULL) {
+            /* Keys were not the same, traverse the linked list to see if it's
+             * farther down. */
             do {
                 tmp_bucket = tmp_bucket->next;
                 larger_key = tmp_bucket->klen > klen ? tmp_bucket->klen : klen;
