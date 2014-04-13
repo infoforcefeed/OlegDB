@@ -23,6 +23,17 @@
 #include "oleg.h"
 #include "tree.h"
 
+int ols_insert(const ol_splay_tree *tree, ol_bucket *bucket) {
+    return 0;
+}
+int ols_delete(const ol_splay_tree *tree, ol_bucket *bucket) {
+    return 0;
+}
+
+ol_bucket *ols_find(const ol_splay_tree *tree) {
+    return NULL;
+}
+
 static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
     ol_splay_tree_node *right_child = node->right;
     node->right = right_child->left;
