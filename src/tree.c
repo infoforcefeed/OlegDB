@@ -32,8 +32,18 @@ static inline void _ols_right_rotate(const ol_splay_tree *tree, ol_splay_tree_no
 static inline void _ols_splay(const ol_splay_tree *tree, ol_splay_tree_node *node) {
 }
 
-static inline void _ols_replace(const ol_splay_tree *tree,
+static inline void _ols_replace(ol_splay_tree *tree,
     ol_splay_tree_node *node_a, ol_splay_tree_node *node_b) {
+
+    if (!node_a->parent)
+        tree->root = node_b;
+    else if (node_a == node_a->parent->left)
+        node_a->parent->left = node_b;
+    else
+        node_a->parent->right = node_b;
+
+    if (node_b)
+        node_a->parent = node_b->parent;
 }
 
 static inline ol_splay_tree_node *_ols_subtree_minimum(ol_splay_tree_node *node) {
