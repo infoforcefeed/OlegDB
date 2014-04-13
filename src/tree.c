@@ -23,13 +23,35 @@
 #include "oleg.h"
 #include "tree.h"
 
-static inline void _ols_left_rotate(const ol_splay_tree *tree, ol_splay_tree_node *node) {
+static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
 }
 
-static inline void _ols_right_rotate(const ol_splay_tree *tree, ol_splay_tree_node *node) {
+static inline void _ols_right_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
 }
 
-static inline void _ols_splay(const ol_splay_tree *tree, ol_splay_tree_node *node) {
+static inline void _ols_splay(ol_splay_tree *tree, ol_splay_tree_node *node) {
+    /* Granny rotate */
+    while (node->parent) {
+        if (!node->parent->parent) {
+            if (node->parent->left == node)
+                right_rotate(tree, node->parent);
+            else
+                left_rotate(tree, node->parent);
+        } else if (node->parent->left == node && node->parent->parent->left == node->parent) {
+            right_rotate(tree, node->parent->parent);
+            right_rotate(tree, node->parent);
+        } else if (node->parent->right == node && node->parent->parent->right == node->parent) {
+            left_rotate(tree, node->parent->parent);
+            left_rotate(tree, node->parent);
+        } else if(node->parent->left == node && node->parent->parent->right == node->parent) {
+            right_rotate(tree, node->parent);
+            left_rotate(tree, node->parent);
+        } else {
+            /* If node is a right node and node's parent is a left node */
+            left_rotate(tree, node->parent);
+            right_rotate(tree, node->parent);
+        }
+    }
 }
 
 static inline void _ols_replace(ol_splay_tree *tree,
