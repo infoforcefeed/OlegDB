@@ -61,6 +61,30 @@ int ols_insert(const ol_splay_tree *tree, ol_bucket *bucket) {
     return 0;
 }
 int ols_delete(const ol_splay_tree *tree, ol_bucket *bucket) {
+    ol_splay_tree_node *node = ols_find(key);
+    if (!node)
+        return 1;
+
+    _ols_splay(tree, node);
+
+    if (!node->left)
+        _ols_replace(node, node->right);
+    else if (!node->right)
+        _ols_replace(node, node->left);
+    else {
+        ol_splay_tree_node *found_node = _ols_subtree_minimum(node->right);
+        if (found_node->parent != node) {
+            _ols_replace(found_node, found_node->right );
+            found_node->right = node->right;
+            found_node->right->parent = found_node;
+        }
+        _ols_replace(node, found_node);
+        found_node->left = node->left;
+        found_node->left->parent = node;
+    }
+
+    free(node);
+    tree->rcrd_cnt--;
     return 0;
 }
 
