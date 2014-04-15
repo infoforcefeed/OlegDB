@@ -21,6 +21,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
+#include <stdio.h>
 
 /* Leaves of the splay tree */
 typedef struct ol_splay_tree_node {
