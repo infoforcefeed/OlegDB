@@ -21,14 +21,16 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
+#include "defs.h"
 
 /* Leaves of the splay tree */
 typedef struct ol_splay_tree_node {
-    struct ol_splay_tree_node *left;
-    struct ol_splay_tree_node *right;
-    struct ol_splay_tree_node *parent;
+    struct  ol_splay_tree_node *left;
+    struct  ol_splay_tree_node *right;
+    struct  ol_splay_tree_node *parent;
 
-    ol_bucket *bucket;
+    char    key[KEY_SIZE];
+    size_t  klen;
 } ol_splay_tree_node;
 
 /* The actual splay tree object */
@@ -38,8 +40,8 @@ typedef struct ol_splay_tree {
 } ol_splay_tree;
 
 /* Insert and splay the tree */
-int ols_insert(ol_splay_tree *tree, ol_bucket *bucket);
+int ols_insert(ol_splay_tree *tree, const char *key, const size_t klen);
 /* Delete and splay the tree */
-int ols_delete(ol_splay_tree *tree, ol_bucket *bucket);
+int ols_delete(ol_splay_tree *tree, const char *key, const size_t klen);
 /* Find an object in the tree. Returns NULL on failure to launch. */
 ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen);
