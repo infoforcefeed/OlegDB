@@ -119,7 +119,7 @@ static inline ol_splay_tree_node *_ols_subtree_maximum(ol_splay_tree_node *node)
     return node;
 }
 
-int ols_insert(ol_splay_tree *tree, const char *key, const size_t klen) {
+int ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const void *ref_obj) {
     check(klen < KEY_SIZE, "Key is too long.");
     ol_splay_tree_node *current_node = tree->root;
     ol_splay_tree_node *previous_node = NULL;
@@ -142,6 +142,7 @@ int ols_insert(ol_splay_tree *tree, const char *key, const size_t klen) {
     if (strncpy(current_node->key, key, klen) != current_node->key)
         return 1;
     current_node->klen = klen;
+    current_node->ref_obj = ref_obj;
     /* Put that shit into the tree */
     current_node->parent = previous_node;
 
