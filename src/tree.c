@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "oleg.h"
+#include "errhandle.h"
 #include "tree.h"
 
 static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
@@ -118,16 +119,17 @@ static inline ol_splay_tree_node *_ols_subtree_maximum(ol_splay_tree_node *node)
     return node;
 }
 
-int ols_insert(ol_splay_tree *tree, ol_bucket *bucket) {
+int ols_insert(ol_splay_tree *tree, const char *key, const size_t klen) {
+    check(klen < KEY_SIZE, "Key is too long.");
     ol_splay_tree_node *current_node = tree->root;
     ol_splay_tree_node *previous_node = NULL;
     size_t larger_key = 0;
 
     while (current_node) {
         previous_node = current_node;
-        larger_key = bucket->klen > current_node->bucket->klen ?
-            bucket->klen : current_node->bucket->klen;
-        if (strncmp(bucket->key, current_node->bucket->key, larger_key))
+        larger_key = klen > current_node->klen ?
+            klen : current_node->klen;
+        if (strncmp(key, current_node->key, larger_key))
             current_node = current_node->right;
         else
             current_node = current_node->left;
@@ -137,15 +139,17 @@ int ols_insert(ol_splay_tree *tree, ol_bucket *bucket) {
     current_node->left = NULL;
     current_node->right = NULL;
     current_node->parent = NULL;
-    current_node->bucket = bucket;
+    if (strncpy(current_node->key, key, klen) != current_node->key)
+        return 1;
+    current_node->klen = klen;
     /* Put that shit into the tree */
     current_node->parent = previous_node;
 
-    larger_key = current_node->bucket->klen > previous_node->bucket->klen ?
-        current_node->bucket->klen : previous_node->bucket->klen;
+    larger_key = current_node->klen > previous_node->klen ?
+        current_node->klen : previous_node->klen;
     if (!previous_node)
         tree->root = current_node;
-    else if (strncmp(previous_node->bucket->key, current_node->bucket->key, larger_key))
+    else if (strncmp(previous_node->key, current_node->key, larger_key))
         previous_node->right = current_node;
     else
         current_node->left = current_node;
@@ -154,9 +158,12 @@ int ols_insert(ol_splay_tree *tree, ol_bucket *bucket) {
     tree->rcrd_cnt++;
 
     return 0;
+
+error:
+    return 1;
 }
-int ols_delete(ol_splay_tree *tree, ol_bucket *bucket) {
-    ol_splay_tree_node *node = ols_find(tree, bucket->key, bucket->klen);
+int ols_delete(ol_splay_tree *tree, const char *key, const size_t klen) {
+    ol_splay_tree_node *node = ols_find(tree, key, klen);
     if (!node)
         return 1;
 
