@@ -235,8 +235,6 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
     } else {
         db->hashes[index] = bucket;
     }
-
-    ols_insert(db->tree, bucket);
     db->rcrd_cnt++;
     return 0;
 }
