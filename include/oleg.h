@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include "defs.h"
+#include "tree.h"
 
 /* xXx ENUM=ol_feature_flags xXx
 * xXx DESCRIPTION=Feature flags tell the database what it should be doing. xXx
@@ -66,6 +67,7 @@ typedef unsigned char *ol_val;
 * xXx hash=Hashed value of this key. xXx
 * xXx next=Collisions are resolved via linked list. This contains the pointer to the next object in the chain, or NULL. xXx
 * xXx expiration=The POSIX timestamp when this key will expire. xXx
+* xXx *node=A pointer to this objects node in the splay tree. xXx
 */
 typedef struct ol_bucket {
     char              key[KEY_SIZE]; /* The key used to reference the data */
@@ -77,6 +79,7 @@ typedef struct ol_bucket {
     uint32_t          hash;
     struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
     struct tm         *expiration;
+    ol_splay_tree_node *node;
 } ol_bucket;
 
 /* xXx STRUCT=ol_database xXx
@@ -97,6 +100,7 @@ typedef struct ol_bucket {
 * xXx created=Timestamp of when the database was initialized. xXx
 * xXx cur_ht_size=The current amount, in bytes, of space allocated for storing <a href="#ol_bucket">ol_bucket</a> objects. xXx
 * xXx **hashes=The actual hashtable. Stores <a href="#ol_bucket">ol_bucket</a> instances. xXx
+* xXx *tree=A pointer to the splay tree holding the ordered list of keys. xXx
 */
 typedef struct ol_database {
     void      (*get_db_file_name)(struct ol_database *db,const char *p,char*);
@@ -115,6 +119,7 @@ typedef struct ol_database {
     time_t    created;
     size_t    cur_ht_size;
     ol_bucket **hashes;
+    ol_splay_tree *tree;
 } ol_database;
 
 /* xXx STRUCT=ol_meta xXx

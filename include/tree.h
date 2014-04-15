@@ -31,6 +31,7 @@ typedef struct ol_splay_tree_node {
 
     char    key[KEY_SIZE];
     size_t  klen;
+    const void *ref_obj;
 } ol_splay_tree_node;
 
 /* The actual splay tree object */
@@ -39,8 +40,9 @@ typedef struct ol_splay_tree {
     int rcrd_cnt;
 } ol_splay_tree;
 
-/* Insert and splay the tree */
-int ols_insert(ol_splay_tree *tree, const char *key, const size_t klen);
+/* Insert and splay the tree. rej_obj is a pointer to an object somewhere in
+ * memory that you want to reference from this node. */
+int ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const void *ref_obj);
 /* Delete and splay the tree */
 int ols_delete(ol_splay_tree *tree, const char *key, const size_t klen);
 /* Find an object in the tree. Returns NULL on failure to launch. */
