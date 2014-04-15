@@ -98,16 +98,27 @@ typedef unsigned char *ol_val;
 * xXx expiration=The POSIX timestamp when this key will expire. xXx
 */
 typedef struct ol_bucket {
-    char              key[KEY_SIZE]; /* The key used to reference the data */
-    size_t            klen;
-    char              *content_type;
-    size_t            ctype_size;
-    ol_val            data_ptr;
-    size_t            data_size;
-    uint32_t          hash;
-    struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
-    struct tm         *expiration;
+    char                key[KEY_SIZE]; /* The key used to reference the data */
+    size_t              klen;
+    char                *content_type;
+    size_t              ctype_size;
+    ol_val              data_ptr;
+    size_t              data_size;
+    uint32_t            hash;
+    struct ol_bucket    *next; /* The next ol_bucket in this chain, if any */
+    struct tm           *expiration;
 } ol_bucket;
+
+
+/* xXx STRUCT=ol_splay_tree xXx
+* xXx DESCRIPTION=Forward declaration for the ol_splay_tree object. Real declaration can be found in <code>src/tree.h</code>. This is an implementation of a splay tree used for iteration and lookups of keys. xXx
+*/
+typedef struct ol_splay_tree ol_splay_tree;
+
+/* xXx STRUCT=ol_splay_tree_node xXx
+* xXx DESCRIPTION=Forward declaration for the ol_splay_tree_node object. Real declaration can be found in <code>src/tree.h</code>. This is the struct for an individual leaf of a splay tree. xXx
+*/
+typedef struct ol_splay_tree_node ol_splay_tree_node;
 
 /* xXx STRUCT=ol_database xXx
 * xXx DESCRIPTION=The object representing a database. This is used in almost every ol_* function to store state and your data. xXx
@@ -127,6 +138,7 @@ typedef struct ol_bucket {
 * xXx created=Timestamp of when the database was initialized. xXx
 * xXx cur_ht_size=The current amount, in bytes, of space allocated for storing <a href="#ol_bucket">ol_bucket</a> objects. xXx
 * xXx **hashes=The actual hashtable. Stores <a href="#ol_bucket">ol_bucket</a> instances. xXx
+* xXx *tree=A pointer to a splay tree object used for cursor iteration and searching for keys in the database. xXx
 */
 typedef struct ol_database {
     void      (*get_db_file_name)(struct ol_database *db,const char *p,char*);
@@ -145,6 +157,7 @@ typedef struct ol_database {
     time_t    created;
     size_t    cur_ht_size;
     ol_bucket **hashes;
+    ol_splay_tree *tree;
 } ol_database;
 
 /* xXx STRUCT=ol_meta xXx
