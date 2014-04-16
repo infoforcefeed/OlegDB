@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 export ERL_MAX_PORTS=4096
 RUN_DIR=/run/olegdb
