@@ -301,8 +301,8 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     if (bucket) {
         debug("Reallocating bucket.");
         free(_key);
-        unsigned char *data = realloc(bucket->data_ptr, vsize);
-        if (memcpy(data, value, vsize) != data)
+        bucket->data_ptr = realloc(bucket->data_ptr, vsize);
+        if (memcpy(bucket->data_ptr, value, vsize) != bucket->data_ptr)
             return 4;
 
         char *ct_real = realloc(bucket->content_type, ctsize+1);
@@ -314,7 +314,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         bucket->ctype_size = ctsize;
         bucket->content_type = ct_real;
         bucket->data_size = vsize;
-        bucket->data_ptr = data;
         if (bucket->expiration != NULL)
             free(bucket->expiration);
         bucket->expiration = NULL;
