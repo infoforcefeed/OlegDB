@@ -41,7 +41,7 @@ int test_open_close() {
     if (ret > 0){
         ol_log_msg(LOG_INFO, "Couldn't free all memory.");
     } else {
-        ol_log_msg(LOG_INFO, "Closed DB: %p.", db);
+        ol_log_msg(LOG_INFO, "Closed DB.");
     }
     return 0;
 }
