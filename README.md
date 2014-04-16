@@ -1,4 +1,4 @@
-Project Oleg
+OlegDB
 ============
 
 [![Build Status](https://drone.io/github.com/infoforcefeed/Project-Oleg/status.png)](https://drone.io/github.com/infoforcefeed/Project-Oleg/latest)
