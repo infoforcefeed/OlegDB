@@ -1,0 +1,18 @@
+language: c
+compiler:
+    - gcc
+    - clang
+script: make liboleg oleg_test && export LD_LIBRARY_PATH=./build/lib:$LD_LIBRARY_PATH && ./build/bin/oleg_test
+env:
+  global:
+   - secure: "GbSMNCqnGnjiuDqJJ55/EaNifx9L7t6JQVPw6illEnGZXL3T5RiC7alrpOQl2qGJG/gwRudMpFmEyvEqs0Rlpgx3x1DvcLCMlC2Rjd/2YklD0KVW0D91Mrrkk7ERzQTO8MXB2AUTxjSAwsZtewybebQhoqr7frulM4TclDZ/Cq4="
+
+addons:
+  coverity_scan:
+    project:
+      name: "infoforcefeed/Project-Oleg"
+      description: "OlegDB, the ugly duckling K/V store"
+    notification_email: qpfiffer@gmail.com
+    build_command_prepend:
+    build_command: make liboleg oleg_test && export LD_LIBRARY_PATH=./build/lib:$LD_LIBRARY_PATH && ./build/bin/oleg_test
+    branch_pattern: coverity_scan

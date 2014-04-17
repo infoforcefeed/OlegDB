@@ -1,7 +1,11 @@
-Project Oleg
+OlegDB
 ============
 
 [![Build Status](https://drone.io/github.com/infoforcefeed/Project-Oleg/status.png)](https://drone.io/github.com/infoforcefeed/Project-Oleg/latest)
+<a href="https://scan.coverity.com/projects/1414">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/1414/badge.svg"/>
+</a>
 
 Alternate title: "How far can we push a mayonnaise metaphor?"
 
