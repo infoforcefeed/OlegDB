@@ -180,7 +180,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     /* Open up a db if we don't have on already */
     if (d->db == NULL) {
         ol_database *db;
-        db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY);
+        db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY | OL_F_SPLAYTREE);
         d->db = db;
     }
 

@@ -47,3 +47,5 @@ int ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const vo
 int ols_delete(ol_splay_tree *tree, const char *key, const size_t klen);
 /* Find an object in the tree. Returns NULL on failure to launch. */
 ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen);
+/* Cleans up a tree (de-allocates memory, sets nulls, etc.) */
+void ols_close(ol_splay_tree *tree);
