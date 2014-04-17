@@ -21,7 +21,7 @@
 %%% THE SOFTWARE.
 -module(ol_util).
 -include("olegdb.hrl").
--export([read_all_data/2, read_remaining_data/2]).
+-export([read_all_data/2, read_remaining_data/2, bits_to_lower/1]).
 read_remaining_data(Header, Socket) ->
     ExpectedLength = Header#ol_record.content_length,
     if
@@ -54,3 +54,6 @@ read_all_data1(Socket, ExpectedLength, Data) ->
             io:format("[-] Client timed out.~n"),
             ok
     end.
+
+bits_to_lower(<<X,Rest/bits>>) -> <<(string:to_lower(X)), (bits_to_lower(Rest))/bits>>;
+bits_to_lower(_) -> <<>>.
