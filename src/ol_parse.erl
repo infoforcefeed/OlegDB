@@ -67,7 +67,12 @@ parse_header(Data, Record) ->
     %io:format("Split: ~p~n", [Split]),
     case Split of
         [Header,PostedData|_] ->
-            parse_header1(binary:split(Header, [<<"\r\n">>], [global]),
+            LowercaseHeader = binary:list_to_bin(
+                                string:to_lower(
+                                  binary:bin_to_list(Header)
+                                 )
+                               ),
+            parse_header1(binary:split(LowercaseHeader, [<<"\r\n">>], [global]),
                           { Record#ol_record{value=PostedData}, []});
         X -> X
     end.
@@ -77,16 +82,16 @@ parse_header(Data, Record) ->
 parse_header1([], {Record, Options}) -> {Record, Options};
 parse_header1([Line|Header], {Record, Options}) ->
     case Line of
-        <<"Expect: 100-continue">> ->
+        <<"expect: 100-continue">> ->
             parse_header1(Header, {Record, Options ++ [send_100]});
-        <<"Content-Length: ", CLength/binary>> ->
+        <<"content-length: ", CLength/binary>> ->
             % This is only used for 100 requests
             Len = list_to_integer(binary_to_list(CLength)),
             parse_header1(Header, {Record#ol_record{content_length=Len}, Options});
-        <<"X-OlegDB-use-by: ", Timestamp/binary>> ->
+        <<"x-olegdb-use-by: ", Timestamp/binary>> ->
             Time = list_to_integer(binary_to_list(Timestamp)),
             parse_header1(Header, {Record#ol_record{expiration_time=Time}, Options});
-        <<"Content-Type: ", CType/binary>> ->
+        <<"content-type: ", CType/binary>> ->
             parse_header1(Header, {Record#ol_record{content_type=CType}, Options});
         _ ->
             parse_header1(Header, {Record, Options})
