@@ -34,11 +34,13 @@
 * xXx OL_F_APPENDONLY=Enable the append only log. This is a write-only logfile for simple persistence. xXx
 * xXx OL_F_SEMIVOL=<strong>Not Implemented</strong> Tell servers that it's okay to fsync every once in a while xXx
 * xXx OL_F_REGDUMPS=<strong>Not Implemented</strong> Tell servers to snapshot the data using ol_save() regularly xXx
+* xXx OL_F_SPLAYTREE=Whether or not to enable to splay tree in the server. This can have a performance impact. xXx
 */
 typedef enum {
     OL_F_APPENDONLY     = 1 << 0,
     OL_F_SEMIVOL        = 1 << 1,
-    OL_F_REGDUMPS       = 1 << 2
+    OL_F_REGDUMPS       = 1 << 2,
+    OL_F_SPLAYTREE      = 1 << 3
 } ol_feature_flags;
 
 /* xXx ENUM=ol_state_flags xXx

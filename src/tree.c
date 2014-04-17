@@ -194,3 +194,32 @@ int ols_delete(ol_splay_tree *tree, const char *key, const size_t klen) {
 ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen) {
     return NULL;
 }
+
+static inline void _ols_free_node(ol_splay_tree_node *node) {
+    check(node != NULL, "Node is null.");
+
+    if (node->left != NULL) {
+        _ols_free_node(node->left);
+    }
+    if (node->right != NULL) {
+        _ols_free_node(node->right);
+    }
+
+    if (node->parent != NULL) {
+        if (node->parent->left == node) {
+            node->parent->left = NULL;
+        } else if (node->parent->right == node) {
+            node->parent->right = NULL;
+        }
+    }
+    free(node);
+
+error:
+    return;
+}
+
+void ols_close(ol_splay_tree *tree) {
+    _ols_free_node(tree->root);
+    free(tree->root);
+}
+

@@ -115,6 +115,9 @@ ol_database *ol_open(char *path, char *name, int features){
     new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
     new_db->feature_set = features;
     new_db->state = OL_S_STARTUP;
+    if (new_db->is_enabled(OL_F_SPLAYTREE, &new_db->feature_set)) {
+        new_db->tree = malloc(sizeof(ol_splay_tree));
+    }
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
         ol_aol_init(new_db);
         check(ol_aol_restore(new_db) == 0, "Error restoring from AOL file");
@@ -146,14 +149,19 @@ int _ol_close(ol_database *db){
         }
     }
 
-    debug("Force flushing files");
-
-    if (db->aolfd) {
-        fflush(db->aolfd);
-        fclose(db->aolfd);
+    if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set) && db->tree != NULL) {
+        debug("Destroying tree.");
+        ols_close(db->tree);
+        db->tree = NULL;
     }
 
-    debug("Files flushed to disk");
+    if (db->aolfd) {
+        debug("Force flushing files");
+        fflush(db->aolfd);
+        fclose(db->aolfd);
+        debug("Files flushed to disk");
+    }
+
 
     free(db->hashes);
     free(db->dump_file);
@@ -317,6 +325,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         if (bucket->expiration != NULL)
             free(bucket->expiration);
         bucket->expiration = NULL;
+
 
         if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
                 db->state != OL_S_STARTUP) {
