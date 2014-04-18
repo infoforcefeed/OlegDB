@@ -93,9 +93,11 @@ ol_database *ol_open(char *path, char *name, int features){
     new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
     new_db->feature_set = features;
     new_db->state = OL_S_STARTUP;
+    /* Allocate a splay tree if we're into that */
     if (new_db->is_enabled(OL_F_SPLAYTREE, &new_db->feature_set)) {
         new_db->tree = malloc(sizeof(ol_splay_tree));
     }
+    /* Lets use an append-only log file */
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
         ol_aol_init(new_db);
         check(ol_aol_restore(new_db) == 0, "Error restoring from AOL file");
@@ -218,6 +220,15 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
         db->hashes[index] = bucket;
     }
     db->rcrd_cnt++;
+
+    if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
+        /* Put the bucket into the tree */
+        ol_splay_tree_node *node = NULL;
+        node = ols_insert(db->tree, bucket->key, bucket->klen, bucket);
+        /* Make sure the bucket can reference the node. */
+        bucket->node = node;
+    }
+
     return 0;
 }
 
