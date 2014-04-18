@@ -98,7 +98,7 @@ static inline ol_splay_tree_node *_ols_subtree_maximum(ol_splay_tree_node *node)
     return node;
 }
 
-int ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const void *ref_obj) {
+ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const void *ref_obj) {
     check(klen < KEY_SIZE, "Key is too long.");
     ol_splay_tree_node *current_node = tree->root;
     ol_splay_tree_node *previous_node = NULL;
@@ -119,12 +119,13 @@ int ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const vo
     current_node->right = NULL;
     current_node->parent = NULL;
     if (strncpy(current_node->key, key, klen) != current_node->key)
-        return 1;
+        return NULL;
     current_node->klen = klen;
     current_node->ref_obj = ref_obj;
     /* Put that shit into the tree */
     current_node->parent = previous_node;
 
+    /* Figure out how current_node relates to previous_node */
     larger_key = current_node->klen > previous_node->klen ?
         current_node->klen : previous_node->klen;
     if (!previous_node)
@@ -132,15 +133,16 @@ int ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const vo
     else if (strncmp(previous_node->key, current_node->key, larger_key))
         previous_node->right = current_node;
     else
-        current_node->left = current_node;
+        previous_node->left = current_node;
 
+    /* Splay the node to the top. */
     _ols_splay(tree, current_node);
     tree->rcrd_cnt++;
 
-    return 0;
+    return current_node;
 
 error:
-    return 1;
+    return NULL;
 }
 int ols_delete(ol_splay_tree *tree, const char *key, const size_t klen) {
     ol_splay_tree_node *node = ols_find(tree, key, klen);
