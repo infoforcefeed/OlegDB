@@ -132,7 +132,9 @@ int _ol_close(ol_database *db){
 
     if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set) && db->tree != NULL) {
         debug("Destroying tree.");
-        ols_close(db->tree);
+        if (db->tree->root != NULL)
+            ols_close(db->tree);
+        free(db->tree);
         db->tree = NULL;
     }
 
@@ -142,7 +144,6 @@ int _ol_close(ol_database *db){
         fclose(db->aolfd);
         debug("Files flushed to disk");
     }
-
 
     free(db->hashes);
     free(db->dump_file);
@@ -433,6 +434,8 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
         return 1;
     }
 
+    ol_bucket *to_free = NULL;
+    int return_level = 2;
     if (db->hashes[index] != NULL) {
         ol_bucket *bucket = db->hashes[index];
         larger_key = bucket->klen > _klen ? bucket->klen : _klen;
@@ -446,9 +449,9 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
                     db->state != OL_S_STARTUP) {
                 ol_aol_write_cmd(db, "SCOOP", bucket);
             }
-            _ol_free_bucket(bucket);
-            db->rcrd_cnt -= 1;
-            return 0;
+
+            to_free = bucket;
+            return_level = 0;
         } else { /* Keys weren't the same, traverse the bucket LL */
             ol_bucket *last;
             do {
@@ -458,15 +461,23 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
                 if (strncmp(bucket->key, _key, larger_key) == 0) {
                     if (bucket->next != NULL)
                         last->next = bucket->next;
-                    _ol_free_bucket(bucket);
-                    db->rcrd_cnt -= 1;
-                    return 0;
+                    to_free = bucket;
+                    return_level = 0;
+                    break;
                 }
             } while (bucket->next != NULL);
         }
     }
 
-    return 2;
+    if (to_free != NULL) {
+        if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
+            ols_delete(db->tree, to_free->node);
+            to_free->node = NULL;
+        }
+        _ol_free_bucket(to_free);
+        db->rcrd_cnt -= 1;
+    }
+    return return_level;
 }
 
 char *ol_content_type(ol_database *db, const char *key, size_t klen) {
