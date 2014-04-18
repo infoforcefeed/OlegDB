@@ -116,25 +116,34 @@ hundred_handler(Header, Socket) ->
 
 mama() ->
     %% Eventually this function will do something interesting.
+    %% We just sit here and block so that the parent process doesn't die
+    %% while it's children are off living fulfilling lives.
     receive
         _ -> mama()
     end.
 
 main() -> main([]).
 main([]) ->
-    io:format("You must specify a location to store aol/dump files.~n"),
+    io:format("[X] You must specify a location to store aol/dump files.~n"),
     exit(not_enough_args);
 main([DbLocation|Args]) ->
-    io:format("[-] Starting server.~n"),
-    ol_database:start(),
-    ol_database:ol_init(DbLocation),
-    case Args of
-        [] -> server_manager(self());
-        [Port] ->
-            {PortNum, _} = string:to_integer(Port),
-            server_manager(self(), PortNum);
-        [Hostname, Port] ->
-            {PortNum, _} = string:to_integer(Port),
-            server_manager(self(), Hostname, PortNum)
-    end,
-    mama().
+    case filelib:is_dir(DbLocation) of
+        true ->
+            io:format("[-] Starting server.~n"),
+            ol_database:start(),
+            ol_database:ol_init(DbLocation),
+            io:format("Args: ~p", [Args]),
+            case Args of
+                [] -> server_manager(self());
+                [Port] ->
+                    {PortNum, _} = string:to_integer(Port),
+                    server_manager(self(), PortNum);
+                [Hostname, Port] ->
+                    {PortNum, _} = string:to_integer(Port),
+                    server_manager(self(), Hostname, PortNum)
+            end,
+            mama();
+        _ ->
+            io:format("[X] Specified database directory does not exist.~n"),
+            exit(location_does_not_exst)
+    end.
