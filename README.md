@@ -60,7 +60,7 @@ olegdb <db_location>
 You can optionally specify a port, host or both. But not just a host.
 
 ```bash
-olegdb <db_location> [host] [port]
+olegdb <db_location> [[host] port]
 ```
 
 curl2sudo® install script coming soon.
