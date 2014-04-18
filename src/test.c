@@ -9,7 +9,7 @@
  * in a million places when we modify it.
  */
 ol_database *_test_db_open() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_F_SPLAYTREE);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
     return db;
 }
