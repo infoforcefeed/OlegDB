@@ -96,6 +96,7 @@ ol_database *ol_open(char *path, char *name, int features){
     /* Allocate a splay tree if we're into that */
     if (new_db->is_enabled(OL_F_SPLAYTREE, &new_db->feature_set)) {
         new_db->tree = malloc(sizeof(ol_splay_tree));
+        new_db->tree->root = NULL;
     }
     /* Lets use an append-only log file */
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {

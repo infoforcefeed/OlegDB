@@ -126,14 +126,16 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
     current_node->parent = previous_node;
 
     /* Figure out how current_node relates to previous_node */
-    larger_key = current_node->klen > previous_node->klen ?
-        current_node->klen : previous_node->klen;
-    if (!previous_node)
+    if (!previous_node) {
         tree->root = current_node;
-    else if (strncmp(previous_node->key, current_node->key, larger_key))
-        previous_node->right = current_node;
-    else
-        previous_node->left = current_node;
+    } else {
+        larger_key = current_node->klen > previous_node->klen ?
+            current_node->klen : previous_node->klen;
+        if (strncmp(previous_node->key, current_node->key, larger_key))
+            previous_node->right = current_node;
+        else
+            previous_node->left = current_node;
+    }
 
     /* Splay the node to the top. */
     _ols_splay(tree, current_node);
@@ -144,8 +146,12 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
 error:
     return NULL;
 }
-int ols_delete(ol_splay_tree *tree, const char *key, const size_t klen) {
+int ols_find_and_delete(ol_splay_tree *tree, const char *key, const size_t klen) {
     ol_splay_tree_node *node = ols_find(tree, key, klen);
+    return ols_delete(tree, node);
+}
+
+int ols_delete(ol_splay_tree *tree, ol_splay_tree_node *node) {
     if (!node)
         return 1;
 
