@@ -1,9 +1,11 @@
 /* Splay tree implementation. */
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "oleg.h"
 #include "errhandle.h"
 #include "tree.h"
+#include "logging.h"
 
 static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
     ol_splay_tree_node *right_child = node->right;
@@ -108,7 +110,7 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
         previous_node = current_node;
         larger_key = klen > current_node->klen ?
             klen : current_node->klen;
-        if (strncmp(key, current_node->key, larger_key))
+        if (strncmp(key, current_node->key, larger_key) >= 0)
             current_node = current_node->right;
         else
             current_node = current_node->left;
@@ -126,12 +128,12 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
     current_node->parent = previous_node;
 
     /* Figure out how current_node relates to previous_node */
-    if (!previous_node) {
+    if (previous_node == NULL) {
         tree->root = current_node;
     } else {
         larger_key = current_node->klen > previous_node->klen ?
             current_node->klen : previous_node->klen;
-        if (strncmp(previous_node->key, current_node->key, larger_key))
+        if (strncmp(previous_node->key, current_node->key, larger_key) >= 0)
             previous_node->right = current_node;
         else
             previous_node->left = current_node;
@@ -183,6 +185,8 @@ ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen) 
 }
 
 static inline void _ols_free_node(ol_splay_tree_node *node) {
+    if (node == NULL)
+        ol_log_msg(LOG_INFO, "hey");
     check(node != NULL, "Node is null.");
 
     if (node->left != NULL) {
@@ -193,9 +197,9 @@ static inline void _ols_free_node(ol_splay_tree_node *node) {
     }
 
     if (node->parent != NULL) {
-        if (node->parent->left == node) {
+        if (node->parent->left && node->parent->left == node) {
             node->parent->left = NULL;
-        } else if (node->parent->right == node) {
+        } else if (node->parent->right && node->parent->right == node) {
             node->parent->right = NULL;
         }
     }
@@ -206,7 +210,11 @@ error:
 }
 
 void ols_close(ol_splay_tree *tree) {
+    check(tree->root != NULL, "Tree root is NULL.");
     _ols_free_node(tree->root);
-    free(tree->root);
+    tree->root = NULL;
+
+error:
+    return;
 }
 
