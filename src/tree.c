@@ -102,14 +102,14 @@ static inline ol_splay_tree_node *_ols_subtree_maximum(ol_splay_tree_node *node)
 
 ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const void *ref_obj) {
     check(klen < KEY_SIZE, "Key is too long.");
-    ol_splay_tree_node *current_node = tree->root;
-    ol_splay_tree_node *previous_node = NULL;
+    check(key != NULL, "Key is null.");
+    ol_splay_tree_node *current_node = NULL, *previous_node = NULL;
+    current_node = tree->root;
     size_t larger_key = 0;
 
-    while (current_node) {
+    while (current_node != NULL) {
         previous_node = current_node;
-        larger_key = klen > current_node->klen ?
-            klen : current_node->klen;
+        larger_key = klen > current_node->klen ? klen : current_node->klen;
         if (strncmp(key, current_node->key, larger_key) >= 0)
             current_node = current_node->right;
         else
@@ -195,6 +195,8 @@ static inline void _ols_free_node(ol_splay_tree_node *node) {
     }
 
     if (node->parent != NULL) {
+        /* Dereference the parent's connection to us.
+         * You're dead to me, ma. ;_; */
         if (node->parent->left && node->parent->left == node) {
             node->parent->left = NULL;
         } else if (node->parent->right && node->parent->right == node) {
