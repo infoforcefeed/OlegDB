@@ -185,8 +185,6 @@ ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen) 
 }
 
 static inline void _ols_free_node(ol_splay_tree_node *node) {
-    if (node == NULL)
-        ol_log_msg(LOG_INFO, "hey");
     check(node != NULL, "Node is null.");
 
     if (node->left != NULL) {
