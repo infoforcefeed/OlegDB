@@ -1,6 +1,8 @@
 CFLAGS=-Wall -Werror -g3 -O2
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
-cc=gcc
+ifndef CC
+	CC = gcc
+endif
 VERSION=0.1.0
 SOVERSION=0
 BUILD_DIR=$(shell pwd)/build/
@@ -30,12 +32,12 @@ endif
 all: liboleg oleg_test server
 
 test.o: ./src/test.c
-	$(cc) $(CFLAGS) $(INCLUDES) -c $<
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 main.o: ./src/main.c
-	$(cc) $(CFLAGS) $(INCLUDES) -c $<
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 
 %.o: ./src/%.c
-	$(cc) $(CFLAGS) $(INCLUDES) -c -fPIC $<
+	$(CC) $(CFLAGS) $(INCLUDES) -c -fPIC $<
 
 FORCE:
 
@@ -47,12 +49,12 @@ $(BIN_DIR)%.beam: ./src/%.erl
 
 oleg_test: liboleg $(BIN_DIR)oleg_test
 $(BIN_DIR)oleg_test: test.o main.o
-	$(cc) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
+	$(CC) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
 liboleg: $(LIB_DIR)liboleg.so
 $(LIB_DIR)liboleg.so: murmur3.o oleg.o dump.o logging.o aol.o port_driver.o rehash.o utils.o
-	$(cc) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o aol.o oleg.o rehash.o utils.o -fpic -shared $(MATH_LINKER)
-	$(cc) $(CFLAGS) $(INCLUDES) $(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
+	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o aol.o oleg.o rehash.o utils.o -fpic -shared $(MATH_LINKER)
+	$(CC) $(CFLAGS) $(INCLUDES) $(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
 
 server: $(BIN_DIR)ol_database.beam $(BIN_DIR)ol_http.beam \
 	$(BIN_DIR)ol_parse.beam $(BIN_DIR)ol_util.beam $(BIN_DIR)olegdb.beam
