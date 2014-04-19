@@ -67,11 +67,7 @@ parse_header(Data, Record) ->
     %io:format("Split: ~p~n", [Split]),
     case Split of
         [Header,PostedData|_] ->
-            LowercaseHeader = binary:list_to_bin(
-                                string:to_lower(
-                                  binary:bin_to_list(Header)
-                                 )
-                               ),
+            LowercaseHeader = ol_util:bits_to_lower(Header),
             parse_header1(binary:split(LowercaseHeader, [<<"\r\n">>], [global]),
                           { Record#ol_record{value=PostedData}, []});
         X -> X
