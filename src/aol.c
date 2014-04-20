@@ -37,8 +37,8 @@ static inline void _serialize_time(struct tm *time, char *buf) {
 
 static inline void _deserialize_time(struct tm *time, char *buf) {
     /* Example 8601 datestamp: 2014-03-08T11:17:39Z */
-    char year[4], month[2], day[2];
-    char hour[2], min[2], sec[2];
+    char year[4]={0}, month[2]={0}, day[2]={0};
+    char hour[2]={0}, min[2]={0}, sec[2]={0};
 
     memcpy(&year, &buf[0], 4);
     memcpy(&month, &buf[5], 2);
@@ -170,7 +170,7 @@ int ol_aol_restore(ol_database *db) {
             ol_string *spoil;
             spoil = _ol_read_data(fd);
 
-            struct tm time;
+            struct tm time = {0};
             _deserialize_time(&time, spoil->data);
 
             check(spoil, "Error reading");

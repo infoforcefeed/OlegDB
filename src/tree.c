@@ -105,9 +105,9 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
     check(key != NULL, "Key is null.");
     ol_splay_tree_node *current_node = NULL, *previous_node = NULL;
     current_node = tree->root;
-    size_t larger_key = 0;
 
     while (current_node != NULL) {
+        size_t larger_key = 0;
         previous_node = current_node;
         larger_key = klen > current_node->klen ? klen : current_node->klen;
         if (strncmp(key, current_node->key, larger_key) >= 0)
@@ -131,6 +131,7 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
     if (previous_node == NULL) {
         tree->root = current_node;
     } else {
+        size_t larger_key = 0;
         larger_key = current_node->klen > previous_node->klen ?
             current_node->klen : previous_node->klen;
         if (strncmp(previous_node->key, current_node->key, larger_key) >= 0)
@@ -164,15 +165,15 @@ int ols_delete(ol_splay_tree *tree, ol_splay_tree_node *node) {
     else if (!node->right)
         _ols_replace(tree, node, node->left);
     else {
-        ol_splay_tree_node *found_node = _ols_subtree_minimum(node->right);
-        if (found_node->parent != node) {
-            _ols_replace(tree, found_node, found_node->right );
-            found_node->right = node->right;
-            found_node->right->parent = found_node;
+        ol_splay_tree_node *minimum_node = _ols_subtree_minimum(node->right);
+        if (minimum_node->parent != node) {
+            _ols_replace(tree, minimum_node, minimum_node->right );
+            minimum_node->right = node->right;
+            minimum_node->right->parent = minimum_node;
         }
-        _ols_replace(tree, node, found_node);
-        found_node->left = node->left;
-        found_node->left->parent = node;
+        _ols_replace(tree, node, minimum_node);
+        minimum_node->left = node->left;
+        minimum_node->left->parent = minimum_node;
     }
 
     free(node);
@@ -185,28 +186,12 @@ ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen) 
 }
 
 static inline void _ols_free_node(ol_splay_tree_node *node) {
-    check(node != NULL, "Node is null.");
-
-    if (node->left != NULL) {
+    if (node != NULL) {
         _ols_free_node(node->left);
-    }
-    if (node->right != NULL) {
         _ols_free_node(node->right);
-    }
 
-    if (node->parent != NULL) {
-        /* Dereference the parent's connection to us.
-         * You're dead to me, ma. ;_; */
-        if (node->parent->left && node->parent->left == node) {
-            node->parent->left = NULL;
-        } else if (node->parent->right && node->parent->right == node) {
-            node->parent->right = NULL;
-        }
+        free(node);
     }
-    free(node);
-
-error:
-    return;
 }
 
 void ols_close(ol_splay_tree *tree) {
