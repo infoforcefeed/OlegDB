@@ -69,7 +69,7 @@ typedef enum {
     OL_F_APPENDONLY     = 1 << 0,
     OL_F_SEMIVOL        = 1 << 1,
     OL_F_REGDUMPS       = 1 << 2,
-	OL_F_LZ4			= 1 << 3
+    OL_F_LZ4            = 1 << 3
 } ol_feature_flags;
 
 /* xXx ENUM=ol_state_flags xXx
@@ -106,7 +106,7 @@ typedef struct ol_bucket {
     size_t            ctype_size;
     ol_val            data_ptr;
     size_t            data_size;
-	size_t            original_size; /* Only needed for LZ4 */
+    size_t            original_size; /* Only needed for LZ4 */
     uint32_t          hash;
     struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
     struct tm         *expiration;

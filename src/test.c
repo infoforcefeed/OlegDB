@@ -633,6 +633,50 @@ error:
     return 1;
 }
 
+int test_lz4() {
+    ol_database *db = _test_db_open();
+    db->enable(OL_F_LZ4, &db->feature_set);
+
+    /* This is basically the Unjar_ds test, since keys, AOL, expiration and
+     * Content-type aren't compressed, it's useless to test those.
+     */
+
+    char key[] = "THE MIGHTY LZ4 TEST";
+    unsigned char val[] = "111 THIS 111 MUST 111 BE 111 COMPRESSED 111 SOMEHOW";
+    size_t val_len = strlen((char*)val);
+    int inserted = ol_jar(db, key, strlen(key), val, val_len);
+
+    if (inserted > 0) {
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
+        ol_close(db);
+        return 1;
+    }
+
+    size_t to_test;
+    ol_val item = ol_unjar_ds(db, key, strlen(key), &to_test);
+    ol_log_msg(LOG_INFO, "Retrieved value.");
+    if (item == NULL) {
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        ol_close(db);
+        return 2;
+    }
+
+    if (memcmp(item, val, strlen((char*)val)) != 0) {
+        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        ol_close(db);
+        return 3;
+    }
+
+    if (to_test != val_len) {
+        ol_log_msg(LOG_ERR, "Sizes were not the same. %p (to_test) vs. %p (val_len)\n", to_test, val_len);
+        ol_close(db);
+        return 4;
+    }
+
+    ol_close(db);
+    return 0;
+}
+
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
@@ -653,6 +697,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_dump_forking);
     ol_run_test(test_feature_flags);
     ol_run_test(test_uptime);
+    ol_run_test(test_lz4);
 
     results[0] = tests_run;
     results[1] = tests_failed;

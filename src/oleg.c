@@ -274,18 +274,17 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
         if (!_has_bucket_expired(bucket)) {
             if (dsize != NULL)
                 memcpy(dsize, &bucket->data_size, sizeof(size_t));
-            
+
+            unsigned char* data = bucket->data_ptr;
+
             /* Decomperss with LZ4 if enabled */
-            if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-                unsigned char* data = malloc(sizeof(unsigned char) *
-                                             bucket->original_size);
-                int datalen = LZ4_decompress_fast((const char*)bucket->data_ptr, 
-                        (char*)data, bucket->original_size);
-                memcpy(dsize, &datalen, sizeof(size_t));
-                bucket->data_ptr = data;
+            if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+                data = malloc(sizeof(unsigned char) * bucket->original_size);
+                LZ4_decompress_fast((const char*)bucket->data_ptr, (char*)data, bucket->original_size);
+                *dsize = bucket->original_size;
             }
 
-			return bucket->data_ptr;
+			return data;
         } else {
             /* It's dead, get rid of it. */
             ol_scoop(db, key, klen);
@@ -304,9 +303,9 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     size_t cmsize;
     unsigned char* compressed = NULL;
     if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-        unsigned char *compressed = malloc(sizeof(unsigned char) * vsize);
-        cmsize = (size_t)LZ4_compress((const char*)value, 
-                                          (char*)compressed, (int)vsize); 
+        compressed = malloc(sizeof(unsigned char) * vsize);
+        cmsize = (size_t)LZ4_compress((const char*)value,
+                                          (char*)compressed, (int)vsize);
     }
 
     /* Free the _key as soon as possible */
@@ -341,16 +340,16 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
                 db->state != OL_S_STARTUP) {
             ol_aol_write_cmd(db, "JAR", bucket);
         }
-       
+
         /* Set LZ4 compressed data into the bucket only AFTER AOL writes */
         if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
 		    bucket->original_size = vsize;
             bucket->data_size = cmsize;
             bucket->data_ptr = compressed;
         }
-        
         return 0;
     }
+
     /* Looks like we don't have an old hash */
     ol_bucket *new_bucket = malloc(sizeof(ol_bucket));
     if (new_bucket == NULL)
@@ -409,6 +408,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
             new_bucket->data_size = vsize;
             new_bucket->data_ptr = data;
         }
+
         ol_aol_write_cmd(db, "JAR", new_bucket);
     }
 
