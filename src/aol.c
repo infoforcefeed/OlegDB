@@ -162,6 +162,8 @@ int ol_aol_restore(ol_database *db) {
             check(v, "Error reading");
             ol_jar_ct(db, k->data, k->dlen, (unsigned char*)v->data, v->dlen,
                     ct->data, ct->dlen);
+            free(ct->data);
+            free(ct);
             free(v->data);
             free(v);
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {
@@ -175,6 +177,8 @@ int ol_aol_restore(ol_database *db) {
 
             check(spoil, "Error reading");
             ol_spoil(db, k->data, k->dlen, &time);
+            free(spoil->data);
+            free(spoil);
         }
 
         free(command->data);
