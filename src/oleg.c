@@ -274,11 +274,18 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
         if (!_has_bucket_expired(bucket)) {
             if (dsize != NULL)
                 memcpy(dsize, &bucket->data_size, sizeof(size_t));
-			/* Pass to LZ4 for decompression */
-			unsigned char* data = malloc(sizeof(unsigned char)*(bucket->or_size));
-			int datalen = LZ4_decompress_safe((const char*)bucket->data_ptr, (char*)data, (int)*dsize, bucket->or_size);
-            memcpy(dsize, &datalen, sizeof(size_t));
-			return (ol_val)data;
+            
+            /* Decomperss with LZ4 if enabled */
+            if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+                unsigned char* data = malloc(sizeof(unsigned char) *
+                                             bucket->original_size);
+                int datalen = LZ4_decompress_fast((const char*)bucket->data_ptr, 
+                        (char*)data, bucket->original_size);
+                memcpy(dsize, &datalen, sizeof(size_t));
+                bucket->data_ptr = data;
+            }
+
+			return bucket->data_ptr;
         } else {
             /* It's dead, get rid of it. */
             ol_scoop(db, key, klen);
@@ -293,12 +300,14 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     int ret;
     uint32_t hash;
 
-	/* Compress using LZ4 before anything else */
-	unsigned char *datalz4 = malloc(sizeof(unsigned char)*vsize);
-	int dsize = LZ4_compress((const char*)value, (char*)datalz4, (int)vsize); 
-	size_t orsize = vsize;
-	vsize = (size_t)dsize;
-	value = datalz4;
+    /* Compress using LZ4 if enabled */
+    size_t cmsize;
+    unsigned char* compressed = NULL;
+    if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+        unsigned char *compressed = malloc(sizeof(unsigned char) * vsize);
+        cmsize = (size_t)LZ4_compress((const char*)value, 
+                                          (char*)compressed, (int)vsize); 
+    }
 
     /* Free the _key as soon as possible */
     char *_key = _ol_trunc(key, klen);
@@ -321,7 +330,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
         bucket->klen = _klen;
         bucket->ctype_size = ctsize;
-		bucket->or_size = orsize;
         bucket->content_type = ct_real;
         bucket->data_size = vsize;
         bucket->data_ptr = data;
@@ -333,7 +341,14 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
                 db->state != OL_S_STARTUP) {
             ol_aol_write_cmd(db, "JAR", bucket);
         }
-
+       
+        /* Set LZ4 compressed data into the bucket only AFTER AOL writes */
+        if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+		    bucket->original_size = vsize;
+            bucket->data_size = cmsize;
+            bucket->data_ptr = compressed;
+        }
+        
         return 0;
     }
     /* Looks like we don't have an old hash */
@@ -357,7 +372,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         return 3;
     new_bucket->data_ptr = data;
     new_bucket->hash = hash;
-	new_bucket->or_size = orsize;
 
     new_bucket->ctype_size = ctsize;
     char *ct_real = calloc(1, ctsize+1);
@@ -377,6 +391,12 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         }
     }
 
+    if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+        new_bucket->original_size = vsize;
+        new_bucket->data_size = cmsize;
+        new_bucket->data_ptr = compressed;
+    }
+
     ret = _ol_set_bucket(db, new_bucket);
 
     if(ret > 0)
@@ -384,6 +404,11 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
             db->state != OL_S_STARTUP) {
+        /* Restore original data for AOL write*/
+        if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+            new_bucket->data_size = vsize;
+            new_bucket->data_ptr = data;
+        }
         ol_aol_write_cmd(db, "JAR", new_bucket);
     }
 
