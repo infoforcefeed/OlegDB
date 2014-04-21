@@ -701,7 +701,6 @@ void run_tests(int results[2]) {
     ol_run_test(test_open_close);
     ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
-    ol_run_test(test_can_find_all_nodes);
     ol_run_test(test_lots_of_deletes);
     ol_run_test(test_unjar);
     ol_run_test(test_unjar_ds);
@@ -711,6 +710,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_dump);
     ol_run_test(test_dump_forking);
     ol_run_test(test_feature_flags);
+    ol_run_test(test_can_find_all_nodes);
     ol_run_test(test_uptime);
 
     results[0] = tests_run;
