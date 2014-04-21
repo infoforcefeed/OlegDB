@@ -15,7 +15,7 @@ server_manager(Caller, Port) ->
 
 server_manager(Caller, Hostname, Port) ->
     {ok, Ip} = inet:getaddr(Hostname, inet),
-    case gen_tcp:listen(Port, [binary, {ip, Ip}, {active, false}, {reuseaddr, true}, {nodelay, true}, {backlog, 50}]) of
+    case gen_tcp:listen(Port, [binary, {ip, Ip}, {active, false}, {reuseaddr, true}, {nodelay, true}, {backlog, 100}]) of
         {ok, Sock} ->
             io:format("[-] Listening on IP ~p, port ~p~n", [Ip, Port]),
             gen_tcp:controlling_process(Sock, Caller),
