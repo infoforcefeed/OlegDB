@@ -579,9 +579,11 @@ int test_aol() {
     ol_log_msg(LOG_INFO, "Cleaning up files created...");
     if (unlink(db->aol_file) != 0) {
         ol_log_msg(LOG_ERR, "Could not remove file: %s", db->aol_file);
+        ol_close(db);
         return 7;
     }
 
+    ol_close(db);
     return 0;
 }
 
