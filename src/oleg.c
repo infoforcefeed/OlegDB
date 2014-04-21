@@ -284,7 +284,7 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
                 *dsize = bucket->original_size;
             }
 
-			return data;
+            return data;
         } else {
             /* It's dead, get rid of it. */
             ol_scoop(db, key, klen);
@@ -343,7 +343,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
         /* Set LZ4 compressed data into the bucket only AFTER AOL writes */
         if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-		    bucket->original_size = vsize;
+            bucket->original_size = vsize;
             bucket->data_size = cmsize;
             bucket->data_ptr = compressed;
         }
