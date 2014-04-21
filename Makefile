@@ -52,8 +52,8 @@ $(BIN_DIR)oleg_test: test.o main.o
 	$(CC) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
 liboleg: $(LIB_DIR)liboleg.so
-$(LIB_DIR)liboleg.so: murmur3.o oleg.o dump.o logging.o aol.o port_driver.o rehash.o utils.o
-	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o aol.o oleg.o rehash.o utils.o -fpic -shared $(MATH_LINKER)
+$(LIB_DIR)liboleg.so: murmur3.o oleg.o dump.o logging.o aol.o port_driver.o rehash.o utils.o lz4.o
+	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o logging.o dump.o aol.o oleg.o rehash.o utils.o lz4.o -fpic -shared $(MATH_LINKER)
 	$(CC) $(CFLAGS) $(INCLUDES) $(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
 
 server: $(BIN_DIR)ol_database.beam $(BIN_DIR)ol_http.beam \

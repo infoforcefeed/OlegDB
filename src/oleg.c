@@ -36,6 +36,7 @@
 #include "errhandle.h"
 #include "rehash.h"
 #include "utils.h"
+#include "lz4.h"
 
 /* Fix for the GNU extension strnlen not being available on some platforms */
 #if defined(__MINGW32_VERSION) || (defined(__APPLE__) && \
@@ -273,7 +274,11 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
         if (!_has_bucket_expired(bucket)) {
             if (dsize != NULL)
                 memcpy(dsize, &bucket->data_size, sizeof(size_t));
-            return bucket->data_ptr;
+			/* Pass to LZ4 for decompression */
+			unsigned char* data = malloc(sizeof(unsigned char)*(bucket->or_size));
+			int datalen = LZ4_decompress_safe((const char*)bucket->data_ptr, (char*)data, (int)*dsize, bucket->or_size);
+            memcpy(dsize, &datalen, sizeof(size_t));
+			return (ol_val)data;
         } else {
             /* It's dead, get rid of it. */
             ol_scoop(db, key, klen);
@@ -287,6 +292,13 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         size_t vsize, const char *ct, const size_t ctsize) {
     int ret;
     uint32_t hash;
+
+	/* Compress using LZ4 before anything else */
+	unsigned char *datalz4 = malloc(sizeof(unsigned char)*vsize);
+	int dsize = LZ4_compress((const char*)value, (char*)datalz4, (int)vsize); 
+	size_t orsize = vsize;
+	vsize = (size_t)dsize;
+	value = datalz4;
 
     /* Free the _key as soon as possible */
     char *_key = _ol_trunc(key, klen);
@@ -309,6 +321,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
         bucket->klen = _klen;
         bucket->ctype_size = ctsize;
+		bucket->or_size = orsize;
         bucket->content_type = ct_real;
         bucket->data_size = vsize;
         bucket->data_ptr = data;
@@ -344,6 +357,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         return 3;
     new_bucket->data_ptr = data;
     new_bucket->hash = hash;
+	new_bucket->or_size = orsize;
 
     new_bucket->ctype_size = ctsize;
     char *ct_real = calloc(1, ctsize+1);

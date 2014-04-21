@@ -104,6 +104,7 @@ typedef struct ol_bucket {
     size_t            ctype_size;
     ol_val            data_ptr;
     size_t            data_size;
+	size_t            or_size;
     uint32_t          hash;
     struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
     struct tm         *expiration;
