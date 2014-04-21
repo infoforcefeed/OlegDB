@@ -133,8 +133,7 @@ int _ol_close(ol_database *db){
 
     if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set) && db->tree != NULL) {
         debug("Destroying tree.");
-        if (db->tree->root != NULL)
-            ols_close(db->tree);
+        ols_close(db->tree);
         free(db->tree);
         db->tree = NULL;
     }
