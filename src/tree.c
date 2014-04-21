@@ -185,13 +185,66 @@ ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen) 
     return NULL;
 }
 
+/* To avoid stack overflows, we have to recurse this tree iteratively to delete
+ * it.
+ * Oh, how I pine for better recursion.
+ */
+struct stack {
+    ol_splay_tree_node *node;
+    struct stack *next;
+};
+
+static inline void spush(struct stack *stack, ol_splay_tree_node *node) {
+    check(stack != NULL, "Stack is null.");
+    check(node != NULL, "Stack is null.");
+
+    struct stack *to_push = NULL;
+    to_push = malloc(sizeof(struct stack));
+    check_mem(to_push);
+
+    to_push->node = node;
+    to_push->next = stack;
+
+    stack = to_push;
+
+error:
+    return;
+}
+
+static inline ol_splay_tree_node *spop(struct stack *stack) {
+    check(stack != NULL, "Stack is null.");
+
+    struct stack *top = stack;
+    stack = top->next;
+    ol_splay_tree_node *node = top->node;
+
+    free(top);
+    return node;
+
+error:
+    return NULL;
+}
+
 static inline void _ols_free_node(ol_splay_tree_node *node) {
-    if (node != NULL) {
-        _ols_free_node(node->left);
-        _ols_free_node(node->right);
+    struct stack stack;
+    stack.next = NULL;
+    stack.node = NULL;
+
+    spush(&stack, node);
+
+    while (stack.next != NULL) {
+        ol_splay_tree_node *cur_node = spop(&stack);
+
+        if (cur_node->left != NULL) {
+            spush(&stack, cur_node->left);
+        }
+        if (cur_node->right != NULL) {
+            spush(&stack, cur_node->right);
+        }
 
         free(node);
     }
+
 }
 
 void ols_close(ol_splay_tree *tree) {
