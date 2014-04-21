@@ -38,6 +38,8 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     orphan_ll *current = og_vampire;
     int orphans_found = 0;
 
+    /* TODO: Refactor the whole orphan stuff to use the general purpose stack
+     * in src/tree.c. */
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
     for (i = 0; i < iterations; i++) {
         bucket = db->hashes[i];

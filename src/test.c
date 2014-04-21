@@ -78,6 +78,84 @@ int test_jar() {
     return 0;
 }
 
+int test_can_find_all_nodes() {
+    ol_database *db = _test_db_open();
+
+    int i;
+    int max_records = RECORD_COUNT;
+    unsigned char to_insert[] = "123456789";
+    for (i = 0; i < max_records; i++) { /* 8======D */
+        char key[64] = "crazy hash";
+        char append[10] = "";
+
+        sprintf(append, "%i", i);
+        strcat(key, append);
+
+        size_t len = strlen((char *)to_insert);
+        size_t klen = strlen(key);
+        int insert_result = ol_jar(db, key, klen, to_insert, len);
+
+        if (insert_result > 0) {
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 2;
+        }
+
+        if (db->rcrd_cnt != i+1) {
+            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 3;
+        }
+
+
+        ol_splay_tree_node *found = ols_find(db->tree, key, klen);
+        if (found == NULL) {
+            ol_log_msg(LOG_ERR, "Could not find key we just inserted!");
+            ol_close(db);
+            return 4;
+        }
+
+        if (found->klen != klen ||
+            strncmp(found->key, key, klen) != 0) {
+            ol_log_msg(LOG_ERR, "The bucket we got back isn't actuall what we asked for.");
+            ol_close(db);
+            return 5;
+        }
+
+    }
+    ol_log_msg(LOG_INFO, "Records inserted: %i.", db->rcrd_cnt);
+    ol_log_msg(LOG_INFO, "Saw %d collisions.", db->key_collisions);
+    ol_log_msg(LOG_INFO, "Now searching for all keys.");
+
+    for (i = 0; i < max_records; i++) { /* 8======D */
+        char key[64] = "crazy hash";
+        char append[10] = "";
+
+        sprintf(append, "%i", i);
+        strcat(key, append);
+
+        size_t length = strlen(key);
+        ol_splay_tree_node *found = ols_find(db->tree, key, length);
+        if (found == NULL) {
+            ol_log_msg(LOG_ERR, "Could not find key: %s", key);
+            ol_close(db);
+            return 6;
+        }
+
+        if (found->klen != strlen(key) ||
+            strncmp(found->key, key, strlen(key)) != 0) {
+            ol_log_msg(LOG_ERR, "The bucket we got back isn't actuall what we asked for.");
+            ol_close(db);
+            return 7;
+        }
+    }
+
+    if (ol_close(db) != 0) {
+        ol_log_msg(LOG_ERR, "Couldn't free all memory.\n");
+        return 1;
+    }
+    return 0;
+}
 int test_lots_of_deletes() {
     ol_database *db = _test_db_open();
 
@@ -623,6 +701,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_open_close);
     ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
+    ol_run_test(test_can_find_all_nodes);
     ol_run_test(test_lots_of_deletes);
     ol_run_test(test_unjar);
     ol_run_test(test_unjar_ds);
