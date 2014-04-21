@@ -300,7 +300,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     uint32_t hash;
 
     /* Compress using LZ4 if enabled */
-    size_t cmsize;
+    size_t cmsize = 0;
     unsigned char* compressed = NULL;
     if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         compressed = malloc(sizeof(unsigned char) * vsize);
