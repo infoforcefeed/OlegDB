@@ -176,27 +176,32 @@ int test_unjar_ds() {
     }
 
     size_t to_test;
-    unsigned char *item = ol_unjar_ds(db, key, strlen(key), &to_test);
+    unsigned char *item = NULL;
+    ol_unjar_ds(db, key, strlen(key), &item, &to_test);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        free(item);
         ol_close(db);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        free(item);
         ol_close(db);
         return 3;
     }
 
     if (to_test != val_len) {
         ol_log_msg(LOG_ERR, "Sizes were not the same. %p (to_test) vs. %p (val_len)\n", to_test, val_len);
+        free(item);
         ol_close(db);
         return 4;
     }
 
     ol_close(db);
+    free(item);
     return 0;
 }
 int test_unjar() {
@@ -212,21 +217,25 @@ int test_unjar() {
         return 1;
     }
 
-    unsigned char *item = ol_unjar(db, key, strlen(key));
+    unsigned char *item = NULL;
+    ol_unjar(db, key, strlen(key), &item);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        free(item);
         ol_close(db);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        free(item);
         ol_close(db);
         return 3;
     }
 
     ol_close(db);
+    free(item);
     return 0;
 }
 
@@ -291,37 +300,44 @@ int test_update() {
         return 1;
     }
 
-    unsigned char *item = ol_unjar(db, key, strlen(key));
+    unsigned char *item = NULL;
+    ol_unjar(db, key, strlen(key), &item);
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
+        free(item);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
         ol_close(db);
+        free(item);
         return 3;
     }
+    free(item);
 
     unsigned char new_val[] = "WOW THAT WAS COOL, WASNT IT?";
     inserted = ol_jar(db, key, strlen(key), new_val, strlen((char*)new_val));
 
-    item = ol_unjar(db, key, strlen(key));
+    ol_unjar(db, key, strlen(key), &item);
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
+        free(item);
         return 2;
     }
 
     if (memcmp(item, new_val, strlen((char*)new_val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the new value.\nVal: %s\n", item);
         ol_close(db);
+        free(item);
         return 3;
     }
     ol_log_msg(LOG_INFO, "New value returned successfully.");
 
     ol_close(db);
+    free(item);
     return 0;
 }
 
@@ -435,15 +451,15 @@ int test_ct() {
         return 1;
     }
 
-    unsigned char *item = ol_unjar(db, key1, strlen(key1));
-    if (item == NULL) {
+    int ret = ol_unjar(db, key1, strlen(key1), NULL);
+    if (!ret) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key1);
         ol_close(db);
         return 2;
     }
 
-    item = ol_unjar(db, key2, strlen(key2));
-    if (item == NULL) {
+    ret = ol_unjar(db, key2, strlen(key2), NULL);
+    if (!ret) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key2);
         ol_close(db);
         return 2;
@@ -623,7 +639,7 @@ int test_expiration() {
 
     check(ol_jar(db, key, strlen(key), value, strlen((char *)value)) == 0, "Could not insert.");
     check(ol_spoil(db, key, strlen(key), &now) == 0, "Could not set expiration");
-    check(ol_unjar(db, key, strlen(key)) == NULL, "Key did not expire properly.");
+    check(ol_unjar(db, key, strlen(key), NULL) == 1, "Key did not expire properly.");
 
     ol_close(db);
 
@@ -653,26 +669,31 @@ int test_lz4() {
     }
 
     size_t to_test;
-    unsigned char *item = ol_unjar_ds(db, key, strlen(key), &to_test);
+    unsigned char *item = NULL;
+    ol_unjar_ds(db, key, strlen(key), &item, &to_test);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
+        free(item);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
         ol_close(db);
+        free(item);
         return 3;
     }
 
     if (to_test != val_len) {
         ol_log_msg(LOG_ERR, "Sizes were not the same. %p (to_test) vs. %p (val_len)\n", to_test, val_len);
         ol_close(db);
+        free(item);
         return 4;
     }
 
+    free(item);
     ol_close(db);
     return 0;
 }
