@@ -31,7 +31,7 @@
  * in a million places when we modify it.
  */
 ol_database *_test_db_open() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, 0);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_F_LZ4);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
     return db;
 }
@@ -208,7 +208,11 @@ int test_unjar() {
     ol_database *db = _test_db_open();
 
     char key[64] = "muh_hash_tho";
-    unsigned char val[] = "{json: \"ain't real\"}";
+    unsigned char val[] = "Hello I am some data for you and I am rather"
+        "a lot of data aren't I? Bigger data is better, as the NoSQL world is"
+        "fond of saying. Geez, I hope senpai notices me today! That would be "
+        "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!"
+        "{json: \"ain't real\"}";
     int inserted = ol_jar(db, key, strlen(key), val, strlen((char*)val));
 
     if (inserted > 0) {
@@ -343,7 +347,10 @@ int test_update() {
 
 static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
     int i;
-    unsigned char to_insert[] = "Hello I am some data for you";
+    unsigned char to_insert[] = "Hello I am some data for you and I am rather"
+        "a lot of data aren't I? Bigger data is better, as the NoSQL world is"
+        "fond of saying. Geez, I hope senpai notices me today! That would be "
+        "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!";
     for (i = 0; i < NUM_KEYS; i++) { // 8======D
         /* DONT NEED YOUR SHIT, GCC */
         char key[64] = "crazy hash";

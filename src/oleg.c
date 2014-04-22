@@ -416,10 +416,11 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         /* Compress using LZ4 if enabled */
         size_t cmsize = 0;
-        unsigned char* compressed = NULL;
-        compressed = malloc(vsize);
+        unsigned char *compressed = calloc(1, vsize);
         cmsize = (size_t)LZ4_compress((const char*)value, (char*)compressed,
                                       (int)vsize);
+        unsigned char *ret = realloc(compressed, (size_t)cmsize);
+        check(ret == compressed, "Could not slim down memory for compressed data.");
 
         new_bucket->data_size = cmsize;
         new_bucket->data_ptr = compressed;
@@ -442,6 +443,9 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
 
     return 0;
+
+error:
+    return 1;
 }
 
 int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
