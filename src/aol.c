@@ -25,6 +25,7 @@
 #include "oleg.h"
 #include "logging.h"
 #include "errhandle.h"
+#include "lz4.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -162,7 +163,7 @@ error:
 int ol_aol_restore(ol_database *db) {
     char c[1];
     FILE *fd;
-    ol_string *command, *key, *value, *ct, *org_size;
+    ol_string *command, *key, *value, *ct, *read_org_size;
     fd = fopen(db->aol_file, "r");
     check(fd, "Error opening file");
     while (!feof(fd)) {
@@ -182,20 +183,33 @@ int ol_aol_restore(ol_database *db) {
         if (strncmp(command->data, "JAR", 3) == 0) {
             ct = _ol_read_data(fd);
             check(ct, "Error reading");
+
             value = _ol_read_data(fd);
             check(value, "Error reading");
-            org_size = _ol_read_data(fd);
-            check(org_size, "Error reading");
-            if ((size_t)org_size->data != (size_t)value->dlen) {
-                debug("Data is compressed. Decompressing...");
-                unsigned char* data = bucket->data_ptr;
-                data = malloc(bucket->original_size);
-                LZ4_decompress_fast((const char*)value->data_ptr, (char*)data, bucket->original_size);
+
+            read_org_size = _ol_read_data(fd);
+            check(read_org_size, "Error reading");
+
+            size_t original_size = (size_t)read_org_size->data;
+            if (original_size != (size_t)value->dlen) {
+                /* Data is compressed, gotta deal with that. */
+                unsigned char tmp_data[original_size];
+                void * ret = memset(&tmp_data, 0, original_size);
+                check(ret != &tmp_data, "Could not initialize tmp_data parameter.");
+
+                int processed = 0;
+                processed = LZ4_decompress_fast((const char*)value->data,
+                                                (char *)&tmp_data, original_size);
+                check(processed != original_size, "Could not decompress data.");
+                ol_jar_ct(db, key->data, key->dlen, tmp_data, original_size,
+                        ct->data, ct->dlen);
+            } else {
+                /* Data is uncompressed, no need for trickery. */
+                ol_jar_ct(db, key->data, key->dlen, (unsigned char*)value->data, value->dlen,
+                        ct->data, ct->dlen);
             }
-            ol_jar_ct(db, key->data, key->dlen, (unsigned char*)value->data, value->dlen,
-                    ct->data, ct->dlen);
-            free(org_size->data);
-            free(org_size);
+            free(read_org_size->data);
+            free(read_org_size);
             free(value->data);
             free(value);
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {

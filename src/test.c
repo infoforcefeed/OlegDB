@@ -176,7 +176,7 @@ int test_unjar_ds() {
     }
 
     size_t to_test;
-    ol_val item = ol_unjar_ds(db, key, strlen(key), &to_test);
+    unsigned char *item = ol_unjar_ds(db, key, strlen(key), &to_test);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
@@ -212,7 +212,7 @@ int test_unjar() {
         return 1;
     }
 
-    ol_val item = ol_unjar(db, key, strlen(key));
+    unsigned char *item = ol_unjar(db, key, strlen(key));
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
@@ -291,7 +291,7 @@ int test_update() {
         return 1;
     }
 
-    ol_val item = ol_unjar(db, key, strlen(key));
+    unsigned char *item = ol_unjar(db, key, strlen(key));
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
@@ -435,7 +435,7 @@ int test_ct() {
         return 1;
     }
 
-    ol_val item = ol_unjar(db, key1, strlen(key1));
+    unsigned char *item = ol_unjar(db, key1, strlen(key1));
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key1);
         ol_close(db);
@@ -653,7 +653,7 @@ int test_lz4() {
     }
 
     size_t to_test;
-    ol_val item = ol_unjar_ds(db, key, strlen(key), &to_test);
+    unsigned char *item = ol_unjar_ds(db, key, strlen(key), &to_test);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);

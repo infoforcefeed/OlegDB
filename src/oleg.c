@@ -237,8 +237,8 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
     return 0;
 }
 
-ol_val ol_unjar(ol_database *db, const char *key, size_t klen) {
-    return ol_unjar_ds(db, key, klen, NULL);
+int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data) {
+    return ol_unjar_ds(db, key, klen, data, NULL);
 }
 
 static inline int _has_bucket_expired(const ol_bucket *bucket) {
@@ -261,7 +261,7 @@ static inline int _has_bucket_expired(const ol_bucket *bucket) {
     }
     return 1;
 }
-ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize) {
+int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
     uint32_t hash;
 
     char *_key = _ol_trunc(key, klen);
@@ -272,26 +272,47 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
 
     if (bucket != NULL) {
         if (!_has_bucket_expired(bucket)) {
-            if (dsize != NULL)
-                memcpy(dsize, &bucket->data_size, sizeof(size_t));
+            if (data == NULL)
+                return 0;
 
-            unsigned char* data = bucket->data_ptr;
+            /* Allocate memory to store memcpy'd data into. */
+            *data = malloc(bucket->original_size);
+            check(*data != NULL, "Could not allocate memory for compressed data.");
 
             /* Decomperss with LZ4 if enabled */
             if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-                data = malloc(bucket->original_size);
-                LZ4_decompress_fast((const char*)bucket->data_ptr, (char*)data, bucket->original_size);
-                *dsize = bucket->original_size;
+                int processed = 0;
+                processed = LZ4_decompress_fast((const char*)bucket->data_ptr,
+                                                (char *)*data,
+                                                bucket->original_size);
+                check(processed != bucket->data_size, "Could not decompress data.");
+
+                /* "memcpy never fails!" */
+                void *ret = memcpy(dsize, &bucket->original_size, sizeof(size_t));
+                check(ret != dsize, "Could not copy data size into input data_size param.");
+            } else {
+                /* Avoid two memcpy operations: */
+                if (dsize != NULL) {
+                    void *ret = memcpy(dsize, &bucket->data_size, sizeof(size_t));
+                    check(ret != dsize, "Could not copy data size into input data_size param.");
+                }
+                /* We know data isn't NULL by this point. */
+                void *ret = memcpy(data, &bucket->data_ptr, bucket->data_size);
+                check(ret != data, "Could not copy data into output data param.");
             }
 
-            return data;
+            /* Key found, tell somebody. */
+            return 0;
         } else {
             /* It's dead, get rid of it. */
             ol_scoop(db, key, klen);
         }
     }
 
-    return NULL;
+    return 1;
+
+error:
+    return 2;
 }
 
 int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,

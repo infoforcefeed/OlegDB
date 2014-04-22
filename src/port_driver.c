@@ -213,10 +213,11 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         /* TODO: Fix this when we have one clean function to retrieve content type
          * and data at the same time.
          */
-        unsigned char *data = ol_unjar_ds(d->db, obj->key, obj->klen, &val_size);
+        unsigned char *data = NULL;
+        int ret = ol_unjar_ds(d->db, obj->key, obj->klen, &data, &val_size);
         ei_x_buff to_send;
         ei_x_new_with_version(&to_send);
-        if (data != NULL) {
+        if (ret) {
             char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
             ei_x_encode_tuple_header(&to_send, 3);
             ei_x_encode_atom(&to_send, "ok");
@@ -227,6 +228,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         }
         driver_output(d->port, to_send.buff, to_send.index);
         ei_x_free(&to_send);
+        free(data);
     } else if (fn == 3) {
         /* ol_scoop */
         int ret = ol_scoop(d->db, obj->key, obj->klen);

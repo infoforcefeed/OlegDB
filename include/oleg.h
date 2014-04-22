@@ -82,11 +82,6 @@ typedef enum {
     OL_S_AOKAY          = 1
 } ol_state_flags;
 
-/* xXx TYPEDEF=ol_val xXx
- * xXx DESCRIPTION=Typedef for the values that can be stored inside the database. xXx
- */
-typedef unsigned char *ol_val;
-
 /* xXx STRUCT=ol_bucket xXx
 * xXx DESCRIPTION=This is the object stored in the database's hashtable. Contains references to value, key, etc. xXx
 * xXx key[KEY_SIZE]=The key used for this bucket. xXx
@@ -100,16 +95,16 @@ typedef unsigned char *ol_val;
 * xXx expiration=The POSIX timestamp when this key will expire. xXx
 */
 typedef struct ol_bucket {
-    char              key[KEY_SIZE]; /* The key used to reference the data */
-    size_t            klen;
-    char              *content_type;
-    size_t            ctype_size;
-    ol_val            data_ptr;
-    size_t            data_size;
-    size_t            original_size; /* Only needed for LZ4 */
-    uint32_t          hash;
-    struct ol_bucket  *next; /* The next ol_bucket in this chain, if any */
-    struct tm         *expiration;
+    char                key[KEY_SIZE]; /* The key used to reference the data */
+    size_t              klen;
+    char                *content_type;
+    size_t              ctype_size;
+    unsigned char       *data_ptr;
+    size_t              data_size;
+    size_t              original_size; /* Only needed for LZ4 */
+    uint32_t            hash;
+    struct ol_bucket    *next; /* The next ol_bucket in this chain, if any */
+    struct tm           *expiration;
 } ol_bucket;
 
 /* xXx STRUCT=ol_database xXx
@@ -181,23 +176,25 @@ int ol_close(ol_database *database);
 int ol_close_save(ol_database *database);
 
 /* xXx FUNCTION=ol_unjar xXx
- * xXx DESCRIPTION=This is OlegDB's canonical 'get' function. Unjar a value from the mayo (database). Calls <a href="#ol_unjar_ds">ol_unjar_ds</a> with a dsize of NULL. xXx
- * xXx RETURNS=A pointer to an <a href="#ol_val">ol_val</a> object, or NULL if the object was not found. xXx
+ * xXx DESCRIPTION=This is OlegDB's canonical 'get' function. Unjar a value from the mayo (database). <strong>data must be freed after calling this function!</strong> Calls <a href="#ol_unjar_ds">ol_unjar_ds</a> with a dsize of NULL. xXx
+ * xXx RETURNS=0 on success, 1 on failure or if the key was not found.
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
+ * xXx data=This parameter will be filled out with the data found in the DB. Passing NULL will check if a key exists. xXx
  */
-ol_val ol_unjar(ol_database *db, const char *key, size_t klen);
+int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data);
 
 /* xXx FUNCTION=ol_unjar_ds xXx
- * xXx DESCRIPTION=This function retrieves a value from the database. It also writes the size of the data to <code>dsize</code>. xXx
- * xXx RETURNS=A pointer to an <a href="#ol_val">ol_val</a> object, or NULL if the object was not found. xXx
+ * xXx DESCRIPTION=This function retrieves a value from the database. <strong>data must be freed after calling this function!</strong> It also writes the size of the data to <code>dsize</code>. xXx
+ * xXx RETURNS=0 on success, 1 on failure or if the key was not found.
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key to use. xXx
+ * xXx data=This parameter will be filled out with the data found in the DB. Passing NULL will check if a key exists. xXx
  * xXx *dsize=Optional parameter that will be filled out with the size of the data, if NULL is not passed in. xXx
  */
-ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize);
+int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize);
 
 /* xXx FUNCTION=ol_jar xXx
  * xXx DESCRIPTION=This is OlegDB's canonical 'set' function. Put a value into the mayo (the database). It's easy to piss in a bucket, it's not easy to piss in 19 jars. Uses default content type. xXx
