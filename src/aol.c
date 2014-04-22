@@ -86,13 +86,18 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     if (strncmp(cmd, "JAR", 3) == 0) {
         /* I'LL RIGOR YER MORTIS */
         debug("Writing: \"%.*s\"", (int)bct->klen, bct->key);
-        char aol_str[] = ":%zu:%s:%zu:%.*s:%zu:%.*s:%zu:%.*s:%zu:";
+        char aol_str[] =
+            ":%zu:%s:"      /* cmd length, cmd */
+            "%zu:%.*s:"     /* klen size, key */
+            "%zu:%.*s:"     /* ctype size, content_type */
+            "%zu:%0*i:"     /* sizeof(original_size, original_size */
+            "%zu:";         /* data size, to be followed by data */
         ret = fprintf(db->aolfd, aol_str,
                 strlen(cmd), cmd,
                 bct->klen, (int)bct->klen, bct->key,
                 bct->ctype_size, (int)bct->ctype_size, bct->content_type,
-                bct->data_size,
-                bct->original_size, (int)bct->original_size);
+                sizeof(size_t), (int)sizeof(size_t), bct->original_size,
+                bct->data_size);
         check(ret > -1, "Error writing to file.");
         ret = fwrite(bct->data_ptr, bct->data_size, 1, db->aolfd);
         check(ret > -1, "Error writing to file.");
@@ -184,13 +189,13 @@ int ol_aol_restore(ol_database *db) {
             ct = _ol_read_data(fd);
             check(ct, "Error reading");
 
-            value = _ol_read_data(fd);
-            check(value, "Error reading");
-
             read_org_size = _ol_read_data(fd);
             check(read_org_size, "Error reading");
 
-            size_t original_size = (size_t)read_org_size->data;
+            value = _ol_read_data(fd);
+            check(value, "Error reading");
+
+            size_t original_size = (size_t)atoi(read_org_size->data);
             if (original_size != (size_t)value->dlen) {
                 /* Data is compressed, gotta deal with that. */
                 unsigned char tmp_data[original_size];
