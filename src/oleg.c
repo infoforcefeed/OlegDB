@@ -281,8 +281,8 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
 
             if (dsize != NULL) {
                 /* "strncpy never fails!" */
-                void *ret = memcpy(dsize, &bucket->original_size, sizeof(size_t));
-                check(ret != dsize, "Could not copy data size into input data_size param.");
+                size_t *ret = memcpy(dsize, &bucket->original_size, sizeof(size_t));
+                check(ret == dsize, "Could not copy data size into input data_size param.");
             }
 
             /* Decomperss with LZ4 if enabled */
@@ -291,11 +291,11 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
                 processed = LZ4_decompress_fast((const char*)bucket->data_ptr,
                                                 (char *)*data,
                                                 bucket->original_size);
-                check(processed != bucket->data_size, "Could not decompress data.");
+                check(processed == bucket->data_size, "Could not decompress data.");
             } else {
                 /* We know data isn't NULL by this point. */
                 char *ret = strncpy((char *)*data, (char *)bucket->data_ptr, bucket->original_size);
-                check(ret != (char *)data, "Could not copy data into output data param.");
+                check(ret == (char *)*data, "Could not copy data into output data param.");
             }
 
             /* Key found, tell somebody. */

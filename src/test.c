@@ -452,14 +452,14 @@ int test_ct() {
     }
 
     int ret = ol_unjar(db, key1, strlen(key1), NULL);
-    if (!ret) {
+    if (ret != 0) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key1);
         ol_close(db);
         return 2;
     }
 
     ret = ol_unjar(db, key2, strlen(key2), NULL);
-    if (!ret) {
+    if (ret != 0) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key2);
         ol_close(db);
         return 2;
