@@ -85,11 +85,13 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     if (strncmp(cmd, "JAR", 3) == 0) {
         /* I'LL RIGOR YER MORTIS */
         debug("Writing: \"%.*s\"", (int)bct->klen, bct->key);
-        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%.*s:%zu:%.*s:%zu:",
+        char aol_str[] = ":%zu:%s:%zu:%.*s:%zu:%.*s:%zu:%.*s:%zu:";
+        ret = fprintf(db->aolfd, aol_str,
                 strlen(cmd), cmd,
                 bct->klen, (int)bct->klen, bct->key,
                 bct->ctype_size, (int)bct->ctype_size, bct->content_type,
-                bct->data_size);
+                bct->data_size,
+                bct->original_size, (int)bct->original_size);
         check(ret > -1, "Error writing to file.");
         ret = fwrite(bct->data_ptr, bct->data_size, 1, db->aolfd);
         check(ret > -1, "Error writing to file.");
@@ -160,7 +162,7 @@ error:
 int ol_aol_restore(ol_database *db) {
     char c[1];
     FILE *fd;
-    ol_string *command, *k, *v, *ct;
+    ol_string *command, *key, *value, *ct, *org_size;
     fd = fopen(db->aol_file, "r");
     check(fd, "Error opening file");
     while (!feof(fd)) {
@@ -174,20 +176,30 @@ int ol_aol_restore(ol_database *db) {
             break;
         }
 
-        k = _ol_read_data(fd);
-        check(k, "Error reading"); /* Everything needs a key */
+        key = _ol_read_data(fd);
+        check(key, "Error reading"); /* Everything needs a key */
 
         if (strncmp(command->data, "JAR", 3) == 0) {
             ct = _ol_read_data(fd);
             check(ct, "Error reading");
-            v = _ol_read_data(fd);
-            check(v, "Error reading");
-            ol_jar_ct(db, k->data, k->dlen, (unsigned char*)v->data, v->dlen,
+            value = _ol_read_data(fd);
+            check(value, "Error reading");
+            org_size = _ol_read_data(fd);
+            check(org_size, "Error reading");
+            if ((size_t)org_size->data != (size_t)value->dlen) {
+                debug("Data is compressed. Decompressing...");
+                unsigned char* data = bucket->data_ptr;
+                data = malloc(bucket->original_size);
+                LZ4_decompress_fast((const char*)value->data_ptr, (char*)data, bucket->original_size);
+            }
+            ol_jar_ct(db, key->data, key->dlen, (unsigned char*)value->data, value->dlen,
                     ct->data, ct->dlen);
-            free(v->data);
-            free(v);
+            free(org_size->data);
+            free(org_size);
+            free(value->data);
+            free(value);
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {
-            ol_scoop(db, k->data, k->dlen);
+            ol_scoop(db, key->data, key->dlen);
         } else if (strncmp(command->data, "SPOIL", 5) == 0) {
             ol_string *spoil;
             spoil = _ol_read_data(fd);
@@ -196,13 +208,13 @@ int ol_aol_restore(ol_database *db) {
             _deserialize_time(&time, spoil->data);
 
             check(spoil, "Error reading");
-            ol_spoil(db, k->data, k->dlen, &time);
+            ol_spoil(db, key->data, key->dlen, &time);
         }
 
         free(command->data);
         free(command);
-        free(k->data);
-        free(k);
+        free(key->data);
+        free(key);
 
         /* Strip the newline char after each "record" */
         check(fread(c, 1, 1, fd) != 0, "Error reading");

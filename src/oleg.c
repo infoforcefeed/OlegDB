@@ -279,7 +279,7 @@ ol_val ol_unjar_ds(ol_database *db, const char *key, size_t klen, size_t *dsize)
 
             /* Decomperss with LZ4 if enabled */
             if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-                data = malloc(sizeof(unsigned char) * bucket->original_size);
+                data = malloc(bucket->original_size);
                 LZ4_decompress_fast((const char*)bucket->data_ptr, (char*)data, bucket->original_size);
                 *dsize = bucket->original_size;
             }
@@ -330,23 +330,26 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         bucket->klen = _klen;
         bucket->ctype_size = ctsize;
         bucket->content_type = ct_real;
-        bucket->data_size = vsize;
-        bucket->data_ptr = data;
         if (bucket->expiration != NULL)
             free(bucket->expiration);
         bucket->expiration = NULL;
+
+        /* Set original_size regardless of lz4 compression. This ensures we always
+         * have something to write to the AOL. */
+        bucket->original_size = vsize;
+        if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+            bucket->data_size = cmsize;
+            bucket->data_ptr = compressed;
+        } else {
+            bucket->data_size = vsize;
+            bucket->data_ptr = data;
+        }
 
         if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
                 db->state != OL_S_STARTUP) {
             ol_aol_write_cmd(db, "JAR", bucket);
         }
 
-        /* Set LZ4 compressed data into the bucket only AFTER AOL writes */
-        if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-            bucket->original_size = vsize;
-            bucket->data_size = cmsize;
-            bucket->data_ptr = compressed;
-        }
         return 0;
     }
 
