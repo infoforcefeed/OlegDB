@@ -279,6 +279,12 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
             *data = malloc(bucket->original_size);
             check(*data != NULL, "Could not allocate memory for compressed data.");
 
+            if (dsize != NULL) {
+                /* "strncpy never fails!" */
+                void *ret = memcpy(dsize, &bucket->original_size, sizeof(size_t));
+                check(ret != dsize, "Could not copy data size into input data_size param.");
+            }
+
             /* Decomperss with LZ4 if enabled */
             if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
                 int processed = 0;
@@ -286,19 +292,10 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
                                                 (char *)*data,
                                                 bucket->original_size);
                 check(processed != bucket->data_size, "Could not decompress data.");
-
-                /* "memcpy never fails!" */
-                void *ret = memcpy(dsize, &bucket->original_size, sizeof(size_t));
-                check(ret != dsize, "Could not copy data size into input data_size param.");
             } else {
-                /* Avoid two memcpy operations: */
-                if (dsize != NULL) {
-                    void *ret = memcpy(dsize, &bucket->data_size, sizeof(size_t));
-                    check(ret != dsize, "Could not copy data size into input data_size param.");
-                }
                 /* We know data isn't NULL by this point. */
-                void *ret = memcpy(data, &bucket->data_ptr, bucket->data_size);
-                check(ret != data, "Could not copy data into output data param.");
+                char *ret = strncpy((char *)*data, (char *)bucket->data_ptr, bucket->original_size);
+                check(ret != (char *)data, "Could not copy data into output data param.");
             }
 
             /* Key found, tell somebody. */

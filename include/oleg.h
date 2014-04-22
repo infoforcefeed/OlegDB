@@ -89,7 +89,8 @@ typedef enum {
 * xXx *content_type=The content-type of this object. If using the server, this defaults to "application/octet-stream". xXx
 * xXx ctype_size=Length of the string representing content-type. xXx
 * xXx data_ptr=Location of this key's value (data). xXx
-* xXx data_size=Length of the value (data) in bytes. xXx
+* xXx data_size=Length of the value (data) in bytes. This is the size of the data stored in memory. xXx
+* xXx original_size=Length of the value (data) in bytes. This is the original length of the data we receieved, non-compressed. xXx
 * xXx hash=Hashed value of this key. xXx
 * xXx next=Collisions are resolved via linked list. This contains the pointer to the next object in the chain, or NULL. xXx
 * xXx expiration=The POSIX timestamp when this key will expire. xXx
@@ -101,7 +102,7 @@ typedef struct ol_bucket {
     size_t              ctype_size;
     unsigned char       *data_ptr;
     size_t              data_size;
-    size_t              original_size; /* Only needed for LZ4 */
+    size_t              original_size;
     uint32_t            hash;
     struct ol_bucket    *next; /* The next ol_bucket in this chain, if any */
     struct tm           *expiration;
