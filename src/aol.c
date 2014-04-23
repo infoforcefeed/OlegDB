@@ -199,13 +199,13 @@ int ol_aol_restore(ol_database *db) {
             if (original_size != (size_t)value->dlen) {
                 /* Data is compressed, gotta deal with that. */
                 unsigned char tmp_data[original_size];
-                void * ret = memset(&tmp_data, 0, original_size);
-                check(ret != &tmp_data, "Could not initialize tmp_data parameter.");
+                unsigned char *ret = memset(&tmp_data, 0, original_size);
+                check(ret == tmp_data, "Could not initialize tmp_data parameter.");
 
                 int processed = 0;
                 processed = LZ4_decompress_fast((const char*)value->data,
                                                 (char *)&tmp_data, original_size);
-                check(processed != original_size, "Could not decompress data.");
+                check(processed == value->dlen, "Could not decompress data.");
                 ol_jar_ct(db, key->data, key->dlen, tmp_data, original_size,
                         ct->data, ct->dlen);
             } else {
