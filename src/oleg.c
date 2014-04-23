@@ -420,7 +420,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         cmsize = (size_t)LZ4_compress((const char*)value, (char*)compressed,
                                       (int)vsize);
         unsigned char *ret = realloc(compressed, (size_t)cmsize);
-        check(ret == compressed, "Could not slim down memory for compressed data.");
+        check(ret != NULL, "Could not slim down memory for compressed data.");
 
         new_bucket->data_size = cmsize;
         new_bucket->data_ptr = compressed;
