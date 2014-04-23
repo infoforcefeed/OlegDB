@@ -217,7 +217,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         int ret = ol_unjar_ds(d->db, obj->key, obj->klen, &data, &val_size);
         ei_x_buff to_send;
         ei_x_new_with_version(&to_send);
-        if (ret) {
+        if (ret == 0) {
             char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
             ei_x_encode_tuple_header(&to_send, 3);
             ei_x_encode_atom(&to_send, "ok");
