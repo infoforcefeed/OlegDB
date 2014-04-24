@@ -47,34 +47,21 @@ static inline void _ols_right_rotate(ol_splay_tree *tree, ol_splay_tree_node *no
     node->parent = left_child;
 }
 
-static inline int _nodes_are_equal(ol_splay_tree_node *node_a, ol_splay_tree_node *node_b) {
-    return (node_a == node_b);
-}
-
 static inline void _ols_splay(ol_splay_tree *tree, ol_splay_tree_node *node) {
     /* Granny rotate */
     while (node->parent) {
-        ol_splay_tree_node *left_parent = node->parent->left;
-        ol_splay_tree_node *right_parent = node->parent->right;
-
         if (!node->parent->parent) {
-            if (left_parent == node)
+            if (node->parent->left == node)
                 _ols_right_rotate(tree, node->parent);
             else
                 _ols_left_rotate(tree, node->parent);
-        } else if (left_parent &&
-                   _nodes_are_equal(left_parent, node) &&
-                   node->parent->parent->left == node->parent) {
+        } else if (node->parent->left == node && node->parent->parent->left == node->parent) {
             _ols_right_rotate(tree, node->parent->parent);
             _ols_right_rotate(tree, node->parent);
-        } else if (right_parent &&
-                   _nodes_are_equal(right_parent, node) &&
-                   node->parent->parent->right == node->parent) {
+        } else if (node->parent->right == node && node->parent->parent->right == node->parent) {
             _ols_left_rotate(tree, node->parent->parent);
             _ols_left_rotate(tree, node->parent);
-        } else if (left_parent &&
-                   _nodes_are_equal(left_parent, node) &&
-                   node->parent->parent->right == node->parent) {
+        } else if(node->parent->left == node && node->parent->parent->right == node->parent) {
             _ols_right_rotate(tree, node->parent);
             _ols_left_rotate(tree, node->parent);
         } else {
