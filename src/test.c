@@ -32,16 +32,21 @@
  */
 ol_database *_test_db_open() {
     ol_database *db = ol_open(DB_PATH, DB_NAME, OL_F_LZ4);
-    ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    if (db != NULL) {
+        ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
+    } else {
+        ol_log_msg(LOG_ERR, "Could not open database.");
+    }
     return db;
 }
+
 int test_open_close() {
     ol_database *db = _test_db_open();
     int ret = ol_close(db);
     if (ret > 0){
         ol_log_msg(LOG_INFO, "Couldn't free all memory.");
     } else {
-        ol_log_msg(LOG_INFO, "Closed DB: %p.", db);
+        ol_log_msg(LOG_INFO, "Closed DB.");
     }
     return 0;
 }
