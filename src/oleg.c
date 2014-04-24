@@ -334,7 +334,7 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     size_t cmsize = 0;
     if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         int maxoutsize = LZ4_compressBound(vsize);
-        data = malloc(maxoutsize);
+        data = realloc(bucket->data_ptr, maxoutsize);
         cmsize = (size_t)LZ4_compress((char*)value, (char*)data,
                                       (int)vsize);
     } else {
@@ -364,11 +364,10 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     bucket->original_size = vsize;
     if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         bucket->data_size = cmsize;
-        bucket->data_ptr = data;
     } else {
         bucket->data_size = vsize;
-        bucket->data_ptr = data;
     }
+    bucket->data_ptr = data;
 
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
             db->state != OL_S_STARTUP) {
