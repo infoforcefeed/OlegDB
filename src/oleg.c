@@ -347,6 +347,7 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     char *ct_real = realloc(bucket->content_type, ctsize+1);
     if (strncpy(ct_real, ct, ctsize) != ct_real) {
         free(data);
+        free(ct_real);
         return 5;
     }
     ct_real[ctsize] = '\0';
