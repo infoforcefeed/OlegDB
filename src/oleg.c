@@ -404,6 +404,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     if (strncpy(new_bucket->key, _key, KEY_SIZE) != new_bucket->key) {
         free(_key);
+        free(new_bucket);
         return 2;
     }
     free(_key);
