@@ -286,7 +286,7 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
             /* Decomperss with LZ4 if enabled */
             if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
                 int processed = 0;
-                processed = LZ4_decompress_fast((const char*)bucket->data_ptr,
+                processed = LZ4_decompress_fast((char *)bucket->data_ptr,
                                                 (char *)*data,
                                                 bucket->original_size);
                 check(processed == bucket->data_size, "Could not decompress data.");
@@ -314,18 +314,22 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
         unsigned char *value, size_t vsize, const char *ct, const size_t ctsize) {
     debug("Reallocating bucket.");
 
+    unsigned char *data = NULL;
+
     /* Compress using LZ4 if enabled */
     size_t cmsize = 0;
     unsigned char* compressed = NULL;
     if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-        compressed = malloc(vsize);
-        cmsize = (size_t)LZ4_compress((const char*)value, (char*)compressed,
+        int maxoutsize = LZ4_compressBound(vsize);
+        compressed = malloc(maxoutsize);
+        cmsize = (size_t)LZ4_compress((char*)value, (char*)compressed,
                                       (int)vsize);
-    }
+    } else {
+        data = realloc(bucket->data_ptr, vsize);
 
-    unsigned char *data = realloc(bucket->data_ptr, vsize);
-    if (memcpy(data, value, vsize) != data)
-        return 4;
+        if (memcpy(data, value, vsize) != data)
+            return 4;
+    }
 
     char *ct_real = realloc(bucket->content_type, ctsize+1);
     if (strncpy(ct_real, ct, ctsize) != ct_real)
@@ -411,15 +415,16 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     new_bucket->original_size = vsize;
     if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         /* Compress using LZ4 if enabled */
-        size_t cmsize = 0;
-        unsigned char *compressed = calloc(1, vsize);
-        cmsize = (size_t)LZ4_compress((const char*)value, (char*)compressed,
+        int maxoutsize = LZ4_compressBound(vsize);
+        unsigned char *compressed = calloc(1, maxoutsize);
+        size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)compressed,
                                       (int)vsize);
-        unsigned char *ret = realloc(compressed, (size_t)cmsize);
+        check(cmsize > 0, "Compression failed");
+        unsigned char *ret = realloc(compressed, cmsize);
         check(ret != NULL, "Could not slim down memory for compressed data.");
 
         new_bucket->data_size = cmsize;
-        new_bucket->data_ptr = compressed;
+        new_bucket->data_ptr = ret;
     } else {
         new_bucket->data_size = vsize;
         unsigned char *data = calloc(1, vsize);
