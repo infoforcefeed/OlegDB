@@ -89,6 +89,10 @@ ol_database *ol_open(char *path, char *name, int features){
     new_db->key_collisions = 0;
     new_db->aolfd = 0;
 
+    /* Null every pointer before initialization in case something goes wrong */
+    new_db->dump_file = NULL;
+    new_db->aol_file = NULL;
+
     /* Function pointers for feature flags */
     new_db->enable = &_ol_enable;
     new_db->disable = &_ol_disable;
@@ -125,6 +129,14 @@ ol_database *ol_open(char *path, char *name, int features){
     return new_db;
 
 error:
+    /* Make sure we free the database first */
+    if (new_db != NULL) {
+        if (new_db->dump_file != NULL)
+            free(new_db->dump_file);
+        if (new_db->aol_file != NULL)
+            free(new_db->aol_file);
+        free(new_db);
+    }
     return NULL;
 }
 
@@ -320,11 +332,10 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 
     /* Compress using LZ4 if enabled */
     size_t cmsize = 0;
-    unsigned char* compressed = NULL;
     if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         int maxoutsize = LZ4_compressBound(vsize);
-        compressed = malloc(maxoutsize);
-        cmsize = (size_t)LZ4_compress((char*)value, (char*)compressed,
+        data = realloc(bucket->data_ptr, maxoutsize);
+        cmsize = (size_t)LZ4_compress((char*)value, (char*)data,
                                       (int)vsize);
     } else {
         data = realloc(bucket->data_ptr, vsize);
@@ -334,8 +345,11 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     }
 
     char *ct_real = realloc(bucket->content_type, ctsize+1);
-    if (strncpy(ct_real, ct, ctsize) != ct_real)
+    if (strncpy(ct_real, ct, ctsize) != ct_real) {
+        free(data);
+        free(ct_real);
         return 5;
+    }
     ct_real[ctsize] = '\0';
 
     /* bucket->klen = _klen; */
@@ -350,11 +364,10 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     bucket->original_size = vsize;
     if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         bucket->data_size = cmsize;
-        bucket->data_ptr = compressed;
     } else {
         bucket->data_size = vsize;
-        bucket->data_ptr = data;
     }
+    bucket->data_ptr = data;
 
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
             db->state != OL_S_STARTUP) {
@@ -383,11 +396,14 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     /* Looks like we don't have an old hash */
     ol_bucket *new_bucket = malloc(sizeof(ol_bucket));
-    if (new_bucket == NULL)
+    if (new_bucket == NULL) {
+        free(_key);
         return 1;
+    }
 
     if (strncpy(new_bucket->key, _key, KEY_SIZE) != new_bucket->key) {
         free(_key);
+        free(new_bucket);
         return 2;
     }
     free(_key);
@@ -400,8 +416,12 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     new_bucket->ctype_size = ctsize;
     char *ct_real = calloc(1, ctsize+1);
-    if (strncpy(ct_real, ct, ctsize) != ct_real)
+    if (strncpy(ct_real, ct, ctsize) != ct_real) {
+        /* Free allocated memory since we're not going to use them */
+        free(ct_real);
+        free(new_bucket);
         return 7;
+    }
     ct_real[ctsize] = '\0';
     new_bucket->content_type = ct_real;
 
@@ -417,23 +437,40 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
 
     new_bucket->original_size = vsize;
+    unsigned char *compressed = NULL;
     if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         /* Compress using LZ4 if enabled */
         int maxoutsize = LZ4_compressBound(vsize);
-        unsigned char *compressed = calloc(1, maxoutsize);
+        compressed = calloc(1, maxoutsize);
         size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)compressed,
                                       (int)vsize);
-        check(cmsize > 0, "Compression failed");
+        if (cmsize <= 0) {
+            /* Free allocated data */
+            free(new_bucket->content_type);
+            free(new_bucket);
+            free(compressed);
+            return 1;
+        }
+
         unsigned char *ret = realloc(compressed, cmsize);
-        check(ret != NULL, "Could not slim down memory for compressed data.");
+        if (ret == NULL) {
+            ol_log_msg(LOG_ERR, "Could not slim down memory for compressed data.");
+        } else {
+            compressed = ret;
+        }
 
         new_bucket->data_size = cmsize;
-        new_bucket->data_ptr = ret;
+        new_bucket->data_ptr = compressed;
     } else {
         new_bucket->data_size = vsize;
         unsigned char *data = calloc(1, vsize);
-        if (memcpy(data, value, vsize) != data)
+        if (memcpy(data, value, vsize) != data) {
+            /* Free allocated memory since we're not going to use them */
+            free(new_bucket->content_type);
+            free(new_bucket);
+            free(data);
             return 3;
+        }
         new_bucket->data_ptr = data;
     }
 
@@ -448,9 +485,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
 
     return 0;
-
-error:
-    return 1;
 }
 
 int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
