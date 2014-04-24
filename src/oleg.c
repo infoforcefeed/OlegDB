@@ -89,6 +89,10 @@ ol_database *ol_open(char *path, char *name, int features){
     new_db->key_collisions = 0;
     new_db->aolfd = 0;
 
+    /* Null every pointer before initialization in case something goes wrong */
+    new_db->dump_file = NULL;
+    new_db->aol_file = NULL;
+
     /* Function pointers for feature flags */
     new_db->enable = &_ol_enable;
     new_db->disable = &_ol_disable;
@@ -125,6 +129,14 @@ ol_database *ol_open(char *path, char *name, int features){
     return new_db;
 
 error:
+    /* Make sure we free the database first */
+    if (new_db != NULL) {
+        if (new_db->dump_file != NULL)
+            free(new_db->dump_file);
+        if (new_db->aol_file != NULL)
+            free(new_db->aol_file);
+        free(new_db);
+    }
     return NULL;
 }
 
@@ -417,23 +429,30 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
 
     new_bucket->original_size = vsize;
+    unsigned char *compressed = NULL;
     if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         /* Compress using LZ4 if enabled */
         int maxoutsize = LZ4_compressBound(vsize);
-        unsigned char *compressed = calloc(1, maxoutsize);
+        compressed = calloc(1, maxoutsize);
         size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)compressed,
                                       (int)vsize);
         check(cmsize > 0, "Compression failed");
         unsigned char *ret = realloc(compressed, cmsize);
-        check(ret != NULL, "Could not slim down memory for compressed data.");
+        if (ret == NULL) {
+            ol_log_msg(LOG_ERR, "Could not slim down memory for compressed data.");
+        } else {
+            compressed = ret;
+        }
 
         new_bucket->data_size = cmsize;
-        new_bucket->data_ptr = ret;
+        new_bucket->data_ptr = compressed;
     } else {
         new_bucket->data_size = vsize;
         unsigned char *data = calloc(1, vsize);
-        if (memcpy(data, value, vsize) != data)
+        if (memcpy(data, value, vsize) != data) {
+            _ol_free_bucket(new_bucket);
             return 3;
+        }
         new_bucket->data_ptr = data;
     }
 
@@ -450,6 +469,10 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     return 0;
 
 error:
+    /* Free compressed data */
+    if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+        if (compressed != NULL) free(compressed);
+    }
     return 1;
 }
 

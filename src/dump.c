@@ -109,7 +109,7 @@ int ol_save_db(ol_database *db) {
     fd = fopen(tmpfile, "w+");
     check(fd, "Failed to open file: %s", tmpfile);
 
-    /* Write the header to the file 
+    /* Write the header to the file
      * Why do we use a temporary buffer here? Because snprintf ALWAYS appends
      * a null string, so you'll end up with the wrong output. Since theres no
      * way to use snprintf and not get warnings (Fuck warnings!), we print to
