@@ -9,7 +9,7 @@
  * in a million places when we modify it.
  */
 ol_database *_test_db_open() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_F_SPLAYTREE);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_F_SPLAYTREE | OL_F_LZ4);
     ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
     return db;
 }
@@ -232,34 +232,43 @@ int test_unjar_ds() {
     }
 
     size_t to_test;
-    ol_val item = ol_unjar_ds(db, key, strlen(key), &to_test);
+    unsigned char *item = NULL;
+    ol_unjar_ds(db, key, strlen(key), &item, &to_test);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        free(item);
         ol_close(db);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        free(item);
         ol_close(db);
         return 3;
     }
 
     if (to_test != val_len) {
         ol_log_msg(LOG_ERR, "Sizes were not the same. %p (to_test) vs. %p (val_len)\n", to_test, val_len);
+        free(item);
         ol_close(db);
         return 4;
     }
 
     ol_close(db);
+    free(item);
     return 0;
 }
 int test_unjar() {
     ol_database *db = _test_db_open();
 
     char key[64] = "muh_hash_tho";
-    unsigned char val[] = "{json: \"ain't real\"}";
+    unsigned char val[] = "Hello I am some data for you and I am rather"
+        "a lot of data aren't I? Bigger data is better, as the NoSQL world is"
+        "fond of saying. Geez, I hope senpai notices me today! That would be "
+        "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!"
+        "{json: \"ain't real\"}";
     int inserted = ol_jar(db, key, strlen(key), val, strlen((char*)val));
 
     if (inserted > 0) {
@@ -268,21 +277,25 @@ int test_unjar() {
         return 1;
     }
 
-    ol_val item = ol_unjar(db, key, strlen(key));
+    unsigned char *item = NULL;
+    ol_unjar(db, key, strlen(key), &item);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        free(item);
         ol_close(db);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        free(item);
         ol_close(db);
         return 3;
     }
 
     ol_close(db);
+    free(item);
     return 0;
 }
 
@@ -347,43 +360,53 @@ int test_update() {
         return 1;
     }
 
-    ol_val item = ol_unjar(db, key, strlen(key));
+    unsigned char *item = NULL;
+    ol_unjar(db, key, strlen(key), &item);
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
+        free(item);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
         ol_close(db);
+        free(item);
         return 3;
     }
+    free(item);
 
     unsigned char new_val[] = "WOW THAT WAS COOL, WASNT IT?";
     inserted = ol_jar(db, key, strlen(key), new_val, strlen((char*)new_val));
 
-    item = ol_unjar(db, key, strlen(key));
+    ol_unjar(db, key, strlen(key), &item);
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         ol_close(db);
+        free(item);
         return 2;
     }
 
     if (memcmp(item, new_val, strlen((char*)new_val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the new value.\nVal: %s\n", item);
         ol_close(db);
+        free(item);
         return 3;
     }
     ol_log_msg(LOG_INFO, "New value returned successfully.");
 
     ol_close(db);
+    free(item);
     return 0;
 }
 
 static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
     int i;
-    unsigned char to_insert[] = "Hello I am some data for you";
+    unsigned char to_insert[] = "Hello I am some data for you and I am rather"
+        "a lot of data aren't I? Bigger data is better, as the NoSQL world is"
+        "fond of saying. Geez, I hope senpai notices me today! That would be "
+        "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!";
     for (i = 0; i < NUM_KEYS; i++) { // 8======D
         /* DONT NEED YOUR SHIT, GCC */
         char key[64] = "crazy hash";
@@ -491,15 +514,15 @@ int test_ct() {
         return 1;
     }
 
-    ol_val item = ol_unjar(db, key1, strlen(key1));
-    if (item == NULL) {
+    int ret = ol_unjar(db, key1, strlen(key1), NULL);
+    if (ret != 0) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key1);
         ol_close(db);
         return 2;
     }
 
-    item = ol_unjar(db, key2, strlen(key2));
-    if (item == NULL) {
+    ret = ol_unjar(db, key2, strlen(key2), NULL);
+    if (ret != 0) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key2);
         ol_close(db);
         return 2;
@@ -681,7 +704,7 @@ int test_expiration() {
 
     check(ol_jar(db, key, strlen(key), value, strlen((char *)value)) == 0, "Could not insert.");
     check(ol_spoil(db, key, strlen(key), &now) == 0, "Could not set expiration");
-    check(ol_unjar(db, key, strlen(key)) == NULL, "Key did not expire properly.");
+    check(ol_unjar(db, key, strlen(key), NULL) == 1, "Key did not expire properly.");
 
     ol_close(db);
 
@@ -689,6 +712,55 @@ int test_expiration() {
 
 error:
     return 1;
+}
+
+int test_lz4() {
+    ol_database *db = _test_db_open();
+    db->enable(OL_F_LZ4, &db->feature_set);
+
+    /* This is basically the Unjar_ds test, since keys, AOL, expiration and
+     * Content-type aren't compressed, it's useless to test those.
+     */
+
+    char key[] = "THE MIGHTY LZ4 TEST";
+    unsigned char val[] = "111 THIS 111 MUST 111 BE 111 COMPRESSED 111 SOMEHOW";
+    size_t val_len = strlen((char*)val);
+    int inserted = ol_jar(db, key, strlen(key), val, val_len);
+
+    if (inserted > 0) {
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
+        ol_close(db);
+        return 1;
+    }
+
+    size_t to_test;
+    unsigned char *item = NULL;
+    ol_unjar_ds(db, key, strlen(key), &item, &to_test);
+    ol_log_msg(LOG_INFO, "Retrieved value.");
+    if (item == NULL) {
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        ol_close(db);
+        free(item);
+        return 2;
+    }
+
+    if (memcmp(item, val, strlen((char*)val)) != 0) {
+        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        ol_close(db);
+        free(item);
+        return 3;
+    }
+
+    if (to_test != val_len) {
+        ol_log_msg(LOG_ERR, "Sizes were not the same. %p (to_test) vs. %p (val_len)\n", to_test, val_len);
+        ol_close(db);
+        free(item);
+        return 4;
+    }
+
+    free(item);
+    ol_close(db);
+    return 0;
 }
 
 void run_tests(int results[2]) {
@@ -712,6 +784,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_feature_flags);
     ol_run_test(test_can_find_all_nodes);
     ol_run_test(test_uptime);
+    ol_run_test(test_lz4);
 
     results[0] = tests_run;
     results[1] = tests_failed;

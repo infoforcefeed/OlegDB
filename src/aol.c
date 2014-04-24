@@ -3,6 +3,7 @@
 #include "oleg.h"
 #include "logging.h"
 #include "errhandle.h"
+#include "lz4.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -63,10 +64,17 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     if (strncmp(cmd, "JAR", 3) == 0) {
         /* I'LL RIGOR YER MORTIS */
         debug("Writing: \"%.*s\"", (int)bct->klen, bct->key);
-        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%.*s:%zu:%.*s:%zu:",
+        char aol_str[] =
+            ":%zu:%s:"      /* cmd length, cmd */
+            "%zu:%.*s:"     /* klen size, key */
+            "%zu:%.*s:"     /* ctype size, content_type */
+            "%zu:%0*i:"     /* sizeof(original_size, original_size */
+            "%zu:";         /* data size, to be followed by data */
+        ret = fprintf(db->aolfd, aol_str,
                 strlen(cmd), cmd,
                 bct->klen, (int)bct->klen, bct->key,
                 bct->ctype_size, (int)bct->ctype_size, bct->content_type,
+                sizeof(size_t), (int)sizeof(size_t), bct->original_size,
                 bct->data_size);
         check(ret > -1, "Error writing to file.");
         ret = fwrite(bct->data_ptr, bct->data_size, 1, db->aolfd);
@@ -138,7 +146,7 @@ error:
 int ol_aol_restore(ol_database *db) {
     char c[1];
     FILE *fd;
-    ol_string *command, *k, *v, *ct;
+    ol_string *command, *key, *value, *ct, *read_org_size;
     fd = fopen(db->aol_file, "r");
     check(fd, "Error opening file");
     while (!feof(fd)) {
@@ -152,22 +160,45 @@ int ol_aol_restore(ol_database *db) {
             break;
         }
 
-        k = _ol_read_data(fd);
-        check(k, "Error reading"); /* Everything needs a key */
+        key = _ol_read_data(fd);
+        check(key, "Error reading"); /* Everything needs a key */
 
         if (strncmp(command->data, "JAR", 3) == 0) {
             ct = _ol_read_data(fd);
             check(ct, "Error reading");
-            v = _ol_read_data(fd);
-            check(v, "Error reading");
-            ol_jar_ct(db, k->data, k->dlen, (unsigned char*)v->data, v->dlen,
-                    ct->data, ct->dlen);
+
+            read_org_size = _ol_read_data(fd);
+            check(read_org_size, "Error reading");
+
+            value = _ol_read_data(fd);
+            check(value, "Error reading");
+
+            size_t original_size = (size_t)atoi(read_org_size->data);
+            if (original_size != (size_t)value->dlen) {
+                /* Data is compressed, gotta deal with that. */
+                unsigned char tmp_data[original_size];
+                unsigned char *ret = memset(&tmp_data, 0, original_size);
+                check(ret == tmp_data, "Could not initialize tmp_data parameter.");
+
+                int processed = 0;
+                processed = LZ4_decompress_fast((const char*)value->data,
+                                                (char *)&tmp_data, original_size);
+                check(processed == value->dlen, "Could not decompress data.");
+                ol_jar_ct(db, key->data, key->dlen, tmp_data, original_size,
+                        ct->data, ct->dlen);
+            } else {
+                /* Data is uncompressed, no need for trickery. */
+                ol_jar_ct(db, key->data, key->dlen, (unsigned char*)value->data, value->dlen,
+                        ct->data, ct->dlen);
+            }
+            free(read_org_size->data);
+            free(read_org_size);
             free(ct->data);
             free(ct);
-            free(v->data);
-            free(v);
+            free(value->data);
+            free(value);
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {
-            ol_scoop(db, k->data, k->dlen);
+            ol_scoop(db, key->data, key->dlen);
         } else if (strncmp(command->data, "SPOIL", 5) == 0) {
             ol_string *spoil;
             spoil = _ol_read_data(fd);
@@ -176,15 +207,15 @@ int ol_aol_restore(ol_database *db) {
             _deserialize_time(&time, spoil->data);
 
             check(spoil, "Error reading");
-            ol_spoil(db, k->data, k->dlen, &time);
+            ol_spoil(db, key->data, key->dlen, &time);
             free(spoil->data);
             free(spoil);
         }
 
         free(command->data);
         free(command);
-        free(k->data);
-        free(k);
+        free(key->data);
+        free(key);
 
         /* Strip the newline char after each "record" */
         check(fread(c, 1, 1, fd) != 0, "Error reading");
