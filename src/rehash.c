@@ -80,6 +80,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     } while (og_vampire->next != NULL);
     debug("We now have %i orphans not accounted for.", orphans_found);
 
+    free(og_vampire);
     free(db->hashes);
     db->hashes = tmp_hashes;
     db->cur_ht_size = to_alloc;
