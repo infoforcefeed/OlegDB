@@ -21,8 +21,8 @@ static inline int _ol_write_bucket(const ol_bucket *bucket, FILE *fd) {
 }
 
 static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
-    char *tmp_key;
-    unsigned char *tmp_value;
+    char *tmp_key = NULL;
+    unsigned char *tmp_value = NULL;
     size_t value_size;
     size_t fread_ret;
     size_t klen;
@@ -54,6 +54,10 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
     return 0;
 
 error:
+    if (tmp_key != NULL)
+        free(tmp_key);
+    if (tmp_key != NULL)
+        free(tmp_value);
     return -1;
 }
 

@@ -135,6 +135,7 @@ ol_string *_ol_read_data(FILE *fd) {
         return data; /* A NULL ol_string means EOF was reached */
     }
 
+    free(data);
     return NULL;
 
 error:

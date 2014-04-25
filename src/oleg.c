@@ -263,10 +263,12 @@ static inline int _has_bucket_expired(const ol_bucket *bucket) {
     if (bucket->expiration != NULL) {
         made = timelocal(bucket->expiration);
         debug("Made Expiration: %lu", (long)made);
+    } else {
+        return 0;
     }
 
     /* For some reason you can't compare 0 to a time_t. */
-    if (bucket->expiration == NULL || current < made) {
+    if (current < made) {
         return 0;
     }
     return 1;
@@ -426,6 +428,8 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         ret = _ol_grow_and_rehash_db(db);
         if (ret > 0) {
             ol_log_msg(LOG_ERR, "Problem rehashing DB. Error code: %i", ret);
+            free(ct_real);
+            free(new_bucket);
             return 4;
         }
     }
