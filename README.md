@@ -1,7 +1,7 @@
 OlegDB
 ============
 
-[![Build Status](https://drone.io/github.com/infoforcefeed/Project-Oleg/status.png)](https://drone.io/github.com/infoforcefeed/Project-Oleg/latest)
+[![Build Status](https://travis-ci.org/infoforcefeed/OlegDB.svg?branch=feature/HOT_TREES)](https://travis-ci.org/infoforcefeed/OlegDB)
 <a href="https://scan.coverity.com/projects/1414">
   <img alt="Coverity Scan Build Status"
        src="https://scan.coverity.com/projects/1414/badge.svg"/>
