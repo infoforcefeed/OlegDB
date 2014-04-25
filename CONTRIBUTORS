@@ -1,6 +1,10 @@
 General madness:
 * Quinlan Pfiffer (http://qpfiffer.com/)
 * Kyle Terry (http://kyte.io/)
+* Hamcha (https://faulty.equipment/)
 
 Murmur3 Implementation:
 * Peter Scott (https://github.com/PeterScott/murmur3)
+
+LZ4 Implementation:
+* Yann Collet (https://code.google.com/p/lz4/)
