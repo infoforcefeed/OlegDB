@@ -178,6 +178,9 @@ int ols_delete(ol_splay_tree *tree, ol_splay_tree_node *node) {
         minimum_node->left->parent = minimum_node;
     }
 
+    node->parent = NULL;
+    node->left = NULL;
+    node->right = NULL;
     free(node);
     tree->rcrd_cnt--;
     return 0;

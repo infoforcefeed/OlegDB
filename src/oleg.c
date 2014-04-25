@@ -581,8 +581,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
     if (to_free != NULL) {
         if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
             ols_delete(db->tree, to_free->node);
-            /* We don't need to set to_free->node to NULL here because ols_delete
-             * reshuffles the tree. We'd be nulling out a random node. */
+            to_free->node = NULL;
         }
         _ol_free_bucket(to_free);
         db->rcrd_cnt -= 1;
