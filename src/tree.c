@@ -67,6 +67,8 @@ static inline void _ols_splay(ol_splay_tree *tree, ol_splay_tree_node *node) {
         } else if (node->parent->right == node && node->parent->parent->left == node->parent) {
             _ols_left_rotate(tree, node->parent);
             _ols_right_rotate(tree, node->parent);
+        } else {
+            ol_log_msg(LOG_ERR, "This shouldn't ever happen! Node has a grandparent that doesn't think it's this node's parent.");
         }
     }
 }
