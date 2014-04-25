@@ -123,8 +123,10 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
     current_node->parent = NULL;
     current_node->klen = 0;
     memset(current_node->key, '\0', KEY_SIZE);
-    if (strncpy(current_node->key, key, klen) != current_node->key)
+    if (strncpy(current_node->key, key, klen) != current_node->key) {
+        free(current_node);
         return NULL;
+    }
     current_node->klen = klen;
     current_node->ref_obj = ref_obj;
     /* Put that shit into the tree */
