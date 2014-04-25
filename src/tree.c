@@ -61,13 +61,14 @@ static inline void _ols_splay(ol_splay_tree *tree, ol_splay_tree_node *node) {
         } else if (node->parent->right == node && node->parent->parent->right == node->parent) {
             _ols_left_rotate(tree, node->parent->parent);
             _ols_left_rotate(tree, node->parent);
-        } else if(node->parent->left == node && node->parent->parent->right == node->parent) {
+        } else if (node->parent->left == node && node->parent->parent->right == node->parent) {
             _ols_right_rotate(tree, node->parent);
             _ols_left_rotate(tree, node->parent);
+        } else if (node->parent->right == node && node->parent->parent->left == node->parent) {
+            _ols_left_rotate(tree, node->parent);
+            _ols_right_rotate(tree, node->parent);
         } else {
-            /* If node is a right node and node's parent is a left node */
-            _ols_left_rotate(tree, node->parent);
-            _ols_right_rotate(tree, node->parent);
+            ol_log_msg(LOG_ERR, "This shouldn't ever happen! Node has a grandparent that doesn't think it's this node's parent.");
         }
     }
 }
@@ -121,7 +122,7 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
     current_node->right = NULL;
     current_node->parent = NULL;
     current_node->klen = 0;
-    memset(current_node->key, '\0', sizeof(current_node->key));
+    memset(current_node->key, '\0', KEY_SIZE);
     if (strncpy(current_node->key, key, klen) != current_node->key)
         return NULL;
     current_node->klen = klen;
@@ -130,9 +131,9 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
     current_node->parent = previous_node;
 
     /* Figure out how current_node relates to previous_node */
-    if (previous_node == NULL) {
+    if (previous_node == NULL)
         tree->root = current_node;
-    } else {
+    else {
         size_t larger_key = 0;
         larger_key = current_node->klen > previous_node->klen ?
             current_node->klen : previous_node->klen;
@@ -157,31 +158,42 @@ int ols_find_and_delete(ol_splay_tree *tree, const char *key, const size_t klen)
 }
 
 int ols_delete(ol_splay_tree *tree, ol_splay_tree_node *node) {
+    ol_log_msg(LOG_INFO, "Freeing %s", node->key);
+    if (strncmp(node->key, "A10", 3) == 0) {
+        ol_log_msg(LOG_INFO, "Hey");
+    }
     if (!node)
         return 1;
 
     _ols_splay(tree, node);
 
-    if (!node->left)
-        _ols_replace(tree, node, node->right);
-    else if (!node->right)
-        _ols_replace(tree, node, node->left);
-    else {
-        ol_splay_tree_node *minimum_node = _ols_subtree_minimum(node->right);
-        if (minimum_node->parent != node) {
-            _ols_replace(tree, minimum_node, minimum_node->right );
-            minimum_node->right = node->right;
-            minimum_node->right->parent = minimum_node;
+    if (!node->left && !node->left) {
+        /* So lonely, the last node, the last mohican, the last of his tribe. */
+        tree->root = NULL;
+    } else {
+        if (!node->left)
+            _ols_replace(tree, node, node->right);
+        else if (!node->right)
+            _ols_replace(tree, node, node->left);
+        else {
+            ol_splay_tree_node *minimum_node = _ols_subtree_minimum(node->right);
+            if (minimum_node->parent != node) {
+                _ols_replace(tree, minimum_node, minimum_node->right);
+                minimum_node->right = node->right;
+                minimum_node->right->parent = minimum_node;
+            }
+            _ols_replace(tree, node, minimum_node);
+            minimum_node->left = node->left;
+            minimum_node->left->parent = minimum_node;
         }
-        _ols_replace(tree, node, minimum_node);
-        minimum_node->left = node->left;
-        minimum_node->left->parent = minimum_node;
     }
 
     node->parent = NULL;
     node->left = NULL;
     node->right = NULL;
+
     free(node);
+    ol_log_msg(LOG_INFO, "Freed node.");
     tree->rcrd_cnt--;
     return 0;
 }
@@ -282,11 +294,9 @@ error:
 }
 
 void ols_close(ol_splay_tree *tree) {
-    check(tree->root != NULL, "Tree root is NULL.");
+    if (tree->root == NULL)
+        return;
     _ols_free_node(tree->root);
     tree->root = NULL;
-
-error:
-    return;
 }
 
