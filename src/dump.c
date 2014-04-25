@@ -82,7 +82,7 @@ error:
 }
 
 int ol_save_db(ol_database *db) {
-    FILE *fd;
+    FILE *fd = NULL;
     struct dump_header header;
     char tmpfile[512];
     sprintf(tmpfile, "%s-tmp", db->dump_file);
@@ -128,6 +128,9 @@ int ol_save_db(ol_database *db) {
 
 error:
     unlink(tmpfile);
+    if (fd != NULL) {
+        fclose(fd);
+    }
     return -1;
 }
 
@@ -136,7 +139,7 @@ int ol_load_db(ol_database *db, char *filename) {
      * the db thinks we should have. For instance, a new or alternate
      * dataset.
      */
-    FILE *fd;
+    FILE *fd = NULL;
     int i, dump_version;
     struct dump_header header;
 
@@ -168,5 +171,8 @@ int ol_load_db(ol_database *db, char *filename) {
     return 0;
 
 error:
+    if (fd != NULL) {
+        fclose(fd);
+    }
     return -1;
 }

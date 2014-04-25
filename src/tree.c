@@ -169,7 +169,7 @@ int ols_delete(ol_splay_tree *tree, ol_splay_tree_node *node) {
 
     _ols_splay(tree, node);
 
-    if (!node->left && !node->left) {
+    if (!node->left && !node->right) {
         /* So lonely, the last node, the last mohican, the last of his tribe. */
         tree->root = NULL;
     } else {

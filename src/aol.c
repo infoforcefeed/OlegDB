@@ -146,8 +146,12 @@ error:
 
 int ol_aol_restore(ol_database *db) {
     char c[1];
-    FILE *fd;
-    ol_string *command, *key, *value, *ct, *read_org_size;
+    FILE *fd = NULL;
+    ol_string *command = NULL,
+              *key = NULL,
+              *value = NULL,
+              *ct = NULL,
+              *read_org_size = NULL;
     fd = fopen(db->aol_file, "r");
     check(fd, "Error opening file");
     while (!feof(fd)) {
@@ -227,5 +231,31 @@ int ol_aol_restore(ol_database *db) {
 
 error:
     ol_log_msg(LOG_ERR, "Restore failed. Corrupt AOL?");
+
+    /* Free all the stuff */
+    if (command != NULL) {
+        free(command->data);
+        free(command);
+    }
+    if (key != NULL) {
+        free(key->data);
+        free(key);
+    }
+    if (value != NULL) {
+        free(value->data);
+        free(value);
+    }
+    if (ct != NULL) {
+        free(ct->data);
+        free(ct);
+    }
+    if (read_org_size) {
+        free(read_org_size->data);
+        free(read_org_size);
+    }
+    if (fd != NULL) {
+        fclose(fd);
+    }
+
     return -1;
 }
