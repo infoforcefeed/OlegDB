@@ -79,7 +79,7 @@ static inline void _ols_replace(ol_splay_tree *tree,
         node_a->parent->right = node_b;
 
     if (node_b)
-        node_a->parent = node_b->parent;
+        node_b->parent = node_a->parent;
 }
 
 static inline ol_splay_tree_node *_ols_subtree_minimum(ol_splay_tree_node *node) {
