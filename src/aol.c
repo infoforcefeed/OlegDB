@@ -202,6 +202,9 @@ int ol_aol_restore(ol_database *db) {
             free(ct);
             free(value->data);
             free(value);
+            read_org_size = NULL;
+            ct = NULL;
+            value = NULL;
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {
             ol_scoop(db, key->data, key->dlen);
         } else if (strncmp(command->data, "SPOIL", 5) == 0) {
@@ -215,18 +218,22 @@ int ol_aol_restore(ol_database *db) {
             ol_spoil(db, key->data, key->dlen, &time);
             free(spoil->data);
             free(spoil);
+            spoil = NULL;
         }
-
-        free(command->data);
-        free(command);
-        free(key->data);
-        free(key);
 
         /* Strip the newline char after each "record" */
         check(fread(c, 1, 1, fd) != 0, "Error reading");
         check(*c == '\n', "Could not strip newline");
+
+        free(command->data);
+        free(command);
+        command = NULL;
+        free(key->data);
+        free(key);
+        key = NULL;
     }
     fclose(fd);
+    fd = NULL;
     return 0;
 
 error:
