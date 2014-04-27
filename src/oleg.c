@@ -574,6 +574,8 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
                 if (strncmp(bucket->key, _key, larger_key) == 0) {
                     if (bucket->next != NULL)
                         last->next = bucket->next;
+                    else
+                        last->next = NULL;
                     to_free = bucket;
                     return_level = 0;
                     break;

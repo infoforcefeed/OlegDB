@@ -7,7 +7,7 @@
  */
 inline void spush(struct ol_stack **stack, void *data) {
     check(stack != NULL, "Stack is null.");
-    check(data != NULL, "Stack is null.");
+    check(data != NULL, "Data is null.");
 
     struct ol_stack *to_push = NULL;
     to_push = malloc(sizeof(struct ol_stack));
