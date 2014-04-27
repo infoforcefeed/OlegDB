@@ -393,6 +393,13 @@ int test_update() {
         return 1;
     }
 
+    if (inserted > 0) {
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
+        ol_close(db);
+        return 1;
+    }
+
+
     ol_unjar(db, key, strlen(key), &item);
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);

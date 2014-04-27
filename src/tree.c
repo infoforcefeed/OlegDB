@@ -6,12 +6,13 @@
 #include "errhandle.h"
 #include "tree.h"
 #include "logging.h"
+#include "stack.h"
 
 static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
     ol_splay_tree_node *right_child = node->right;
     node->right = right_child->left;
 
-    if (right_child->left)
+    if (right_child && right_child->left)
         right_child->left->parent = node;
 
     right_child->parent = node->parent;
@@ -31,7 +32,7 @@ static inline void _ols_right_rotate(ol_splay_tree *tree, ol_splay_tree_node *no
     ol_splay_tree_node *left_child = node->left;
     node->left = left_child->right;
 
-    if (left_child->right)
+    if (left_child && left_child->right)
         left_child->right->parent = node;
 
     left_child->parent = node->parent;
@@ -209,67 +210,27 @@ error:
     return NULL;
 }
 
-/* To avoid stack overflows, we have to recurse this tree iteratively to delete
- * it.
- * Oh, how I pine for better recursion.
- */
-struct stack {
-    ol_splay_tree_node *node;
-    struct stack *next;
-};
-
-static inline void spush(struct stack **stack, ol_splay_tree_node *node) {
-    check(stack != NULL, "Stack is null.");
-    check(node != NULL, "Stack is null.");
-
-    struct stack *to_push = NULL;
-    to_push = malloc(sizeof(struct stack));
-    check_mem(to_push);
-
-    to_push->node = node;
-    to_push->next = *stack;
-
-    *stack = to_push;
-
-error:
-    return;
-}
-
-static inline ol_splay_tree_node *spop(struct stack **stack) {
-    check(stack != NULL, "Stack is null.");
-
-    struct stack *top = *stack;
-    *stack = top->next;
-    ol_splay_tree_node *node = top->node;
-
-    free(top);
-    return node;
-
-error:
-    return NULL;
-}
-
 static inline void _ols_free_node(ol_splay_tree_node *node) {
-    struct stack *stack = NULL;
-    stack = malloc(sizeof(struct stack));
+    struct ol_stack *stack = NULL;
+    stack = malloc(sizeof(struct ol_stack));
     check_mem(stack);
 
     stack->next = NULL;
-    stack->node = NULL;
+    stack->data = NULL;
 
-    spush(&stack, node);
+    spush(&stack, (void *)node);
 
     int iters = 0;
     ol_log_msg(LOG_INFO, "Clearing tree.");
     while (stack->next != NULL) {
         iters++;
-        ol_splay_tree_node *cur_node = spop(&stack);
+        ol_splay_tree_node *cur_node = (ol_splay_tree_node *)spop(&stack);
 
         if (cur_node->left != NULL) {
-            spush(&stack, cur_node->left);
+            spush(&stack, (void *)cur_node->left);
         }
         if (cur_node->right != NULL) {
-            spush(&stack, cur_node->right);
+            spush(&stack, (void *)cur_node->right);
         }
         free(cur_node);
     }

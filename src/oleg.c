@@ -138,7 +138,7 @@ int _ol_close(ol_database *db){
             ol_bucket *next;
             for (ptr = db->hashes[i]; NULL != ptr; ptr = next) {
                 next = ptr->next;
-                _ol_free_bucket(ptr);
+                _ol_free_bucket(&ptr);
                 freed++;
             }
         }
@@ -574,6 +574,8 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
                 if (strncmp(bucket->key, _key, larger_key) == 0) {
                     if (bucket->next != NULL)
                         last->next = bucket->next;
+                    else
+                        last->next = NULL;
                     to_free = bucket;
                     return_level = 0;
                     break;
@@ -587,7 +589,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             ols_delete(db->tree, to_free->node);
             to_free->node = NULL;
         }
-        _ol_free_bucket(to_free);
+        _ol_free_bucket(&to_free);
         db->rcrd_cnt -= 1;
     }
     return return_level;
