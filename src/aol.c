@@ -75,7 +75,7 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
             "%zu:%.*s:"     /* klen size, key */
             "%zu:%.*s:"     /* ctype size, content_type */
             "%zu:%0*i:"     /* sizeof(original_size, original_size */
-            "%zu:";         /* data size, to be followed by data */
+            "%zu:%s";         /* data size, to be followed by data */
         size_t data_size = 100 + KEY_SIZE + bct->data_size + 1;
         char data_str[data_size];
         ret = sprintf(data_str, fmt_str,
@@ -83,13 +83,15 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
                 bct->klen, (int)bct->klen, bct->key,
                 bct->ctype_size, (int)bct->ctype_size, bct->content_type,
                 sizeof(size_t), (int)sizeof(size_t), bct->original_size,
-                bct->data_size);
+                bct->data_size, bct->data_ptr);
         check(ret > -1, "Error writing to buffer.");
+        /*
         char *cat_ret;
         cat_ret = strncat(data_str, (char*)bct->data_ptr, bct->data_size);
         check(cat_ret == data_str, "Error on data_ptr concat.");
         cat_ret = strncat(data_str, (char*)"\n", 1);
         check(cat_ret == data_str, "Error on data_ptr concat.");
+        */
         /*
         ret = fprintf(db->aolfd, aol_str,
                 strlen(cmd), cmd,
@@ -101,6 +103,7 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
         /* fwrite will handle binary data */
         ret = fwrite(data_str, sizeof(data_str), 1, db->aolfd);
         check(ret > -1, "Error writing to file.");
+
         /*ret = fprintf(db->aolfd, "\n");*/
     } else if (strncmp(cmd, "SCOOP", 5) == 0) {
         ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s\n",
