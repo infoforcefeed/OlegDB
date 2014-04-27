@@ -6,5 +6,5 @@ struct ol_stack {
     struct ol_stack *next;
 };
 
-inline void *spop(struct ol_stack **stack);
-inline void spush(struct ol_stack **stack, void *data);
+void *spop(struct ol_stack **stack);
+void spush(struct ol_stack **stack, void *data);
