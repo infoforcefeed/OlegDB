@@ -77,5 +77,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     return 0;
 
 error:
+    if (tmp_hashes != NULL)
+        free(tmp_hashes);
     return -1;
 }

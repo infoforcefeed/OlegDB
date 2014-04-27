@@ -32,7 +32,7 @@ OlegDB consists of a server written in Erlang and a C library for all of the
 heavy lifting. Binaries are in `build/bin/` and the library is in `build/lib/`.
 Beam files are also thrown in `build/bin/`.
 
-Currently builds are tested against gcc 4.6 and 4.8.
+Currently builds are tested against gcc and clang.
 
 ```bash
 # Building everything:
