@@ -71,10 +71,12 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     do {
         orphan_ll *next = og_vampire->next;
         ol_bucket *rebucket = og_vampire->orphan;
-        rebucket->next = NULL;
-        _ol_rehash_insert_bucket(tmp_hashes, to_alloc, rebucket);
+        if (rebucket) {
+            rebucket->next = NULL;
+            _ol_rehash_insert_bucket(tmp_hashes, to_alloc, rebucket);
 
-        free(og_vampire);
+            free(og_vampire);
+        }
         og_vampire = next;
         orphans_found--;
     } while (og_vampire->next != NULL);

@@ -11,7 +11,7 @@ static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *nod
     ol_splay_tree_node *right_child = node->right;
     node->right = right_child->left;
 
-    if (right_child->left)
+    if (right_child && right_child->left)
         right_child->left->parent = node;
 
     right_child->parent = node->parent;
@@ -31,7 +31,7 @@ static inline void _ols_right_rotate(ol_splay_tree *tree, ol_splay_tree_node *no
     ol_splay_tree_node *left_child = node->left;
     node->left = left_child->right;
 
-    if (left_child->right)
+    if (left_child && left_child->right)
         left_child->right->parent = node;
 
     left_child->parent = node->parent;
