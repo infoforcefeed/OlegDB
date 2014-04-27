@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "errhandle.h"
 #include "logging.h"
+#include "stack.h"
 
 static inline void _ol_rehash_insert_bucket(
         ol_bucket **tmp_hashes, const size_t to_alloc, ol_bucket *bucket) {
@@ -30,16 +31,13 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     tmp_hashes = calloc(1, to_alloc);
     check_mem(tmp_hashes);
 
-    /* Head of the orphan chain */
-    orphan_ll *og_vampire = malloc(sizeof(orphan_ll));
-    og_vampire->next = NULL;
-    og_vampire->orphan = NULL;
-    /* Pointer to the tail of the orphan chain */
-    orphan_ll *current = og_vampire;
+    struct ol_stack *orphans = NULL;
+    orphans = malloc(sizeof(struct ol_stack));
+    check_mem(orphans);
+    orphans->next = NULL;
+    orphans->data = NULL;
     int orphans_found = 0;
 
-    /* TODO: Refactor the whole orphan stuff to use the general purpose stack
-     * in src/tree.c. */
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
     for (i = 0; i < iterations; i++) {
         bucket = db->hashes[i];
@@ -47,13 +45,8 @@ int _ol_grow_and_rehash_db(ol_database *db) {
             if (bucket->next != NULL) {
                 ol_bucket *tmp_bucket = bucket;
                 do {
-                    current->orphan = tmp_bucket->next;
-                    current->next = malloc(sizeof(orphan_ll));
+                    spush(&orphans, tmp_bucket->next);
 
-                    current = current->next;
-                    current->orphan = NULL;
-                    current->next = NULL;
-                    /* Clear previous references */
                     ol_bucket *next = tmp_bucket->next;
                     tmp_bucket->next = NULL;
                     tmp_bucket = next;
@@ -67,20 +60,16 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     }
 
     /* Take care of our orphans */
-    debug("Have %i orphans to take care of.", orphans_found);
+    ol_log_msg(LOG_INFO, "Have %i orphans to take care of.", orphans_found);
     do {
-        orphan_ll *next = og_vampire->next;
-        ol_bucket *rebucket = og_vampire->orphan;
-        rebucket->next = NULL;
+        ol_bucket *rebucket = spop(&orphans);
         _ol_rehash_insert_bucket(tmp_hashes, to_alloc, rebucket);
 
-        free(og_vampire);
-        og_vampire = next;
         orphans_found--;
-    } while (og_vampire->next != NULL);
-    debug("We now have %i orphans not accounted for.", orphans_found);
+    } while (orphans->next != NULL);
+    ol_log_msg(LOG_INFO, "We now have %i orphans not accounted for.", orphans_found);
 
-    free(og_vampire);
+    free(orphans);
     free(db->hashes);
     db->hashes = tmp_hashes;
     db->cur_ht_size = to_alloc;
@@ -88,5 +77,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     return 0;
 
 error:
+    if (tmp_hashes != NULL)
+        free(tmp_hashes);
     return -1;
 }
