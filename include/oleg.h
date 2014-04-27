@@ -36,7 +36,8 @@ typedef enum {
 */
 typedef enum {
     OL_S_STARTUP        = 0,
-    OL_S_AOKAY          = 1
+    OL_S_AOKAY          = 1,
+    OL_S_AOL_REWRITE    = 2
 } ol_state_flags;
 
 /* xXx STRUCT=ol_bucket xXx
@@ -97,6 +98,7 @@ typedef struct ol_database {
     char      *dump_file;
     char      *aol_file;
     FILE      *aolfd;
+    char      *aol_rewrite_buf;
     int       feature_set;
     short int state;
     int       rcrd_cnt;

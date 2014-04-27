@@ -58,28 +58,49 @@ static inline void _deserialize_time(struct tm *time, char *buf) {
     time->tm_sec = atoi(sec);
 }
 
+/*
+static int ol_aol_write_data(FILE fd, char *data_buf) {
+    return 0;
+}
+*/
+
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     int ret;
 
     if (strncmp(cmd, "JAR", 3) == 0) {
+        char data_str[100 + KEY_SIZE + bct->data_size + 1];
         /* I'LL RIGOR YER MORTIS */
         debug("Writing: \"%.*s\"", (int)bct->klen, bct->key);
-        char aol_str[] =
+        char fmt_str[] =
             ":%zu:%s:"      /* cmd length, cmd */
             "%zu:%.*s:"     /* klen size, key */
             "%zu:%.*s:"     /* ctype size, content_type */
             "%zu:%0*i:"     /* sizeof(original_size, original_size */
             "%zu:";         /* data size, to be followed by data */
+        ret = sprintf(data_str, fmt_str,
+                strlen(cmd), cmd,
+                bct->klen, (int)bct->klen, bct->key,
+                bct->ctype_size, (int)bct->ctype_size, bct->content_type,
+                sizeof(size_t), (int)sizeof(size_t), bct->original_size,
+                bct->data_size);
+        check(ret > -1, "Error writing to buffer.");
+        char *cat_ret;
+        cat_ret = strncat(data_str, (char*)bct->data_ptr, bct->data_size);
+        check(cat_ret == data_str, "Error on data_ptr concat.");
+        cat_ret = strcat(data_str, (char*)'\n');
+        check(cat_ret == data_str, "Error on data_ptr concat.");
+        /*
         ret = fprintf(db->aolfd, aol_str,
                 strlen(cmd), cmd,
                 bct->klen, (int)bct->klen, bct->key,
                 bct->ctype_size, (int)bct->ctype_size, bct->content_type,
                 sizeof(size_t), (int)sizeof(size_t), bct->original_size,
                 bct->data_size);
+        */
+        /* fwrite will handle binary data */
+        ret = fwrite(data_str, strlen(data_str), 1, db->aolfd);
         check(ret > -1, "Error writing to file.");
-        ret = fwrite(bct->data_ptr, bct->data_size, 1, db->aolfd);
-        check(ret > -1, "Error writing to file.");
-        ret = fprintf(db->aolfd, "\n");
+        /*ret = fprintf(db->aolfd, "\n");*/
     } else if (strncmp(cmd, "SCOOP", 5) == 0) {
         ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s\n",
                 strlen(cmd), cmd,
@@ -266,3 +287,9 @@ error:
 
     return -1;
 }
+
+/*
+int ol_aol_rewrite(ol_database *db) {
+    return 0;
+}
+*/
