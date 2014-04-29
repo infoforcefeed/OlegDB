@@ -254,10 +254,10 @@ ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) 
     if (!cur)
         return NULL;
 
-    if (cur->left_child != NULL)
-        return cur->left_child;
-    else if (cur->right_child != NULL)
-        return cur->right_child;
+    if (cur->left != NULL)
+        return cur->left;
+    else if (cur->right != NULL)
+        return cur->right;
     else {
         /* No parents, no children, no siblings, no god: */
         if (tree->root == cur)
@@ -266,10 +266,10 @@ ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) 
         /* Now it get's tricky. We need to walk up and to the right until we
          * find a node. Assume we have a parent. */
         ol_splay_tree_node *next_node = cur->parent;
-        while (next_node->right_child == NULL) {
+        while (next_node->right == NULL) {
             if (next_node == tree->root)
                 return NULL;
-            next_node = next_node->parent->right_child;
+            next_node = next_node->parent->right;
         }
         return next_node;
     }
