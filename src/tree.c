@@ -288,5 +288,27 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **dat
         return 1;
     if (data) /* We don't want to overwrite the *data ptr */
         return 1;
+
+    ol_splay_tree *tree = db->tree;
+    ol_splay_tree_node *current_node = db->tree->root;
+
+    struct ol_stack *matches = malloc(sizeof(struct ol_stack));
+    matches->data = NULL;
+    matches->next = NULL;
+
+    int imatches = 0;
+    while (current_node != NULL) {
+        if (strncmp(current_node->key, prefix, plen) == 0) {
+            spush(&matches, current_node);
+            imatches++;
+        }
+        current_node = ols_next_node(tree, current_node);
+    }
+    debug("Found %i matches.", imatches);
+
+    /* Free all of the matches */
+    while (matches->next != NULL) {
+        spop(&matches);
+    }
     return 0;
 }
