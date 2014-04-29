@@ -248,3 +248,7 @@ void ols_close(ol_splay_tree *tree) {
     tree->root = NULL;
 }
 
+/* Defined in oleg.h */
+int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **data) {
+    return 0;
+}
