@@ -4,6 +4,7 @@
 #include "errhandle.h"
 #include "logging.h"
 #include "test.h"
+#include "tree.h"
 
 /* Helper function to open databases, so we don't have to change API code
  * in a million places when we modify it.
@@ -778,6 +779,39 @@ int test_lz4() {
     return 0;
 }
 
+int test_can_get_next_in_tree() {
+    ol_database *db = _test_db_open();
+    int next_records = 10;
+    ol_log_msg(LOG_INFO, "Inserting %i records.", next_records);
+    int ret = _insert_keys(db, next_records);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
+    int i;
+    ol_splay_tree *tree = db->tree;
+    ol_splay_tree_node *node = db->tree->root;
+
+    int found = 0;
+    for (i = 0; i < next_records; i++) {
+        check(node != NULL, "Could not retrieve a node.");
+        ol_log_msg(LOG_INFO, "Node found: %s", node->key);
+        node = ols_next_node(tree, node);
+        found++;
+    }
+
+    check(found == next_records, "Did not find enough records. Only found %i.", found);
+
+    ol_close(db);
+    return 0;
+
+error:
+    if (db)
+        ol_close(db);
+    return 1;
+}
+
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
@@ -800,6 +834,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_can_find_all_nodes);
     ol_run_test(test_uptime);
     ol_run_test(test_lz4);
+    ol_run_test(test_can_get_next_in_tree);
 
     results[0] = tests_run;
     results[1] = tests_failed;

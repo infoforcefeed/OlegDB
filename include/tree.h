@@ -23,6 +23,8 @@ typedef struct ol_splay_tree {
 /* Insert and splay the tree. rej_obj is a pointer to an object somewhere in
  * memory that you want to reference from this node. */
 ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const void *ref_obj);
+/* Used for iterating through a tree. This returns the closest neighbor or NULL. */
+ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur);
 
 /* Finds and deletes a node via key */
 int ols_find_and_delete(ol_splay_tree *tree, const char *key, const size_t klen);

@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "oleg.h"
-#include "errhandle.h"
 #include "tree.h"
 #include "logging.h"
 #include "stack.h"
+#include "errhandle.h"
 
 static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
     ol_splay_tree_node *right_child = node->right;
@@ -254,11 +254,14 @@ ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) 
     if (!cur)
         return NULL;
 
-    if (cur->left != NULL)
+    if (cur->left != NULL) {
+        debug("Left child: %s", cur->left->key);
         return cur->left;
-    else if (cur->right != NULL)
+    }
+    else if (cur->right != NULL) {
+        debug("Right child: %s", cur->right->key);
         return cur->right;
-    else {
+    } else {
         /* No parents, no children, no siblings, no god: */
         if (tree->root == cur)
             return NULL;
