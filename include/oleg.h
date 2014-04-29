@@ -234,3 +234,13 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
  */
 int ol_ht_bucket_max(size_t ht_size);
 
+/* xXx FUNCTION=ol_skim xXx
+ * xXx DESCRIPTION=Returns values of keys that match a given prefix. xXx
+ * xXx RETURNS=0 on success, 1 on failure or if the key was not found. xXx
+ * xXx *db=Database to retrieve values from. xXx
+ * xXx *prefix=The prefix to attempt matches on. xXx
+ * xXx plen=The length of the prefix. xXx
+ * xXx **data=The pointer to a <code>char *</code> where the <a href="http://msgpack.org/">msgpack</a> encoded list of values from the keys will be stored. <strong>This must be freed when done with.<strong> xXx
+ */
+int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **data);
+
