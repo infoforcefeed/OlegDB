@@ -248,6 +248,35 @@ void ols_close(ol_splay_tree *tree) {
     tree->root = NULL;
 }
 
+ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) {
+    if (!tree || !tree->root)
+        return NULL;
+    if (!cur)
+        return NULL;
+
+    if (cur->left_child != NULL)
+        return cur->left_child;
+    else if (cur->right_child != NULL)
+        return cur->right_child;
+    else {
+        /* No parents, no children, no siblings, no god: */
+        if (tree->root == cur)
+            return NULL;
+
+        /* Now it get's tricky. We need to walk up and to the right until we
+         * find a node. Assume we have a parent. */
+        ol_splay_tree_node *next_node = cur->parent;
+        while (next_node->right_child == NULL) {
+            if (next_node == tree->root)
+                return NULL;
+            next_node = next_node->parent->right_child;
+        }
+        return next_node;
+    }
+
+    return NULL;
+}
+
 /* Defined in oleg.h */
 int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **data) {
     if (!db->is_enabled(OL_F_SPLAYTREE, &db->feature_set))
