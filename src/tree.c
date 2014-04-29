@@ -250,5 +250,11 @@ void ols_close(ol_splay_tree *tree) {
 
 /* Defined in oleg.h */
 int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **data) {
+    if (!db->is_enabled(OL_F_SPLAYTREE, &db->feature_set))
+        return 1;
+    if (!prefix)
+        return 1;
+    if (data) /* We don't want to overwrite the *data ptr */
+        return 1;
     return 0;
 }
