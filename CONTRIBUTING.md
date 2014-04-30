@@ -1,11 +1,10 @@
 Contributing
 ============
 
-Contributing is easy. We're on github, obviously, so if you want to contribute
-just fork the repository, make your changes and send us
-a pull request.
+Contributing is easy. If you want to contribute; fork the repository, make 
+your changes, and send us a pull request.
 
-If it passes tests, code review and any other arbitrary constraints it comes up
+If it passes testing, code review, and any other arbitrary constraints we come up
 with, we'll add your name and your code to the repository.
 
 What needs to be done?
@@ -13,14 +12,15 @@ What needs to be done?
 
 We have a rather large amount of [issues](https://github.com/infoforcefeed/OlegDB/issues)
 in the github issue-tracking system.
+
 The general rule appears to be if it's not assigned, it's fair game. Some
 tickets have a larger scope than others and this isn't really defined anywhere.
 If the ticket is just really vague but seems important, it's probably a
 discussion thing.
 
 Of course, contributions should not be limited to the ticketing system. If you
-want to add support for something or a random feature, go ahead. The worst we
-can do is belittle you and your code (we probably won't, though).
+want to add support for something, go ahead. The worst we can do is belittle 
+you and your code (we probably won't, though).
 
 General Guidelines
 ==================
