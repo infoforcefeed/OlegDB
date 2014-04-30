@@ -13,7 +13,7 @@ What needs to be done?
 
 We have a rather large amount of [issues](https://github.com/infoforcefeed/OlegDB/issues)
 in the github issue-tracking system.
-The general rule appears to be if it's not assigned, it's free game. Some
+The general rule appears to be if it's not assigned, it's fair game. Some
 tickets have a larger scope than others and this isn't really defined anywhere.
 If the ticket is just really vague but seems important, it's probably a
 discussion thing.
