@@ -5,6 +5,13 @@
  * information.
  */
 
+/* CPP compatibility. This is put before the includes so they we can probably
+ * avoid putting this ugly wrapper around those other files as well.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -234,3 +241,6 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
  */
 int ol_ht_bucket_max(size_t ht_size);
 
+#ifdef __cplusplus
+}
+#endif
