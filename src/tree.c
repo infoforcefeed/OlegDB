@@ -90,13 +90,6 @@ static inline ol_splay_tree_node *_ols_subtree_minimum(ol_splay_tree_node *node)
     return node;
 }
 
-static inline ol_splay_tree_node *_ols_subtree_maximum(ol_splay_tree_node *node) {
-    while (node->left != NULL) {
-        node = node->right;
-    }
-    return node;
-}
-
 ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const void *ref_obj) {
     check(klen < KEY_SIZE, "Key is too long.");
     check(key != NULL, "Key is null.");
