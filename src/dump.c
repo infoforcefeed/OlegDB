@@ -30,7 +30,7 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
     fread_ret = fread(&klen, sizeof(size_t), 1, fd);
     check(fread_ret > 0, "Error reading");
 
-    check(klen > KEY_SIZE, "Key size too damn big! Size: %zu", klen);
+    check(klen <= KEY_SIZE, "Key size too damn big! Size: %zu", klen);
 
     tmp_key = malloc(klen + 1);
     check_mem(tmp_key);
