@@ -530,14 +530,14 @@ int test_ct() {
         return 1;
     }
 
-    int ret = ol_unjar(db, key1, strlen(key1), NULL);
+    int ret = ol_exists(db, key1, strlen(key1));
     if (ret != 0) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key1);
         ol_close(db);
         return 2;
     }
 
-    ret = ol_unjar(db, key2, strlen(key2), NULL);
+    ret = ol_exists(db, key2, strlen(key2));
     if (ret != 0) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key2);
         ol_close(db);
@@ -720,7 +720,7 @@ int test_expiration() {
 
     check(ol_jar(db, key, strlen(key), value, strlen((char *)value)) == 0, "Could not insert.");
     check(ol_spoil(db, key, strlen(key), &now) == 0, "Could not set expiration");
-    check(ol_unjar(db, key, strlen(key), NULL) == 1, "Key did not expire properly.");
+    check(ol_exists(db, key, strlen(key)) == 1, "Key did not expire properly.");
 
     ol_close(db);
 
