@@ -251,6 +251,10 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
     return ol_unjar_ds(db, key, klen, data, NULL);
 }
 
+int ol_exists(ol_database *db, const char *key, size_t klen) {
+    return ol_unjar_ds(db, key, klen, NULL, NULL);
+}
+
 static inline int _has_bucket_expired(const ol_bucket *bucket) {
     struct tm utctime;
     time_t current;
