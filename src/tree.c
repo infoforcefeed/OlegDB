@@ -303,5 +303,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **dat
     while (matches->next != NULL) {
         spop(&matches);
     }
+
+    free(matches);
     return 0;
 }

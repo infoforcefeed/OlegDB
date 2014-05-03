@@ -30,9 +30,7 @@ static inline int _ol_store_bin_object(ol_database *db, FILE *fd) {
     fread_ret = fread(&klen, sizeof(size_t), 1, fd);
     check(fread_ret > 0, "Error reading");
 
-    if (klen > KEY_SIZE) {
-        ol_log_msg(LOG_ERR, "Key size too damn big! Size: %zu", klen);
-    }
+    check(klen <= KEY_SIZE, "Key size too damn big! Size: %zu", klen);
 
     tmp_key = malloc(klen + 1);
     check_mem(tmp_key);
@@ -68,8 +66,10 @@ int ol_background_save(ol_database *db) {
     if (pid == 0) {
         int ret;
         ret = ol_save_db(db);
-        if(ret != 0)
-            log_err("Could not save DB to disk."); exit(ret);
+        if(ret != 0) {
+            log_err("Could not save DB to disk.");
+            exit(ret);
+        }
     } else {
         check(pid > 0, "Could not background dump.");
         ol_log_msg(LOG_INFO, "Backgrounding ol_dump. PID: %d", pid);
@@ -111,15 +111,15 @@ int ol_save_db(ol_database *db) {
     /* Start serializing the struct and write to the file */
     int i;
     int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
-    ol_bucket *item;
+
     for (i = 0; i < bucket_max; i++) {
-        item = db->hashes[i];
-        if (item != NULL)
-            check(_ol_write_bucket(item, fd) == 0, "Recording bucket failed.");
+        if (db->hashes[i] != NULL)
+            check(_ol_write_bucket(db->hashes[i], fd) == 0, "Recording bucket failed.");
     }
 
     fflush(fd);
     fclose(fd);
+    fd = NULL;
 
     debug("Renaming file: %s -> %s.", tmpfile, db->dump_file);
     check(rename(tmpfile, db->dump_file) == 0, "Could not rename.")
