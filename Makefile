@@ -65,6 +65,8 @@ uninstall:
 	rm -rf $(INSTALL_BIN)/olegdb
 	rm -rf $(ERL_ODB_INSTALL_DIR)
 
+# The reason we have install twice here is because the variable needs to be compiled install
+# when we are installing. It tells erlang where to look
 install: ERL_LIB_LOOKFOR=-DLIBLOCATION=\"$(INSTALL_LIB)\"
 install: liboleg server
 	@mkdir -p $(INSTALL_LIB)

@@ -328,6 +328,9 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **dat
             int processed = 0;
             processed = LZ4_decompress_fast((char *)data_ptr, offset, data_len);
             check(processed == deref->data_size, "Could not decompress data.");
+        } else {
+            unsigned char *to_check = memcpy(data_ptr, offset, data_len);
+            check(to_check == data_ptr, "Could not copy data to msgpuck buffer.");
         }
 
     }
