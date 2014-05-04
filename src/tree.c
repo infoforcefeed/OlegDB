@@ -314,7 +314,8 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
 
     /* Compute size of everything and malloc it here */
     size_t total_size = sizeof(char *) * imatches;
-    char **to_return = malloc(total_size);
+    char **to_return = NULL;
+    to_return = malloc(total_size);
     check_mem(to_return);
 
     int i;
@@ -345,5 +346,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
 error:
     if (data != NULL)
         free(data);
+    if (to_return)
+        free(to_return);
     return -1;
 }
