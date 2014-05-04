@@ -4,6 +4,7 @@
 #include "errhandle.h"
 #include "logging.h"
 #include "test.h"
+#include "tree.h"
 
 /* Helper function to open databases, so we don't have to change API code
  * in a million places when we modify it.
@@ -534,14 +535,14 @@ int test_ct() {
         return 1;
     }
 
-    int ret = ol_unjar(db, key1, strlen(key1), NULL);
+    int ret = ol_exists(db, key1, strlen(key1));
     if (ret != 0) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key1);
         ol_close(db);
         return 2;
     }
 
-    ret = ol_unjar(db, key2, strlen(key2), NULL);
+    ret = ol_exists(db, key2, strlen(key2));
     if (ret != 0) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key2);
         ol_close(db);
@@ -724,7 +725,7 @@ int test_expiration() {
 
     check(ol_jar(db, key, strlen(key), value, strlen((char *)value)) == 0, "Could not insert.");
     check(ol_spoil(db, key, strlen(key), &now) == 0, "Could not set expiration");
-    check(ol_unjar(db, key, strlen(key), NULL) == 1, "Key did not expire properly.");
+    check(ol_exists(db, key, strlen(key)) == 1, "Key did not expire properly.");
 
     ol_close(db);
 
@@ -783,6 +784,75 @@ int test_lz4() {
     return 0;
 }
 
+int test_can_get_next_in_tree() {
+    ol_database *db = _test_db_open();
+    int next_records = 10;
+    ol_log_msg(LOG_INFO, "Inserting %i records.", next_records);
+    int ret = _insert_keys(db, next_records);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
+    int i;
+    ol_splay_tree *tree = db->tree;
+    ol_splay_tree_node *node = db->tree->root;
+
+    int found = 0;
+    for (i = 0; i < next_records; i++) {
+        check(node != NULL, "Could not retrieve a node.");
+        ol_log_msg(LOG_INFO, "Node found: %s", node->key);
+        node = ols_next_node(tree, node);
+        found++;
+    }
+
+    check(found == next_records, "Did not find enough records. Only found %i.", found);
+
+    ol_close(db);
+    return 0;
+
+error:
+    if (db)
+        ol_close(db);
+    return 1;
+}
+
+int test_can_match_prefixes() {
+    ol_database *db = _test_db_open();
+    int next_records = 10;
+    ol_log_msg(LOG_INFO, "Inserting %i records.", next_records);
+    int ret = _insert_keys(db, next_records);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
+    char key[] = "test";
+    unsigned char to_insert[] = "Thjis lsl;ajfldskjf";
+    size_t len = strlen((char *)to_insert);
+    ret = ol_jar(db, key, strlen(key), to_insert, len);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
+    ol_val_array matches_list = NULL;
+    ret = ol_prefix_match(db, "crazy hash", strlen("crazy hash"), &matches_list);
+    if (ret < 0) {
+        ol_log_msg(LOG_ERR, "Error finding prefixes. Error code: %d\n", ret);
+        return 1;
+    }
+
+    int i;
+    for (i = 0; i < ret; i++) {
+        free(matches_list[i]);
+    }
+    free(matches_list);
+    ol_close(db);
+    return 0;
+
+}
+
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
@@ -805,6 +875,8 @@ void run_tests(int results[2]) {
     ol_run_test(test_can_find_all_nodes);
     ol_run_test(test_uptime);
     ol_run_test(test_lz4);
+    ol_run_test(test_can_get_next_in_tree);
+    ol_run_test(test_can_match_prefixes);
 
     results[0] = tests_run;
     results[1] = tests_failed;

@@ -2,11 +2,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "lz4.h"
 #include "oleg.h"
-#include "errhandle.h"
 #include "tree.h"
 #include "logging.h"
 #include "stack.h"
+#include "errhandle.h"
 
 static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
     ol_splay_tree_node *right_child = node->right;
@@ -241,3 +242,111 @@ void ols_close(ol_splay_tree *tree) {
     tree->root = NULL;
 }
 
+ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) {
+    if (!tree || !tree->root)
+        return NULL;
+    if (!cur)
+        return NULL;
+
+    if (cur->left != NULL) {
+        debug("Left child: %s", cur->left->key);
+        return cur->left;
+    }
+    else if (cur->right != NULL) {
+        debug("Right child: %s", cur->right->key);
+        return cur->right;
+    } else {
+        /* No parents, no children, no siblings, no god: */
+        if (tree->root == cur)
+            return NULL;
+
+        /* Now it get's tricky. We need to walk up and to the right until we
+         * find a node. Assume we have a parent. */
+        ol_splay_tree_node *last_node = cur;
+        ol_splay_tree_node *next_node = cur->parent;
+        while (1) {
+            if (next_node == tree->root &&
+                last_node == tree->root->right)
+                return NULL;
+
+            last_node = next_node;
+            next_node = next_node->parent;
+
+            if (next_node->right &&
+                next_node->right != last_node)
+                return next_node->right;
+        }
+    }
+
+    return NULL;
+}
+
+/* Defined in oleg.h */
+int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_array *data) {
+    if (!db->is_enabled(OL_F_SPLAYTREE, &db->feature_set))
+        return -1;
+    if (!prefix)
+        return -1;
+
+    ol_splay_tree *tree = db->tree;
+    ol_splay_tree_node *current_node = db->tree->root;
+
+    char **to_return = NULL;
+    struct ol_stack *matches = malloc(sizeof(struct ol_stack));
+    matches->data = NULL;
+    matches->next = NULL;
+
+    int imatches = 0;
+    size_t size_total = 0;
+    while (current_node != NULL) {
+        if (strncmp(current_node->key, prefix, plen) == 0) {
+            spush(&matches, current_node);
+            imatches++;
+
+            size_t data_len = ((ol_bucket *)current_node->ref_obj)->original_size;
+            size_total += data_len;
+        }
+        current_node = ols_next_node(tree, current_node);
+    }
+    debug(LOG_INFO, "Found %i matches.", imatches);
+
+    /* No pointer in doing anything else if we don't have any matches. */
+    check(imatches > 0, "No matched keys.");
+
+    /* Compute size of everything and malloc it here */
+    size_t total_size = sizeof(char *) * imatches;
+    to_return = malloc(total_size);
+    check_mem(to_return);
+
+    int i;
+    for (i = 0;i < imatches; i++) {
+        ol_splay_tree_node *cur_node = (ol_splay_tree_node *)spop(&matches);
+        ol_bucket *deref = (ol_bucket *)cur_node->ref_obj;
+
+        unsigned char *data_ptr = deref->data_ptr;
+        size_t data_len = deref->original_size;
+
+        char *dest = malloc(data_len);
+        if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+            int processed = 0;
+            processed = LZ4_decompress_fast((char *)data_ptr, dest, data_len);
+            check(processed == deref->data_size, "Could not decompress data.");
+        } else {
+            unsigned char *to_check = memcpy(data_ptr, dest, data_len);
+            check(to_check == data_ptr, "Could not copy data to msgpuck buffer.");
+        }
+
+        to_return[i] = dest;
+    }
+
+    *data = to_return;
+    free(matches);
+    return imatches;
+
+error:
+    if (*data != NULL)
+        free(*data);
+    if (to_return != NULL)
+        free(to_return);
+    return -1;
+}

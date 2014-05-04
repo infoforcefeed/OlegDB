@@ -46,6 +46,11 @@ typedef enum {
     OL_S_AOKAY          = 1
 } ol_state_flags;
 
+/* xXx TYPEDEF=ol_val_array xXx
+* xXx DESCRIPTION=This is shorthand for a pointer to an array of values, typically the same kind of values stored in an <a href="#ol_bucket">ol_bucket</a>->data_ptr object. xXx
+*/
+typedef char ** ol_val_array;
+
 /* xXx STRUCT=ol_bucket xXx
 * xXx DESCRIPTION=This is the object stored in the database's hashtable. Contains references to value, key, etc. xXx
 * xXx key[KEY_SIZE]=The key used for this bucket. xXx
@@ -168,7 +173,7 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
 /* xXx FUNCTION=ol_jar xXx
  * xXx DESCRIPTION=This is OlegDB's canonical 'set' function. Put a value into the mayo (the database). It's easy to piss in a bucket, it's not easy to piss in 19 jars. Uses default content type. xXx
  * xXx RETURNS=0 on sucess. xXx
- * xXx *db=Database to retrieve value from. xXx
+ * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  * xXx *value=The value to insert. xXx
@@ -179,7 +184,7 @@ int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value, 
 /* xXx FUNCTION=ol_jar_ct xXx
  * xXx DESCRIPTION=Wrapped by <a href="#ol_jar">ol_jar</a>, this function will set a value in the database. It differs only in that it allows you to specify a content type to store in addition to the value. xXx
  * xXx RETURNS=0 on sucess. xXx
- * xXx *db=Database to retrieve value from. xXx
+ * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  * xXx *value=The value to insert. xXx
@@ -202,7 +207,7 @@ char *ol_content_type(ol_database *db, const char *key, size_t klen);
 /* xXx FUNCTION=ol_expiration xXx
  * xXx DESCRIPTION=Retrieves the expiration time for a given key from the database. xXx
  * xXx RETURNS=Stored <code>struct tm *</code> representing the time that this key will expire, or NULL if not found. xXx
- * xXx *db=Database to retrieve value from. xXx
+ * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  */
@@ -211,7 +216,7 @@ struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen);
 /* xXx FUNCTION=ol_scoop xXx
  * xXx DESCRIPTION=Removes an object from the database. Get that crap out of the mayo jar. xXx
  * xXx RETURNS=0 on success, and 1 or 2 if the object could not be deleted. xXx
- * xXx *db=Database to retrieve value from. xXx
+ * xXx *db=Database to remove the value from. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  */
@@ -227,7 +232,7 @@ int ol_uptime(ol_database *db);
 /* xXx FUNCTION=ol_spoil xXx
  * xXx DESCRIPTION=Sets the expiration value of a key. Will fail if no <a href="#ol_bucket">ol_bucket</a> under the chosen key exists. xXx
  * xXx RETURNS=0 upon success, 1 if otherwise. xXx
- * xXx *db=Database to retrieve value from. xXx
+ * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  * xXx expiration_date=The <b>UTC</b> time to set the expiration to. xXx
@@ -240,6 +245,25 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
  * xXx *ht_size=The size you want to divide by <code>sizeof(ol_bucket)</code>. xXx
  */
 int ol_ht_bucket_max(size_t ht_size);
+
+/* xXx FUNCTION=ol_prefix_match xXx
+ * xXx DESCRIPTION=Returns values of keys that match a given prefix. xXx
+ * xXx RETURNS=-1 on failure and a positive integer representing the number of matched prefices in the database. xXx
+ * xXx *db=Database to retrieve values from. xXx
+ * xXx *prefix=The prefix to attempt matches on. xXx
+ * xXx plen=The length of the prefix. xXx
+ * xXx *data=A pointer to an <code>ol_val_array</code> object where the list of values will be stored. <strong>Both the list and it's items must be freed after use.<strong> xXx
+ */
+int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_array *data);
+
+/* xXx FUNCTION=ol_exists xXx
+ * xXx DESCRIPTION=Returns whether the given key exists on the database xXx
+ * xXx RETURNS=0 if the key exists, 1 otherwise. xXx
+ * xXx *db=Database the key should be in. xXx
+ * xXx *key=The key to check. xXx
+ * xXx klen=The length of the key. xXx
+ */
+int ol_exists(ol_database *db, const char *key, size_t klen);
 
 #ifdef __cplusplus
 }

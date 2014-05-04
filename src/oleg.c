@@ -202,8 +202,8 @@ static inline void _ol_trunc(const char *key, size_t klen, char *out) {
 ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char *key, size_t klen) {
     /* Note: Keys should already be safely truncated at this point. */
     int index = _ol_calc_idx(db->cur_ht_size, hash);
-    size_t larger_key = 0;
     if (db->hashes[index] != NULL) {
+        size_t larger_key = 0;
         ol_bucket *tmp_bucket;
         tmp_bucket = db->hashes[index];
         larger_key = tmp_bucket->klen > klen ? tmp_bucket->klen : klen;
@@ -249,6 +249,10 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
 
 int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data) {
     return ol_unjar_ds(db, key, klen, data, NULL);
+}
+
+int ol_exists(ol_database *db, const char *key, size_t klen) {
+    return ol_unjar_ds(db, key, klen, NULL, NULL);
 }
 
 static inline int _has_bucket_expired(const ol_bucket *bucket) {
@@ -442,7 +446,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         compressed = calloc(1, maxoutsize);
         size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)compressed,
                                       (int)vsize);
-        if (cmsize <= 0) {
+        if (cmsize == 0) {
             /* Free allocated data */
             free(new_bucket->content_type);
             free(new_bucket);
@@ -538,7 +542,6 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
     char _key[KEY_SIZE] = {'\0'};
     _ol_trunc(key, klen, _key);
     size_t _klen = strnlen(_key, KEY_SIZE);
-    size_t larger_key = 0;
 
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     int index = _ol_calc_idx(db->cur_ht_size, hash);
@@ -550,6 +553,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
     ol_bucket *to_free = NULL;
     int return_level = 2;
     if (db->hashes[index] != NULL) {
+        size_t larger_key = 0;
         ol_bucket *bucket = db->hashes[index];
         larger_key = bucket->klen > _klen ? bucket->klen : _klen;
         if (strncmp(bucket->key, _key, larger_key) == 0) {
@@ -566,9 +570,8 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             to_free = bucket;
             return_level = 0;
         } else { /* Keys weren't the same, traverse the bucket LL */
-            ol_bucket *last;
             do {
-                last = bucket;
+                ol_bucket *last = bucket;
                 bucket = bucket->next;
                 larger_key = bucket->klen > klen ? bucket->klen : klen;
                 if (strncmp(bucket->key, _key, larger_key) == 0) {
