@@ -291,6 +291,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
     ol_splay_tree *tree = db->tree;
     ol_splay_tree_node *current_node = db->tree->root;
 
+    char **to_return = NULL;
     struct ol_stack *matches = malloc(sizeof(struct ol_stack));
     matches->data = NULL;
     matches->next = NULL;
@@ -314,7 +315,6 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
 
     /* Compute size of everything and malloc it here */
     size_t total_size = sizeof(char *) * imatches;
-    char **to_return = NULL;
     to_return = malloc(total_size);
     check_mem(to_return);
 
@@ -346,7 +346,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
 error:
     if (data != NULL)
         free(data);
-    if (to_return)
+    if (to_return != NULL)
         free(to_return);
     return -1;
 }
