@@ -5,6 +5,13 @@
  * information.
  */
 
+/* CPP compatibility. This is put before the includes so they we can probably
+ * avoid putting this ugly wrapper around those other files as well.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -257,3 +264,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
  * xXx klen=The length of the key. xXx
  */
 int ol_exists(ol_database *db, const char *key, size_t klen);
+
+#ifdef __cplusplus
+}
+#endif

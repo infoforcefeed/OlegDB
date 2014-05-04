@@ -388,6 +388,11 @@ int test_update() {
 
     unsigned char new_val[] = "WOW THAT WAS COOL, WASNT IT?";
     inserted = ol_jar(db, key, strlen(key), new_val, strlen((char*)new_val));
+    if (inserted != 0) {
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
+        ol_close(db);
+        return 1;
+    }
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
