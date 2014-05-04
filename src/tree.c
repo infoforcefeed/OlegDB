@@ -261,13 +261,20 @@ ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) 
 
         /* Now it get's tricky. We need to walk up and to the right until we
          * find a node. Assume we have a parent. */
+        ol_splay_tree_node *last_node = cur;
         ol_splay_tree_node *next_node = cur->parent;
-        while (next_node->right == NULL) {
-            if (next_node == tree->root)
+        while (1) {
+            if (next_node == tree->root &&
+                last_node == tree->root->right)
                 return NULL;
-            next_node = next_node->parent->right;
+
+            last_node = next_node;
+            next_node = next_node->parent;
+
+            if (next_node->right &&
+                next_node->right != last_node)
+                return next_node->right;
         }
-        return next_node;
     }
 
     return NULL;
@@ -297,7 +304,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **dat
         }
         current_node = ols_next_node(tree, current_node);
     }
-    debug("Found %i matches.", imatches);
+    ol_log_msg(LOG_INFO, "Found %i matches.", imatches);
 
     /* Free all of the matches */
     while (matches->next != NULL) {
