@@ -344,8 +344,8 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
     return imatches;
 
 error:
-    if (data != NULL)
-        free(data);
+    if (*data != NULL)
+        free(*data);
     if (to_return != NULL)
         free(to_return);
     return -1;
