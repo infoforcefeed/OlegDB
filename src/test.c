@@ -822,6 +822,15 @@ int test_can_match_prefixes() {
         return 1;
     }
 
+    char key[] = "test";
+    unsigned char to_insert[] = "Thjis lsl;ajfldskjf";
+    size_t len = strlen((char *)to_insert);
+    ret = ol_jar(db, key, strlen(key), to_insert, len);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
     ret = ol_prefix_match(db, "crazy hash", strlen("crazy hash"), NULL);
     if (ret > 0) {
         ol_log_msg(LOG_ERR, "Error finding prefixes. Error code: %d\n", ret);
@@ -856,7 +865,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_uptime);
     ol_run_test(test_lz4);
     ol_run_test(test_can_get_next_in_tree);
-    //ol_run_test(test_can_match_prefixes);
+    ol_run_test(test_can_match_prefixes);
 
     results[0] = tests_run;
     results[1] = tests_failed;
