@@ -292,19 +292,16 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
     ol_splay_tree_node *current_node = db->tree->root;
 
     char **to_return = NULL;
+    char *dest = NULL;
     struct ol_stack *matches = malloc(sizeof(struct ol_stack));
     matches->data = NULL;
     matches->next = NULL;
 
     int imatches = 0;
-    size_t size_total = 0;
     while (current_node != NULL) {
         if (strncmp(current_node->key, prefix, plen) == 0) {
             spush(&matches, current_node);
             imatches++;
-
-            size_t data_len = ((ol_bucket *)current_node->ref_obj)->original_size;
-            size_total += data_len;
         }
         current_node = ols_next_node(tree, current_node);
     }
@@ -326,7 +323,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
         unsigned char *data_ptr = deref->data_ptr;
         size_t data_len = deref->original_size;
 
-        char *dest = malloc(data_len);
+        dest = malloc(data_len);
         if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
             int processed = 0;
             processed = LZ4_decompress_fast((char *)data_ptr, dest, data_len);
@@ -348,5 +345,9 @@ error:
         free(*data);
     if (to_return != NULL)
         free(to_return);
+    if (dest != NULL)
+        free(dest);
+    free(matches);
+
     return -1;
 }
