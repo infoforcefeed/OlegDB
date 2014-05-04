@@ -39,6 +39,11 @@ typedef enum {
     OL_S_AOKAY          = 1
 } ol_state_flags;
 
+/* xXx TYPEDEF=ol_val_array xXx
+* xXx DESCRIPTION=This is shorthand for a pointer to an array of values, typically the same kind of values stored in an <a href="#ol_bucket">ol_bucket</a>->data_ptr object. xXx
+*/
+typedef char ** ol_val_array;
+
 /* xXx STRUCT=ol_bucket xXx
 * xXx DESCRIPTION=This is the object stored in the database's hashtable. Contains references to value, key, etc. xXx
 * xXx key[KEY_SIZE]=The key used for this bucket. xXx
@@ -236,13 +241,13 @@ int ol_ht_bucket_max(size_t ht_size);
 
 /* xXx FUNCTION=ol_prefix_match xXx
  * xXx DESCRIPTION=Returns values of keys that match a given prefix. xXx
- * xXx RETURNS=0 on success, 1 on failure or if the key was not found. xXx
+ * xXx RETURNS=-1 on failure and a positive integer representing the number of matched prefices in the database. xXx
  * xXx *db=Database to retrieve values from. xXx
  * xXx *prefix=The prefix to attempt matches on. xXx
  * xXx plen=The length of the prefix. xXx
- * xXx **data=The pointer to a <code>char *</code> where the <a href="http://msgpack.org/">msgpack</a> encoded list of values from the keys will be stored. <strong>This must be freed when done with.<strong> xXx
+ * xXx *data=A pointer to an <code>ol_val_array</code> object where the list of values will be stored. <strong>Both the list and it's items must be freed after use.<strong> xXx
  */
-int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **data);
+int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_array *data);
 
 /* xXx FUNCTION=ol_exists xXx
  * xXx DESCRIPTION=Returns whether the given key exists on the database xXx

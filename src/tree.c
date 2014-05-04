@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "lz4.h"
-#include "msgpuck.h"
 #include "oleg.h"
 #include "tree.h"
 #include "logging.h"
@@ -283,11 +282,11 @@ ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) 
 }
 
 /* Defined in oleg.h */
-int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **data) {
+int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_array *data) {
     if (!db->is_enabled(OL_F_SPLAYTREE, &db->feature_set))
-        return 1;
+        return -1;
     if (!prefix)
-        return 1;
+        return -1;
 
     ol_splay_tree *tree = db->tree;
     ol_splay_tree_node *current_node = db->tree->root;
@@ -297,49 +296,54 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **dat
     matches->next = NULL;
 
     int imatches = 0;
-    size_t msgpck_size_total = 0;
+    size_t size_total = 0;
     while (current_node != NULL) {
         if (strncmp(current_node->key, prefix, plen) == 0) {
             spush(&matches, current_node);
             imatches++;
 
             size_t data_len = ((ol_bucket *)current_node->ref_obj)->original_size;
-            msgpck_size_total += mp_sizeof_bin(data_len);
+            size_total += data_len;
         }
         current_node = ols_next_node(tree, current_node);
     }
-    ol_log_msg(LOG_INFO, "Found %i matches.", imatches);
+    debug(LOG_INFO, "Found %i matches.", imatches);
+
+    /* No pointer in doing anything else if we don't have any matches. */
+    check(imatches > 0, "No matched keys.");
 
     /* Compute size of everything and malloc it here */
-    msgpck_size_total += mp_sizeof_array(imatches);
-    *data = malloc(msgpck_size_total);
-    check_mem(*data);
-    char *offset = mp_encode_array(*data, imatches);
+    size_t total_size = sizeof(char *) * imatches;
+    char **to_return = malloc(total_size);
+    check_mem(to_return);
 
-    while (matches->next != NULL) {
+    int i;
+    for (i = 0;i < imatches; i++) {
         ol_splay_tree_node *cur_node = (ol_splay_tree_node *)spop(&matches);
         ol_bucket *deref = (ol_bucket *)cur_node->ref_obj;
 
         unsigned char *data_ptr = deref->data_ptr;
         size_t data_len = deref->original_size;
 
-        offset = mp_encode_binl(offset, data_len);
+        char *dest = malloc(data_len);
         if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
             int processed = 0;
-            processed = LZ4_decompress_fast((char *)data_ptr, offset, data_len);
+            processed = LZ4_decompress_fast((char *)data_ptr, dest, data_len);
             check(processed == deref->data_size, "Could not decompress data.");
         } else {
-            unsigned char *to_check = memcpy(data_ptr, offset, data_len);
+            unsigned char *to_check = memcpy(data_ptr, dest, data_len);
             check(to_check == data_ptr, "Could not copy data to msgpuck buffer.");
         }
 
+        to_return[i] = dest;
     }
 
+    *data = to_return;
     free(matches);
-    return 0;
+    return imatches;
 
 error:
     if (data != NULL)
         free(data);
-    return 1;
+    return -1;
 }

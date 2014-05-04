@@ -1,6 +1,5 @@
 /* Unit tests. */
 #include <stdlib.h>
-#include "msgpuck.h"
 #include "aol.h"
 #include "errhandle.h"
 #include "logging.h"
@@ -832,17 +831,16 @@ int test_can_match_prefixes() {
         return 1;
     }
 
-    char *matches_list = NULL;
+    ol_val_array matches_list = NULL;
     ret = ol_prefix_match(db, "crazy hash", strlen("crazy hash"), &matches_list);
-    if (ret > 0) {
+    if (ret < 0) {
         ol_log_msg(LOG_ERR, "Error finding prefixes. Error code: %d\n", ret);
         return 1;
     }
 
-    char *checkem = matches_list;
-    if (mp_typeof(*checkem) != MP_ARRAY) {
-        ol_log_msg(LOG_ERR, "Error finding prefixes. Error code: %d\n", ret);
-        return 1;
+    int i;
+    for (i = 0; i < ret; i++) {
+        free(matches_list[i]);
     }
     free(matches_list);
     ol_close(db);
