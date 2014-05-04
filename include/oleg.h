@@ -234,7 +234,7 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
  */
 int ol_ht_bucket_max(size_t ht_size);
 
-/* xXx FUNCTION=ol_skim xXx
+/* xXx FUNCTION=ol_prefix_match xXx
  * xXx DESCRIPTION=Returns values of keys that match a given prefix. xXx
  * xXx RETURNS=0 on success, 1 on failure or if the key was not found. xXx
  * xXx *db=Database to retrieve values from. xXx
