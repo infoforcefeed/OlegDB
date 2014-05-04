@@ -345,8 +345,9 @@ error:
         free(*data);
     if (to_return != NULL)
         free(to_return);
+    if (dest != NULL)
+        free(dest);
     free(matches);
-    free(dest);
 
     return -1;
 }
