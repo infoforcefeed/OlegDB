@@ -304,7 +304,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **dat
             imatches++;
 
             size_t data_len = ((ol_bucket *)current_node->ref_obj)->original_size;
-            msgpck_size_total += mp_sizeof_str(data_len);
+            msgpck_size_total += mp_sizeof_bin(data_len);
         }
         current_node = ols_next_node(tree, current_node);
     }
