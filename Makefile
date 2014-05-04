@@ -53,7 +53,7 @@ $(BIN_DIR)oleg_test: test.o main.o
 
 liboleg: $(LIB_DIR)liboleg.so
 $(LIB_DIR)liboleg.so: murmur3.o oleg.o dump.o logging.o aol.o rehash.o utils.o tree.o lz4.o stack.o msgpuck.o
-	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so $? -fpic -shared $(MATH_LINKER)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so $^ -fpic -shared $(MATH_LINKER)
 	#$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so murmur3.o stack.o logging.o dump.o aol.o oleg.o tree.o lz4.o rehash.o utils.o -fpic -shared $(MATH_LINKER)
 
 server: $(BIN_DIR)ol_database.beam $(BIN_DIR)ol_http.beam \
@@ -65,6 +65,8 @@ uninstall:
 	rm -rf $(INSTALL_BIN)/olegdb
 	rm -rf $(ERL_ODB_INSTALL_DIR)
 
+# The reason we have install twice here is because the variable needs to be compiled install
+# when we are installing. It tells erlang where to look
 install: ERL_LIB_LOOKFOR=-DLIBLOCATION=\"$(INSTALL_LIB)\"
 install: liboleg server
 	@mkdir -p $(INSTALL_LIB)

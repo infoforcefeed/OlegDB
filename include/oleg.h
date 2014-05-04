@@ -161,7 +161,7 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
 /* xXx FUNCTION=ol_jar xXx
  * xXx DESCRIPTION=This is OlegDB's canonical 'set' function. Put a value into the mayo (the database). It's easy to piss in a bucket, it's not easy to piss in 19 jars. Uses default content type. xXx
  * xXx RETURNS=0 on sucess. xXx
- * xXx *db=Database to retrieve value from. xXx
+ * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  * xXx *value=The value to insert. xXx
@@ -172,7 +172,7 @@ int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value, 
 /* xXx FUNCTION=ol_jar_ct xXx
  * xXx DESCRIPTION=Wrapped by <a href="#ol_jar">ol_jar</a>, this function will set a value in the database. It differs only in that it allows you to specify a content type to store in addition to the value. xXx
  * xXx RETURNS=0 on sucess. xXx
- * xXx *db=Database to retrieve value from. xXx
+ * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  * xXx *value=The value to insert. xXx
@@ -195,7 +195,7 @@ char *ol_content_type(ol_database *db, const char *key, size_t klen);
 /* xXx FUNCTION=ol_expiration xXx
  * xXx DESCRIPTION=Retrieves the expiration time for a given key from the database. xXx
  * xXx RETURNS=Stored <code>struct tm *</code> representing the time that this key will expire, or NULL if not found. xXx
- * xXx *db=Database to retrieve value from. xXx
+ * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  */
@@ -204,7 +204,7 @@ struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen);
 /* xXx FUNCTION=ol_scoop xXx
  * xXx DESCRIPTION=Removes an object from the database. Get that crap out of the mayo jar. xXx
  * xXx RETURNS=0 on success, and 1 or 2 if the object could not be deleted. xXx
- * xXx *db=Database to retrieve value from. xXx
+ * xXx *db=Database to remove the value from. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  */
@@ -220,7 +220,7 @@ int ol_uptime(ol_database *db);
 /* xXx FUNCTION=ol_spoil xXx
  * xXx DESCRIPTION=Sets the expiration value of a key. Will fail if no <a href="#ol_bucket">ol_bucket</a> under the chosen key exists. xXx
  * xXx RETURNS=0 upon success, 1 if otherwise. xXx
- * xXx *db=Database to retrieve value from. xXx
+ * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  * xXx expiration_date=The <b>UTC</b> time to set the expiration to. xXx
@@ -234,7 +234,7 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
  */
 int ol_ht_bucket_max(size_t ht_size);
 
-/* xXx FUNCTION=ol_skim xXx
+/* xXx FUNCTION=ol_prefix_match xXx
  * xXx DESCRIPTION=Returns values of keys that match a given prefix. xXx
  * xXx RETURNS=0 on success, 1 on failure or if the key was not found. xXx
  * xXx *db=Database to retrieve values from. xXx
@@ -244,3 +244,11 @@ int ol_ht_bucket_max(size_t ht_size);
  */
 int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, char **data);
 
+/* xXx FUNCTION=ol_exists xXx
+ * xXx DESCRIPTION=Returns whether the given key exists on the database xXx
+ * xXx RETURNS=0 if the key exists, 1 otherwise. xXx
+ * xXx *db=Database the key should be in. xXx
+ * xXx *key=The key to check. xXx
+ * xXx klen=The length of the key. xXx
+ */
+int ol_exists(ol_database *db, const char *key, size_t klen);
