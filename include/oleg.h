@@ -26,7 +26,6 @@ extern "C" {
 * xXx OL_F_REGDUMPS=<strong>Not Implemented</strong> Tell servers to snapshot the data using ol_save() regularly xXx
 * xXx OL_F_SPLAYTREE=Whether or not to enable to splay tree in the server. This can have a performance impact. xXx
 * xXx OL_F_LZ4=Enable LZ4 compression. xXx
->>>>>>> master
 */
 typedef enum {
     OL_F_APPENDONLY     = 1 << 0,
