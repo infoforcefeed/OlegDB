@@ -1,11 +1,9 @@
 OlegDB
 ============
 
-[![Build Status](https://travis-ci.org/infoforcefeed/OlegDB.svg?branch=feature/HOT_TREES)](https://travis-ci.org/infoforcefeed/OlegDB)
-<a href="https://scan.coverity.com/projects/1414">
-  <img alt="Coverity Scan Build Status"
-       src="https://scan.coverity.com/projects/1414/badge.svg"/>
-</a>
+[![Build Status](https://travis-ci.org/infoforcefeed/OlegDB.svg?branch=master)](https://travis-ci.org/infoforcefeed/OlegDB)
+![OlegDB MAYO](http://b.repl.ca/v1/OlegDB-MAYO-brightgreen.png)
+[![Scan Status](https://scan.coverity.com/projects/1414/badge.svg)](https://scan.coverity.com/projects/1414)
 
 Alternate title: "How far can we push a mayonnaise metaphor?"
 
