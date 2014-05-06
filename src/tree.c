@@ -309,7 +309,8 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
         if (match_result == 0) {
             spush(&matches, current_node);
             imatches++;
-        } else if (match_result > 0 && current_node->left == NULL && current_node->right == NULL) {
+        } else if (match_result > 0) {
+            /* Thanks to the power of the binary tree, we can stop. */
             break;
         }
         current_node = ols_next_node(tree, current_node);
