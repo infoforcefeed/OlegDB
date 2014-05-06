@@ -265,12 +265,18 @@ ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) 
         ol_splay_tree_node *last_node = cur;
         ol_splay_tree_node *next_node = cur->parent;
         while (1) {
-            if (next_node == tree->root &&
-                last_node == tree->root->right)
+            if ((next_node == tree->root &&
+                last_node == tree->root->right) ||
+                (next_node == tree->root &&
+                 last_node == tree->root->left &&
+                 next_node->right == NULL))
                 return NULL;
 
             last_node = next_node;
             next_node = next_node->parent;
+
+            //if (next_node == NULL)
+            //    return NULL;
 
             if (next_node->right &&
                 next_node->right != last_node)
@@ -299,9 +305,12 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
 
     int imatches = 0;
     while (current_node != NULL) {
-        if (strncmp(current_node->key, prefix, plen) == 0) {
+        int match_result = strncmp(current_node->key, prefix, plen);
+        if (match_result == 0) {
             spush(&matches, current_node);
             imatches++;
+        } else if (match_result > 0 && current_node->left == NULL && current_node->right == NULL) {
+            break;
         }
         current_node = ols_next_node(tree, current_node);
     }

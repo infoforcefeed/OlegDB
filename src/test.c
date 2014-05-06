@@ -836,10 +836,19 @@ int test_can_match_prefixes() {
         return 1;
     }
 
+    char key2[] = "crazy";
+    unsigned char to_insert2[] = "This should not match.";
+    len = strlen((char *)to_insert2);
+    ret = ol_jar(db, key2, strlen(key2), to_insert2, len);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
     ol_val_array matches_list = NULL;
     ret = ol_prefix_match(db, "crazy hash", strlen("crazy hash"), &matches_list);
-    if (ret < 0) {
-        ol_log_msg(LOG_ERR, "Error finding prefixes. Error code: %d\n", ret);
+    if (ret != next_records) {
+        ol_log_msg(LOG_ERR, "Found the wrong number of matches. Error code: %d\n", ret);
         return 1;
     }
 
