@@ -251,7 +251,7 @@ int ol_ht_bucket_max(size_t ht_size);
  * xXx *db=Database to retrieve values from. xXx
  * xXx *prefix=The prefix to attempt matches on. xXx
  * xXx plen=The length of the prefix. xXx
- * xXx *data=A pointer to an <code>ol_val_array</code> object where the list of values will be stored. <strong>Both the list and it's items must be freed after use.<strong> xXx
+ * xXx *data=A pointer to an <code>ol_val_array</code> object where the list of values will be stored. <strong>Both the list and it's items must be freed after use.</strong> xXx
  */
 int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_array *data);
 
