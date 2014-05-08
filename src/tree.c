@@ -264,23 +264,17 @@ ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) 
          * find a node. Assume we have a parent. */
         ol_splay_tree_node *last_node = cur;
         ol_splay_tree_node *next_node = cur->parent;
-        while (1) {
-            if ((next_node == tree->root &&
-                last_node == tree->root->right) ||
-                (next_node == tree->root &&
-                 last_node == tree->root->left &&
-                 next_node->right == NULL))
+        while (next_node != NULL) {
+            if (next_node == tree->root &&
+                last_node == tree->root->right)
                 return NULL;
-
-            last_node = next_node;
-            next_node = next_node->parent;
-
-            //if (next_node == NULL)
-            //    return NULL;
 
             if (next_node->right &&
                 next_node->right != last_node)
                 return next_node->right;
+
+            last_node = next_node;
+            next_node = next_node->parent;
         }
     }
 
@@ -305,11 +299,11 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
 
     int imatches = 0;
     while (current_node != NULL) {
-        int match_result = strncmp(current_node->key, prefix, plen);
+        const int match_result = strncmp(current_node->key, prefix, plen);
         if (match_result == 0) {
             spush(&matches, current_node);
             imatches++;
-        } else if (match_result > 0) {
+        } else if (match_result > 0 && current_node->left == NULL && current_node->right == NULL) {
             /* Thanks to the power of the binary tree, we can stop. */
             break;
         }
