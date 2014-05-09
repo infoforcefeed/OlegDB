@@ -856,7 +856,6 @@ int test_can_match_prefixes() {
         strcat(prepend, key3);
 
         size_t len = strlen((char *)to_insert);
-        ol_log_msg(LOG_INFO, "Prepend: %s", prepend);
         int insert_result = ol_jar(db, prepend, strlen(prepend), to_insert, len);
 
         if (insert_result > 0) {
@@ -866,9 +865,17 @@ int test_can_match_prefixes() {
         }
     }
 
+    char key3[] = "crazy hash666";
+    len = strlen((char *)to_insert2);
+    ret = ol_jar(db, key3, strlen(key3), to_insert2, len);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
     ol_val_array matches_list = NULL;
     ret = ol_prefix_match(db, "crazy hash", strlen("crazy hash"), &matches_list);
-    if (ret != next_records) {
+    if (ret != next_records + 1) {
         ol_log_msg(LOG_ERR, "Found the wrong number of matches. Error code: %d\n", ret);
         return 1;
     }
