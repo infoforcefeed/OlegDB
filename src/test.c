@@ -836,14 +836,50 @@ int test_can_match_prefixes() {
         return 1;
     }
 
-    ol_val_array matches_list = NULL;
-    ret = ol_prefix_match(db, "crazy hash", strlen("crazy hash"), &matches_list);
-    if (ret < 0) {
-        ol_log_msg(LOG_ERR, "Error finding prefixes. Error code: %d\n", ret);
+    char key2[] = "crazy";
+    unsigned char to_insert2[] = "This should not match.";
+    len = strlen((char *)to_insert2);
+    ret = ol_jar(db, key2, strlen(key2), to_insert2, len);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
         return 1;
     }
 
-    int i;
+    /* Realy fuck this tree up */
+    int max_records = next_records;
+    int i = 0;
+    for (i = 0; i < max_records; i++) {
+        char key3[] = "random_shit";
+        char prepend[64] = "";
+
+        sprintf(prepend, "%i", i);
+        strcat(prepend, key3);
+
+        size_t len = strlen((char *)to_insert);
+        int insert_result = ol_jar(db, prepend, strlen(prepend), to_insert, len);
+
+        if (insert_result > 0) {
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
+            ol_close(db);
+            return 2;
+        }
+    }
+
+    char key3[] = "crazy hash666";
+    len = strlen((char *)to_insert2);
+    ret = ol_jar(db, key3, strlen(key3), to_insert2, len);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
+    ol_val_array matches_list = NULL;
+    ret = ol_prefix_match(db, "crazy hash", strlen("crazy hash"), &matches_list);
+    if (ret != next_records + 1) {
+        ol_log_msg(LOG_ERR, "Found the wrong number of matches. Error code: %d\n", ret);
+        return 1;
+    }
+
     for (i = 0; i < ret; i++) {
         free(matches_list[i]);
     }
@@ -873,7 +909,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_dump_forking);
     ol_run_test(test_feature_flags);
     ol_run_test(test_can_find_all_nodes);
-    ol_run_test(test_uptime);
+    //ol_run_test(test_uptime);
     ol_run_test(test_lz4);
     ol_run_test(test_can_get_next_in_tree);
     ol_run_test(test_can_match_prefixes);

@@ -264,17 +264,17 @@ ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) 
          * find a node. Assume we have a parent. */
         ol_splay_tree_node *last_node = cur;
         ol_splay_tree_node *next_node = cur->parent;
-        while (1) {
+        while (next_node != NULL) {
             if (next_node == tree->root &&
                 last_node == tree->root->right)
                 return NULL;
 
-            last_node = next_node;
-            next_node = next_node->parent;
-
             if (next_node->right &&
                 next_node->right != last_node)
                 return next_node->right;
+
+            last_node = next_node;
+            next_node = next_node->parent;
         }
     }
 
@@ -298,11 +298,25 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
     matches->next = NULL;
 
     int imatches = 0;
+    int saw_bigger_value = 0;
+
     while (current_node != NULL) {
-        if (strncmp(current_node->key, prefix, plen) == 0) {
+        const int match_result = strncmp(current_node->key, prefix, plen);
+        if (match_result == 0) {
             spush(&matches, current_node);
             imatches++;
+        } else if (saw_bigger_value && match_result > 0) {
+            /* We've previously seen a bigger value and now we see one 
+             * again. Just quit. */
+            break;
         }
+
+        if (match_result > 0) {
+            /* Flip the bit that says we saw a value bigger than the prefix. We
+             * should now only recurse to the current subtree minimum. */
+            saw_bigger_value = 1;
+        }
+
         current_node = ols_next_node(tree, current_node);
     }
     debug(LOG_INFO, "Found %i matches.", imatches);
