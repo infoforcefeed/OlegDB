@@ -84,9 +84,16 @@ static inline void _ols_replace(ol_splay_tree *tree,
         node_b->parent = node_a->parent;
 }
 
-static inline ol_splay_tree_node *_ols_subtree_minimum(ol_splay_tree_node *node) {
+inline ol_splay_tree_node *ols_subtree_minimum(ol_splay_tree_node *node) {
     while (node->left != NULL) {
         node = node->left;
+    }
+    return node;
+}
+
+inline ol_splay_tree_node *ols_subtree_maximum(ol_splay_tree_node *node) {
+    while (node->right != NULL) {
+        node = node->right;
     }
     return node;
 }
@@ -160,7 +167,7 @@ int ols_delete(ol_splay_tree *tree, ol_splay_tree_node *node) {
     else if (!node->right)
         _ols_replace(tree, node, node->left);
     else {
-        ol_splay_tree_node *minimum_node = _ols_subtree_minimum(node->right);
+        ol_splay_tree_node *minimum_node = ols_subtree_minimum(node->right);
         if (minimum_node->parent != node) {
             _ols_replace(tree, minimum_node, minimum_node->right);
             minimum_node->right = node->right;
@@ -205,8 +212,8 @@ error:
 }
 
 static inline void _ols_free_node(ol_splay_tree_node *node) {
-    struct ol_stack *stack = NULL;
-    stack = malloc(sizeof(struct ol_stack));
+    ol_stack *stack = NULL;
+    stack = malloc(sizeof(ol_stack));
     check_mem(stack);
 
     stack->next = NULL;
@@ -289,11 +296,12 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
         return -1;
 
     ol_splay_tree *tree = db->tree;
-    ol_splay_tree_node *current_node = db->tree->root;
+    //ol_splay_tree_node *current_node = db->tree->root;
+    ol_splay_tree_node *current_node = ols_subtree_minimum(db->tree->root);
 
     char **to_return = NULL;
     char *dest = NULL;
-    struct ol_stack *matches = malloc(sizeof(struct ol_stack));
+    ol_stack *matches = malloc(sizeof(ol_stack));
     matches->data = NULL;
     matches->next = NULL;
 

@@ -52,7 +52,7 @@ $(BIN_DIR)oleg_test: test.o main.o
 	$(CC) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
 liboleg: $(LIB_DIR)liboleg.so
-$(LIB_DIR)liboleg.so: murmur3.o oleg.o dump.o logging.o aol.o rehash.o utils.o tree.o lz4.o stack.o
+$(LIB_DIR)liboleg.so: murmur3.o oleg.o dump.o logging.o aol.o rehash.o utils.o tree.o lz4.o stack.o cursor.o
 	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so $^ -fpic -shared $(MATH_LINKER)
 
 server: $(BIN_DIR)ol_database.beam $(BIN_DIR)ol_http.beam \
