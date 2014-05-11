@@ -8,6 +8,7 @@
 #include "logging.h"
 #include "stack.h"
 #include "errhandle.h"
+#include "cursor.h"
 
 static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
     ol_splay_tree_node *right_child = node->right;
@@ -249,45 +250,6 @@ void ols_close(ol_splay_tree *tree) {
     tree->root = NULL;
 }
 
-ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) {
-    if (!tree || !tree->root)
-        return NULL;
-    if (!cur)
-        return NULL;
-
-    if (cur->left != NULL) {
-        debug("Left child: %s", cur->left->key);
-        return cur->left;
-    }
-    else if (cur->right != NULL) {
-        debug("Right child: %s", cur->right->key);
-        return cur->right;
-    } else {
-        /* No parents, no children, no siblings, no god: */
-        if (tree->root == cur)
-            return NULL;
-
-        /* Now it get's tricky. We need to walk up and to the right until we
-         * find a node. Assume we have a parent. */
-        ol_splay_tree_node *last_node = cur;
-        ol_splay_tree_node *next_node = cur->parent;
-        while (next_node != NULL) {
-            if (next_node == tree->root &&
-                last_node == tree->root->right)
-                return NULL;
-
-            if (next_node->right &&
-                next_node->right != last_node)
-                return next_node->right;
-
-            last_node = next_node;
-            next_node = next_node->parent;
-        }
-    }
-
-    return NULL;
-}
-
 /* Defined in oleg.h */
 int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_array *data) {
     if (!db->is_enabled(OL_F_SPLAYTREE, &db->feature_set))
@@ -295,9 +257,9 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
     if (!prefix)
         return -1;
 
-    ol_splay_tree *tree = db->tree;
-    //ol_splay_tree_node *current_node = db->tree->root;
-    ol_splay_tree_node *current_node = ols_subtree_minimum(db->tree->root);
+    ol_cursor *cursor = NULL;
+    cursor = olc_init(db);
+    ol_splay_tree_node *current_node = _olc_get_node(cursor);
 
     char **to_return = NULL;
     char *dest = NULL;
@@ -325,7 +287,9 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
             saw_bigger_value = 1;
         }
 
-        current_node = ols_next_node(tree, current_node);
+
+        olc_step(cursor);
+        current_node = _olc_get_node(cursor);
     }
     debug(LOG_INFO, "Found %i matches.", imatches);
 
