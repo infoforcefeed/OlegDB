@@ -54,3 +54,6 @@ ol_bucket *olc_get(ol_cursor *cursor) {
     ol_bucket *bucket = (ol_bucket *)cursor->current_node->ref_obj;
     return bucket;
 }
+
+void olc_step(ol_cursor *cursor) {
+}

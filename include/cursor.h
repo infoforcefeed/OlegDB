@@ -14,7 +14,7 @@ typedef struct ol_cursor {
 /* Creates a cursor for use. Maybe locks the DB? */
 ol_cursor *olc_init(ol_database *db);
 
-/* Steps a cursor forwards in the tree. */
+/* Steps a cursor forward in the tree. */
 void olc_step(ol_cursor *cursor);
 
 /* Returns a bucket object from a cursor. */
