@@ -1,6 +1,7 @@
 /* Unit tests. */
 #include <stdlib.h>
 #include "aol.h"
+#include "cursor.h"
 #include "errhandle.h"
 #include "logging.h"
 #include "test.h"
@@ -794,17 +795,17 @@ int test_can_get_next_in_tree() {
         return 1;
     }
 
-    int i;
-    ol_splay_tree *tree = db->tree;
-    ol_splay_tree_node *node = db->tree->root;
-
     int found = 0;
-    for (i = 0; i < next_records; i++) {
+
+    ol_cursor cursor;
+    olc_init(db, &cursor);
+    while(olc_step(&cursor)) {
+        ol_splay_tree_node *node = _olc_get_node(&cursor);
         check(node != NULL, "Could not retrieve a node.");
         ol_log_msg(LOG_INFO, "Node found: %s", node->key);
-        node = ols_next_node(tree, node);
         found++;
     }
+    olc_close(&cursor);
 
     check(found == next_records, "Did not find enough records. Only found %i.", found);
 

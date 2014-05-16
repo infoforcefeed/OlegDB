@@ -257,12 +257,17 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
     if (!prefix)
         return -1;
 
-    ol_cursor *cursor = NULL;
-    cursor = olc_init(db);
-    ol_splay_tree_node *current_node = _olc_get_node(cursor);
-
+    ol_cursor cursor;
     char **to_return = NULL;
     char *dest = NULL;
+
+    /* Build cursor */
+    olc_init(db, &cursor);
+    check(cursor.stack != NULL, "Could not init cursor.");
+
+    /* Get current node */
+    ol_splay_tree_node *current_node = _olc_get_node(&cursor);
+    /* Build up our matches stack */
     ol_stack *matches = malloc(sizeof(ol_stack));
     matches->data = NULL;
     matches->next = NULL;
@@ -288,9 +293,11 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
         }
 
 
-        olc_step(cursor);
-        current_node = _olc_get_node(cursor);
+        if (!olc_step(&cursor))
+            break;
+        current_node = _olc_get_node(&cursor);
     }
+    olc_close(&cursor);
     debug(LOG_INFO, "Found %i matches.", imatches);
 
     /* No pointer in doing anything else if we don't have any matches. */

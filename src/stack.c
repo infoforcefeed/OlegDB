@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include "errhandle.h"
 #include "stack.h"
-/* To avoid stack overflows, we have to recurse this tree iteratively to delete
+/* This comment doesn't make any sense here but I'm keeping it anyway:
+ * To avoid stack overflows, we have to recurse this tree iteratively to delete
  * it.
  * Oh, how I pine for better recursion.
  */
