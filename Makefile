@@ -20,7 +20,7 @@ ERLI_DIR=$(shell echo 'io:format("~s~n",[code:lib_dir(erl_interface)]),init:stop
 ERLINCLUDES=-I$(ERL_DIR)/usr/include/ -I$(ERLI_DIR)/include/
 ERLLIBS=-L$(ERL_DIR)/usr/lib/ -L$(ERLI_DIR)/lib/
 ERL_ODB_INSTALL_DIR=$(ERL_DIR)/lib/olegdb-$(VERSION)
-INCLUDES=-I./include $(ERLINCLUDES)
+INCLUDES=-I./include
 
 MATH_LINKER=
 ifeq ($(uname_S),Darwin)
@@ -57,7 +57,7 @@ $(LIB_DIR)liboleg.so: murmur3.o oleg.o dump.o logging.o aol.o rehash.o utils.o t
 
 server: $(BIN_DIR)ol_database.beam $(BIN_DIR)ol_http.beam \
 	$(BIN_DIR)ol_parse.beam $(BIN_DIR)ol_util.beam $(BIN_DIR)olegdb.beam $(LIB_DIR)liboleg.so port_driver.o
-	$(CC) $(CFLAGS) $(INCLUDES) $(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
+	$(CC) $(CFLAGS) $(INCLUDES) $(ERLINCLUDES) $(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
 
 uninstall:
 	rm -rf $(INSTALL_LIB)/liboleg*
