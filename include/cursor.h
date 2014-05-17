@@ -7,9 +7,8 @@
 
 /* The main cursor object. Remembers iteration and whatever. */
 typedef struct ol_cursor {
-    ol_stack *stack; /* Holds the state of the tree, ie. where this cursor needs to go. */
     ol_splay_tree_node *current_node;
-    jmp_buf black_magic;
+    ol_splay_tree_node *last_node;
 } ol_cursor;
 
 /* TODO: Lock/unlock the DB for insertion when these happen. */

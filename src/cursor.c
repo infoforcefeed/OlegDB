@@ -15,6 +15,7 @@ void olc_init(ol_database *db, ol_cursor *cursor) {
     /* Init the cursor */
     cursor->stack = NULL;
     cursor->current_node = NULL;
+    cursor->last_node = NULL;
 
     /* Push the stack-state down to the subtree minimum. Cursors, for now
     * traverse the tree in-order. */
@@ -70,35 +71,21 @@ ol_bucket *olc_get(ol_cursor *cursor) {
     return bucket;
 }
 
-/* Where upon I summon dark, contextual gods */
-static inline int _olc_step(ol_cursor *cursor) {
-    ol_stack *stack = cursor->stack;
+/* TODO: Make this go backwards or forwards */
+int olc_step(ol_cursor *cursor) {
+    ol_splay_tree_node *cur_node = cursor->current_node;
+    ol_splay_tree_node *last_node = cursor->last_node;
 
-    while (stack->next != NULL) {
-        if (setjmp(cursor->black_magic) == 1) {
-            /* Handle longjmp(1) */
-            ol_splay_tree_node *cur_node = (ol_splay_tree_node *)spop(&stack);
-
-            if (cur_node->left != NULL) {
-                spush(&stack, (void *)cur_node->left);
-            }
-            if (cur_node->right != NULL) {
-                spush(&stack, (void *)cur_node->right);
-            }
-
-            cursor->current_node = cur_node;
-        } else {
-            break;
-        }
-        return 1;
+    if (cur_node->left && last_node != cur_node->left) {
+        cursor->last_node = cur_node;
+        cursor->current_node = cur_node->left;
+    } else if (cur_node->parent != NULL && last_node != cur_node->right) {
+        cursor->last_node = cur_node;
+        cursor->current_node = cur_node->parent;
+    } else {
+        cursor->last_node = cur_node;
+        cursor->current_node = ols_subtree_minimum(cur_node);
     }
 
     return 0;
-}
-/* TODO: Make this go backwards or forwards */
-int olc_step(ol_cursor *cursor) {
-    int return_val = _olc_step(cursor);
-    longjmp(cursor->black_magic, 1);
-
-    return return_val;
 }
