@@ -7,15 +7,13 @@
 
 /* The main cursor object. Remembers iteration and whatever. */
 typedef struct ol_cursor {
+    ol_splay_tree_node *maximum;
     ol_splay_tree_node *current_node;
-    ol_splay_tree_node *last_node;
 } ol_cursor;
 
 /* TODO: Lock/unlock the DB for insertion when these happen. */
 /* Creates a cursor for use. */
 void olc_init(ol_database *db, ol_cursor *cursor_ref);
-/* Close and free a cursor. */
-void olc_close(ol_cursor *cursor_ref);
 
 /* Steps a cursor forward in the tree. */
 int olc_step(ol_cursor *cursor);
