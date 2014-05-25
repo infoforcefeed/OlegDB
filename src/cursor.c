@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "cursor.h"
 #include "errhandle.h"
+#include "tree.h"
 
 void olc_init(ol_database *db, ol_cursor *cursor) {
     ol_stack *stack = NULL;
