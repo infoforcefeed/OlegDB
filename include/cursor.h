@@ -1,5 +1,5 @@
 #pragma once
-/* Functions, anecdotes and scary stories about cursors. */
+/* Functions, anecdotes, and scary stories about cursors. */
 #include <setjmp.h>
 #include "oleg.h"
 #include "tree.h"
