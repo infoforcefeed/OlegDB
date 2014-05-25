@@ -171,7 +171,7 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
 
 /* xXx FUNCTION=ol_jar xXx
  * xXx DESCRIPTION=This is OlegDB's canonical 'set' function. Put a value into the mayo (the database). It's easy to piss in a bucket, it's not easy to piss in 19 jars. Uses default content type. xXx
- * xXx RETURNS=0 on sucess. xXx
+ * xXx RETURNS=0 on success. xXx
  * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx

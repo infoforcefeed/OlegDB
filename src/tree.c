@@ -85,14 +85,14 @@ static inline void _ols_replace(ol_splay_tree *tree,
         node_b->parent = node_a->parent;
 }
 
-inline ol_splay_tree_node *ols_subtree_minimum(ol_splay_tree_node *node) {
+ol_splay_tree_node *ols_subtree_minimum(ol_splay_tree_node *node) {
     while (node->left != NULL) {
         node = node->left;
     }
     return node;
 }
 
-inline ol_splay_tree_node *ols_subtree_maximum(ol_splay_tree_node *node) {
+ol_splay_tree_node *ols_subtree_maximum(ol_splay_tree_node *node) {
     while (node->right != NULL) {
         node = node->right;
     }
