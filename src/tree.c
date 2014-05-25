@@ -8,6 +8,7 @@
 #include "logging.h"
 #include "stack.h"
 #include "errhandle.h"
+#include "cursor.h"
 
 static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
     ol_splay_tree_node *right_child = node->right;
@@ -84,9 +85,16 @@ static inline void _ols_replace(ol_splay_tree *tree,
         node_b->parent = node_a->parent;
 }
 
-static inline ol_splay_tree_node *_ols_subtree_minimum(ol_splay_tree_node *node) {
+ol_splay_tree_node *ols_subtree_minimum(ol_splay_tree_node *node) {
     while (node->left != NULL) {
         node = node->left;
+    }
+    return node;
+}
+
+ol_splay_tree_node *ols_subtree_maximum(ol_splay_tree_node *node) {
+    while (node->right != NULL) {
+        node = node->right;
     }
     return node;
 }
@@ -160,7 +168,7 @@ int ols_delete(ol_splay_tree *tree, ol_splay_tree_node *node) {
     else if (!node->right)
         _ols_replace(tree, node, node->left);
     else {
-        ol_splay_tree_node *minimum_node = _ols_subtree_minimum(node->right);
+        ol_splay_tree_node *minimum_node = ols_subtree_minimum(node->right);
         if (minimum_node->parent != node) {
             _ols_replace(tree, minimum_node, minimum_node->right);
             minimum_node->right = node->right;
@@ -205,8 +213,8 @@ error:
 }
 
 static inline void _ols_free_node(ol_splay_tree_node *node) {
-    struct ol_stack *stack = NULL;
-    stack = malloc(sizeof(struct ol_stack));
+    ol_stack *stack = NULL;
+    stack = malloc(sizeof(ol_stack));
     check_mem(stack);
 
     stack->next = NULL;
@@ -242,45 +250,6 @@ void ols_close(ol_splay_tree *tree) {
     tree->root = NULL;
 }
 
-ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur) {
-    if (!tree || !tree->root)
-        return NULL;
-    if (!cur)
-        return NULL;
-
-    if (cur->left != NULL) {
-        debug("Left child: %s", cur->left->key);
-        return cur->left;
-    }
-    else if (cur->right != NULL) {
-        debug("Right child: %s", cur->right->key);
-        return cur->right;
-    } else {
-        /* No parents, no children, no siblings, no god: */
-        if (tree->root == cur)
-            return NULL;
-
-        /* Now it get's tricky. We need to walk up and to the right until we
-         * find a node. Assume we have a parent. */
-        ol_splay_tree_node *last_node = cur;
-        ol_splay_tree_node *next_node = cur->parent;
-        while (next_node != NULL) {
-            if (next_node == tree->root &&
-                last_node == tree->root->right)
-                return NULL;
-
-            if (next_node->right &&
-                next_node->right != last_node)
-                return next_node->right;
-
-            last_node = next_node;
-            next_node = next_node->parent;
-        }
-    }
-
-    return NULL;
-}
-
 /* Defined in oleg.h */
 int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_array *data) {
     if (!db->is_enabled(OL_F_SPLAYTREE, &db->feature_set))
@@ -288,12 +257,17 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
     if (!prefix)
         return -1;
 
-    ol_splay_tree *tree = db->tree;
-    ol_splay_tree_node *current_node = db->tree->root;
-
+    ol_cursor cursor;
     char **to_return = NULL;
     char *dest = NULL;
-    struct ol_stack *matches = malloc(sizeof(struct ol_stack));
+
+    /* Build cursor */
+    olc_init(db, &cursor);
+
+    /* Get current node */
+    ol_splay_tree_node *current_node = _olc_get_node(&cursor);
+    /* Build up our matches stack */
+    ol_stack *matches = malloc(sizeof(ol_stack));
     matches->data = NULL;
     matches->next = NULL;
 
@@ -317,7 +291,10 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
             saw_bigger_value = 1;
         }
 
-        current_node = ols_next_node(tree, current_node);
+
+        if (!olc_step(&cursor))
+            break;
+        current_node = _olc_get_node(&cursor);
     }
     debug(LOG_INFO, "Found %i matches.", imatches);
 

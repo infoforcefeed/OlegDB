@@ -26,6 +26,10 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
 /* Used for iterating through a tree. This returns the closest neighbor or NULL. */
 ol_splay_tree_node *ols_next_node(ol_splay_tree *tree, ol_splay_tree_node *cur);
 
+/* Gets the right-most node. */
+ol_splay_tree_node *ols_subtree_maximum(ol_splay_tree_node *node);
+ol_splay_tree_node *ols_subtree_minimum(ol_splay_tree_node *node);
+
 /* Finds and deletes a node via key */
 int ols_find_and_delete(ol_splay_tree *tree, const char *key, const size_t klen);
 /* Delete and splay the tree */
