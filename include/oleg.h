@@ -86,7 +86,6 @@ typedef struct ol_bucket {
 * xXx is_enabled=Helper function that checks weather or not a feature flag is enabled. xXx
 * xXx name=The name of the database. xXx
 * xXx path[PATH_LENGTH]=Path to the database's working directory. xXx
-* xXx dump_file=Path and filename of db dump. xXx
 * xXx aol_file=Path and filename of the append only log. xXx
 * xXx aolfd=Pointer of FILE type to append only log. xXx
 * xXx feature_set=Bitmask holding enabled/disabled status of various features. See ol_feature_flags. xXx
@@ -96,6 +95,7 @@ typedef struct ol_bucket {
 * xXx created=Timestamp of when the database was initialized. xXx
 * xXx cur_ht_size=The current amount, in bytes, of space allocated for storing <a href="#ol_bucket">ol_bucket</a> objects. xXx
 * xXx **hashes=The actual hashtable. Stores <a href="#ol_bucket">ol_bucket</a> instances. xXx
+* xXx hashesfd=File descriptor holding the open FD to the mmap'd bucket's file. xXx
 * xXx *tree=A pointer to the splay tree holding the ordered list of keys. xXx
 */
 typedef struct ol_database {
@@ -105,7 +105,6 @@ typedef struct ol_database {
     bool      (*is_enabled)(int, int*);
     char      name[DB_NAME_SIZE];
     char      path[PATH_LENGTH];
-    char      *dump_file;
     char      *aol_file;
     FILE      *aolfd;
     int       feature_set;
@@ -115,6 +114,7 @@ typedef struct ol_database {
     time_t    created;
     size_t    cur_ht_size;
     ol_bucket **hashes;
+    FILE      *hashesfd;
     ol_splay_tree *tree;
 } ol_database;
 

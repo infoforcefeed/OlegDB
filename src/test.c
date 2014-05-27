@@ -4,6 +4,7 @@
 #include "cursor.h"
 #include "errhandle.h"
 #include "logging.h"
+#include "oleg.h"
 #include "test.h"
 #include "tree.h"
 
@@ -455,60 +456,6 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
     return 0;
 }
 
-int test_dump_forking() {
-    ol_database *db = _test_db_open();
-
-    int ret;
-    unsigned int num_keys = RECORD_COUNT;
-    ret = _insert_keys(db, num_keys);
-    if (ret > 0) {
-        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
-        return 1;
-    }
-
-    ret = ol_background_save(db);
-
-    if (ret != 0) {
-        ol_log_msg(LOG_ERR, "Could not background save DB");
-        return 1;
-    }
-
-    /* Close the DB to try and load it */
-    ol_close(db);
-
-    db = _test_db_open();
-
-    char tmp_path[512];
-    db->get_db_file_name(db, "dump", tmp_path);
-
-    ol_log_msg(LOG_INFO, "Loading DB from disk");
-    ol_load_db(db, tmp_path);
-
-    if (db->rcrd_cnt != num_keys) {
-        ol_log_msg(LOG_ERR, "Not all records were loaded. %i\n", db->rcrd_cnt);
-        return 2;
-    }
-    ol_log_msg(LOG_INFO, "Loaded %i records from dump file.", db->rcrd_cnt);
-    ol_log_msg(LOG_INFO, "Checking for corruption.");
-    int i;
-    for (i = 0; i < (db->cur_ht_size/sizeof(ol_bucket*));i++) {
-        ol_bucket *temp = db->hashes[i];
-
-        if (temp != NULL) {
-            do {
-                if (temp->data_ptr == NULL || temp->data_size == 0) {
-                    ol_log_msg(LOG_ERR, "Records were corrupt or something. I: %i\n", i);
-                    exit(1);
-                }
-                temp = temp->next;
-            } while(temp != NULL);
-        }
-    }
-    /* Finally, close and exit */
-    ol_close(db);
-    return 0;
-}
-
 int test_ct() {
     ol_database *db = _test_db_open();
 
@@ -562,64 +509,6 @@ int test_ct() {
         return 3;
     }
     ol_log_msg(LOG_INFO, "Content type retrieved successfully.");
-
-    ol_close(db);
-    return 0;
-}
-
-int test_dump() {
-    ol_database *db = _test_db_open();
-
-    int ret;
-    unsigned int num_keys = RECORD_COUNT;
-    ret = _insert_keys(db, num_keys);
-    if (ret > 0) {
-        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
-        return 1;
-    }
-    if (db->rcrd_cnt != num_keys) {
-        ol_log_msg(LOG_ERR, "Not all records were inserted.\n", ret);
-        return 2;
-    }
-
-    ol_log_msg(LOG_INFO, "Dumping DB to disk.");
-    ret = ol_save_db(db);
-    if (ret != 0) {
-        ol_log_msg(LOG_ERR, "Could not save DB\n");
-        return 1;
-    }
-    ol_log_msg(LOG_INFO, "Dumped %i records", num_keys);
-
-    ol_close(db);
-
-    db = _test_db_open();
-
-    char tmp_path[512];
-    db->get_db_file_name(db, "dump", tmp_path);
-
-    ol_log_msg(LOG_INFO, "Loading DB from disk.");
-    ol_load_db(db, tmp_path);
-
-    if (db->rcrd_cnt != num_keys) {
-        ol_log_msg(LOG_ERR, "Not all records were loaded. %i\n", db->rcrd_cnt);
-        return 2;
-    }
-    ol_log_msg(LOG_INFO, "Loaded %i records from dump file.", db->rcrd_cnt);
-    ol_log_msg(LOG_INFO, "Checking for corruption.");
-    int i;
-    for (i = 0; i < (db->cur_ht_size/sizeof(ol_bucket*));i++) {
-        ol_bucket *temp = db->hashes[i];
-
-        if (temp != NULL) {
-            do {
-                if (temp->data_ptr == NULL || temp->data_size == 0) {
-                    ol_log_msg(LOG_ERR, "Records were corrupt or something. I: %i\n", i);
-                    exit(1);
-                }
-                temp = temp->next;
-            } while(temp != NULL);
-        }
-    }
 
     ol_close(db);
     return 0;
@@ -907,8 +796,6 @@ void run_tests(int results[2]) {
     ol_run_test(test_scoop);
     ol_run_test(test_update);
     ol_run_test(test_ct);
-    ol_run_test(test_dump);
-    ol_run_test(test_dump_forking);
     ol_run_test(test_feature_flags);
     ol_run_test(test_can_find_all_nodes);
     //ol_run_test(test_uptime);

@@ -9,21 +9,11 @@
 #include "oleg.h"
 #include "aol.h"
 #include "logging.h"
-#include "dump.h"
 #include "murmur3.h"
 #include "errhandle.h"
 #include "rehash.h"
 #include "utils.h"
 #include "lz4.h"
-
-/* Fix for the GNU extension strnlen not being available on some platforms */
-#if defined(__MINGW32_VERSION) || (defined(__APPLE__) && \
-    __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1070)
-size_t strnlen(char *text, size_t maxlen) {
-    const char *last = memchr(text, '\0', maxlen);
-    return last ? (size_t) (last - text) : maxlen;
-}
-#endif
 
 
 inline int ol_ht_bucket_max(size_t ht_size) {
@@ -68,7 +58,6 @@ ol_database *ol_open(char *path, char *name, int features){
     new_db->aolfd = 0;
 
     /* Null every pointer before initialization in case something goes wrong */
-    new_db->dump_file = NULL;
     new_db->aol_file = NULL;
 
     /* Function pointers for feature flags */
@@ -89,9 +78,7 @@ ol_database *ol_open(char *path, char *name, int features){
     if (stat(path, &st) == -1) /* Check to see if the DB exists */
         mkdir(path, 0755);
 
-    new_db->dump_file = calloc(1, 512);
-    check_mem(new_db->dump_file);
-    new_db->get_db_file_name(new_db, "dump", new_db->dump_file);
+    //new_db->get_db_file_name(new_db, "dump", new_db->dump_file);
 
     new_db->aol_file = calloc(1, 512);
     check_mem(new_db->aol_file);
@@ -116,8 +103,6 @@ ol_database *ol_open(char *path, char *name, int features){
 error:
     /* Make sure we free the database first */
     if (new_db != NULL) {
-        if (new_db->dump_file != NULL)
-            free(new_db->dump_file);
         if (new_db->aol_file != NULL)
             free(new_db->aol_file);
         free(new_db);
@@ -159,7 +144,6 @@ int _ol_close(ol_database *db){
     }
 
     free(db->hashes);
-    free(db->dump_file);
     free(db->aol_file);
     db->feature_set = 0;
     free(db);
@@ -173,7 +157,6 @@ int _ol_close(ol_database *db){
 
 int ol_close_save(ol_database *db) {
     debug("Saving and closing \"%s\" database.", db->name);
-    check(ol_save_db(db) == 0, "Could not save DB.");
     check(_ol_close(db) == 0, "Could not close DB.");
 
     return 0;
