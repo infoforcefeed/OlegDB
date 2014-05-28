@@ -34,8 +34,7 @@ int olc_step(ol_cursor *cursor) {
     }
 
     ol_splay_tree_node *parent = node->parent;
-    while(parent != NULL && node == parent->right)
-    {
+    while(parent != NULL && node == parent->right) {
         node = parent;
         parent = parent->parent;
     }
