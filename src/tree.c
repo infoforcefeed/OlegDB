@@ -262,7 +262,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
     char *dest = NULL;
 
     /* Build cursor */
-    olc_init(db, &cursor);
+    check(olc_init(db, &cursor), "Could not init cursor.");
 
     /* Get current node */
     ol_splay_tree_node *current_node = _olc_get_node(&cursor);
