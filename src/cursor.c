@@ -4,29 +4,11 @@
 #include "tree.h"
 
 void olc_init(ol_database *db, ol_cursor *cursor) {
-    ol_stack *stack = NULL;
-
-    /* Initialize the stack */
-    stack = malloc(sizeof(ol_stack));
-    check_mem(stack);
-
-    stack->next = NULL;
-    stack->data = NULL;
-
     /* Init the cursor */
     cursor->current_node = NULL;
     cursor->maximum = ols_subtree_maximum(db->tree->root);
     cursor->current_node = ols_subtree_minimum(db->tree->root);
 
-    return;
-
-error:
-    if (stack != NULL) {
-        while (stack->next != NULL) {
-            spop(&stack);
-        }
-        free(stack);
-    }
     return;
 }
 
