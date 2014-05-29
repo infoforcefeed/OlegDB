@@ -33,7 +33,7 @@ void _ol_disable(int feature, int *feature_set) {
 }
 
 bool _ol_is_enabled(int feature, int *feature_set) {
-    return (*feature_set & feature);
+    return (*feature_set & feature) == feature;
 }
 
 ol_database *ol_open(char *path, char *name, int features){

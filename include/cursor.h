@@ -12,8 +12,8 @@ typedef struct ol_cursor {
 } ol_cursor;
 
 /* TODO: Lock/unlock the DB for insertion when these happen. */
-/* Creates a cursor for use. */
-void olc_init(ol_database *db, ol_cursor *cursor_ref);
+/* Creates a cursor for use. Returns 0 on failure, 1 on success.*/
+int olc_init(ol_database *db, ol_cursor *cursor_ref);
 
 /* Steps a cursor forward in the tree. */
 int olc_step(ol_cursor *cursor);

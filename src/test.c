@@ -687,7 +687,7 @@ int test_can_get_next_in_tree() {
     int found = 0;
 
     ol_cursor cursor;
-    olc_init(db, &cursor);
+    check(olc_init(db, &cursor), "Could not init cursor.");
     if (cursor.current_node != NULL)
         found++;
     while(olc_step(&cursor)) {
