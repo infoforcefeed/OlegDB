@@ -90,6 +90,7 @@ ol_database *ol_open(char *path, char *name, int features){
          check(ftruncate(hashes_fd, (off_t)to_alloc) != -1, "Could not allocate file for hashes.");
     }
     check(hashes_fd > 0, "Could not open file.");
+    /* TODO: Investigate usage of madvise here. */
     new_db->hashes = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED,
                           hashes_fd, 0);
     check(new_db->hashes != MAP_FAILED, "Could not mmap hashes file.");

@@ -18,7 +18,6 @@ extern "C" {
 #include <time.h>
 #include "defs.h"
 #include "tree.h"
-#define DEBUG
 
 /* xXx ENUM=ol_feature_flags xXx
 * xXx DESCRIPTION=Feature flags tell the database what it should be doing. xXx
