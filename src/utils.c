@@ -47,8 +47,9 @@ int _ol_get_stat(const char *filepath, struct stat *sb) {
 }
 
 int _ol_get_file_size(const char *filepath) {
-    struct stat sb;
-    _ol_get_stat(filepath, &sb);
-
-    return (int)sb.st_size;
+    struct stat sb = {0};
+    int ret = _ol_get_stat(filepath, &sb);
+    if (ret) /* Maybe the file doesn't exist. */
+        return sb.st_size;
+    return -1;
 }
