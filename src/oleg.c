@@ -89,6 +89,9 @@ ol_database *ol_open(char *path, char *name, int features){
 
     debug("Opening %s for hashes", hashes_filename);
     hashes_fd = open(hashes_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
+    if (_ol_get_file_size(hashes_filename) <= HASH_MALLOC) {
+        check(ftruncate(hashes_fd, HASH_MALLOC) != -1, "Could not truncate file.");
+    }
     check(hashes_fd > 0, "Could not open file.");
     new_db->hashes = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_PRIVATE,
                           hashes_fd, 0);
