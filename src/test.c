@@ -77,7 +77,7 @@ int test_jar() {
         }
     }
     ol_log_msg(LOG_INFO, "Records inserted: %i.", db->rcrd_cnt);
-    ol_log_msg(LOG_INFO, "Saw %d collisions.", db->key_collisions);
+    ol_log_msg(LOG_INFO, "Saw %d collisions.", db->meta->key_collisions);
 
     if (ol_close(db) != 0) {
         ol_log_msg(LOG_ERR, "Couldn't free all memory.\n");
@@ -132,7 +132,7 @@ int test_can_find_all_nodes() {
 
     }
     ol_log_msg(LOG_INFO, "Records inserted: %i.", db->rcrd_cnt);
-    ol_log_msg(LOG_INFO, "Saw %d collisions.", db->key_collisions);
+    ol_log_msg(LOG_INFO, "Saw %d collisions.", db->meta->key_collisions);
     ol_log_msg(LOG_INFO, "Now searching for all keys.");
 
     /* This slows things down a lot but will do a thourough search. */
@@ -196,7 +196,7 @@ int test_lots_of_deletes() {
         }
     }
     ol_log_msg(LOG_INFO, "Records inserted: %i.", db->rcrd_cnt);
-    ol_log_msg(LOG_INFO, "Saw %d collisions.", db->key_collisions);
+    ol_log_msg(LOG_INFO, "Saw %d collisions.", db->meta->key_collisions);
 
     for (i = 0; i < max_records; i++) { /* 8======D */
         char key[KEY_SIZE] = "A";

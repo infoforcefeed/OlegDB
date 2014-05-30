@@ -38,23 +38,18 @@ bool _ol_is_enabled(int feature, int *feature_set) {
 
 ol_database *ol_open(char *path, char *name, int features){
     debug("Opening \"%s\" database", name);
-    ol_database *new_db = malloc(sizeof(struct ol_database));
+    ol_database *new_db = malloc(sizeof(ol_database));
 
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = calloc(1, to_alloc);
     new_db->cur_ht_size = to_alloc;
 
-    /* NULL everything */
-    int i;
-    for (i = 0; i < ol_ht_bucket_max(to_alloc); i++){
-        new_db->hashes[i] = NULL;
-    }
-
     time_t created;
     time(&created);
-    new_db->created = created;
+    new_db->meta = malloc(sizeof(ol_meta));
+    new_db->meta->created = created;
+    new_db->meta->key_collisions = 0;
     new_db->rcrd_cnt = 0;
-    new_db->key_collisions = 0;
     new_db->aolfd = 0;
 
     /* Null every pointer before initialization in case something goes wrong */
@@ -145,6 +140,7 @@ int _ol_close(ol_database *db){
 
     free(db->hashes);
     free(db->aol_file);
+    free(db->meta);
     db->feature_set = 0;
     free(db);
     if (freed != rcrd_cnt) {
@@ -210,7 +206,7 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
     /* TODO: error codes? */
     int index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
     if (db->hashes[index] != NULL) {
-        db->key_collisions++;
+        db->meta->key_collisions++;
         ol_bucket *tmp_bucket = db->hashes[index];
         tmp_bucket = _ol_get_last_bucket_in_slot(tmp_bucket);
         tmp_bucket->next = bucket;
@@ -632,6 +628,6 @@ int ol_uptime(ol_database *db) {
     time_t now;
     double diff;
     time(&now);
-    diff = difftime(now, db->created);
+    diff = difftime(now, db->meta->created);
     return diff;
 }

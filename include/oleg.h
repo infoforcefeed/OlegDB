@@ -78,6 +78,16 @@ typedef struct ol_bucket {
     ol_splay_tree_node  *node;
 } ol_bucket;
 
+/* xXx STRUCT=ol_meta xXx
+* xXx DESCRIPTION=Structure used to record meta-information about the database. xXx
+* xXx created=When the database was created. xXx
+* xXx key_collisions=The number of keys that have collided over the lifetime of this database. xXx
+*/
+typedef struct ol_meta {
+    time_t      created;
+    int         key_collisions;
+} ol_meta;
+
 /* xXx STRUCT=ol_database xXx
 * xXx DESCRIPTION=The object representing a database. This is used in almost every ol_* function to store state and your data. xXx
 * xXx get_db_file_name=A function pointer that returns the path to the location of the db file to reduce code duplication. Used for writing and reading of dump files. xXx
@@ -95,8 +105,8 @@ typedef struct ol_bucket {
 * xXx created=Timestamp of when the database was initialized. xXx
 * xXx cur_ht_size=The current amount, in bytes, of space allocated for storing <a href="#ol_bucket">ol_bucket</a> objects. xXx
 * xXx **hashes=The actual hashtable. Stores <a href="#ol_bucket">ol_bucket</a> instances. xXx
-* xXx hashesfd=File descriptor holding the open FD to the mmap'd bucket's file. xXx
 * xXx *tree=A pointer to the splay tree holding the ordered list of keys. xXx
+* xXx *meta=A pointer to a struct holding extra meta information. See <a href="#ol_meta">oleg_meta</a> for more information. xXx
 */
 typedef struct ol_database {
     void      (*get_db_file_name)(struct ol_database *db,const char *p,char*);
@@ -110,20 +120,11 @@ typedef struct ol_database {
     int       feature_set;
     short int state;
     int       rcrd_cnt;
-    int       key_collisions;
-    time_t    created;
     size_t    cur_ht_size;
     ol_bucket **hashes;
-    FILE      *hashesfd;
     ol_splay_tree *tree;
+    ol_meta   *meta;
 } ol_database;
-
-/* xXx STRUCT=ol_meta xXx
-* xXx DESCRIPTION=Structure used to record meta-information about the database. xXx
-*/
-typedef struct ol_meta {
-    time_t uptime;
-} ol_meta;
 
 /* xXx FUNCTION=ol_open xXx
  * xXx DESCRIPTION=Opens a database for use. xXx
