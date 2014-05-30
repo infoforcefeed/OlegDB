@@ -1,5 +1,6 @@
 /* Functions needed to rehash the main hash table. */
 #include <stdlib.h>
+#include <sys/mman.h>
 #include "oleg.h"
 #include "rehash.h"
 #include "utils.h"
@@ -70,7 +71,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     ol_log_msg(LOG_INFO, "We now have %i orphans not accounted for.", orphans_found);
 
     free(orphans);
-    free(db->hashes);
+    munmap(db->hashes, db->cur_ht_size);
     db->hashes = tmp_hashes;
     db->cur_ht_size = to_alloc;
     debug("Current hash table size is now: %zu bytes.", to_alloc);

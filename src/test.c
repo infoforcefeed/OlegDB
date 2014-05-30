@@ -1,5 +1,6 @@
 /* Unit tests. */
 #include <stdlib.h>
+#include <unistd.h>
 #include "aol.h"
 #include "cursor.h"
 #include "errhandle.h"
@@ -22,7 +23,14 @@ ol_database *_test_db_open() {
 }
 
 static int _test_db_close(ol_database *db) {
+    char hashes_filename[DB_NAME_SIZE] = { 0 };
+    db->get_db_file_name(db, HASHES_FILENAME, hashes_filename);
+
     int ret = ol_close(db);
+
+    ol_log_msg(LOG_INFO, "Unlinking %s", hashes_filename);
+    unlink(hashes_filename);
+
     return ret;
 }
 
