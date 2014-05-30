@@ -85,7 +85,7 @@ ol_database *ol_open(char *path, char *name, int features){
     /* Figure out the filename */
     new_db->get_db_file_name(new_db, HASHES_FILENAME, hashes_filename);
     int filesize = _ol_get_file_size(hashes_filename);
-    int to_mmap = filesize <= 0 ? to_alloc : (size_t)filesize;
+    int to_mmap = filesize <= 0 ? to_alloc : filesize;
 
     debug("Opening %s for hashes", hashes_filename);
     hashes_fd = open(hashes_filename, O_RDWR | O_CREAT, O_SYNC);
