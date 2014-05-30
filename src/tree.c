@@ -297,7 +297,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
             break;
         current_node = _olc_get_node(&cursor);
     }
-    debug(LOG_INFO, "Found %i matches.", imatches);
+    debug("Found %i matches.", imatches);
 
     /* No pointer in doing anything else if we don't have any matches. */
     check(imatches > 0, "No matched keys.");
