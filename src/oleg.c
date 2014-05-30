@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 #include "oleg.h"
@@ -80,12 +81,16 @@ ol_database *ol_open(char *path, char *name, int features){
     /* Figure out the filename */
     new_db->get_db_file_name(new_db, HASHES_FILENAME, hashes_filename);
     int filesize = _ol_get_file_size(hashes_filename);
-    int to_mmap = filesize == -1 ? to_alloc : (size_t)filesize;
+    int to_mmap = filesize <= 0 ? to_alloc : (size_t)filesize;
 
     debug("Opening %s for hashes", hashes_filename);
-    hashes_fd = open(hashes_filename, O_RDWR | O_CREAT, O_SYNC);
+    hashes_fd = open(hashes_filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    /* Make the file the right size if we just created it */
+    if (filesize == 0) {
+         check(ftruncate(hashes_fd, (off_t)to_alloc) != -1, "Could not allocate file for hashes.");
+    }
     check(hashes_fd > 0, "Could not open file.");
-    new_db->hashes = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_PRIVATE,
+    new_db->hashes = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED,
                           hashes_fd, 0);
     check(new_db->hashes != MAP_FAILED, "Could not mmap hashes file.");
     close(hashes_fd);
