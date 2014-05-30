@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 #include "oleg.h"
@@ -74,8 +75,6 @@ ol_database *ol_open(char *path, char *name, int features){
     strncpy(new_db->path, path, PATH_LENGTH);
 
     /* mmap() the hashes/values into memory. */
-    size_t to_alloc = HASH_MALLOC;
-    new_db->cur_ht_size = to_alloc;
     new_db->hashes = NULL;
     new_db->values = NULL;
 
@@ -85,15 +84,22 @@ ol_database *ol_open(char *path, char *name, int features){
     /* Figure out the filename */
     new_db->get_db_file_name(new_db, HASHES_FILENAME, hashes_filename);
     int filesize = _ol_get_file_size(hashes_filename);
-    int to_mmap = filesize <= 0 ? to_alloc : filesize;
+    int to_mmap = filesize <= 0 ? HASH_MALLOC : (size_t)filesize;
+    new_db->cur_ht_size = to_mmap;
 
     debug("Opening %s for hashes", hashes_filename);
     hashes_fd = open(hashes_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
-    if (_ol_get_file_size(hashes_filename) <= HASH_MALLOC) {
-        check(ftruncate(hashes_fd, HASH_MALLOC) != -1, "Could not truncate file.");
+
+    if (_ol_get_file_size(hashes_filename) == 0) {
+         check(ftruncate(hashes_fd, HASH_MALLOC) != -1, "Could not allocate file for hashes.");
+         int i;
+         /* Null out the stragglers */
+         for (i = 0; i < ol_ht_bucket_max(new_db->cur_ht_size); i++)
+             new_db->hashes[i] = NULL;
     }
     check(hashes_fd > 0, "Could not open file.");
-    new_db->hashes = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_PRIVATE,
+    /* TODO: Investigate usage of madvise here. */
+    new_db->hashes = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED,
                           hashes_fd, 0);
     check(new_db->hashes != MAP_FAILED, "Could not mmap hashes file.");
     close(hashes_fd);
