@@ -10,3 +10,6 @@ void _ol_free_bucket(ol_bucket **ptr);
 
 /* Internal function used to find a buckets position in the DB */
 int _ol_calc_idx(const size_t ht_size, const uint32_t hash);
+
+/* Gets the size of a file. Duh. */
+int _ol_get_file_size(const char *filepath);

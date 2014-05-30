@@ -31,3 +31,6 @@
 */
 #define DEVILS_SEED 666
 
+/* xXx DEFINE=HASHES_FILENAME xXx
+ */
+#define HASHES_FILENAME "ht"

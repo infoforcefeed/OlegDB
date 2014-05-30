@@ -1,11 +1,14 @@
 /* Main oleg source code. See corresponding header file for more info. */
 #include <assert.h>
+#include <fcntl.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
 #include "oleg.h"
 #include "aol.h"
 #include "logging.h"
@@ -40,20 +43,16 @@ ol_database *ol_open(char *path, char *name, int features){
     debug("Opening \"%s\" database", name);
     ol_database *new_db = malloc(sizeof(ol_database));
 
-    size_t to_alloc = HASH_MALLOC;
-    new_db->hashes = calloc(1, to_alloc);
-    new_db->cur_ht_size = to_alloc;
-
     time_t created;
     time(&created);
     new_db->meta = malloc(sizeof(ol_meta));
     new_db->meta->created = created;
     new_db->meta->key_collisions = 0;
     new_db->rcrd_cnt = 0;
-    new_db->aolfd = 0;
 
     /* Null every pointer before initialization in case something goes wrong */
     new_db->aol_file = NULL;
+    new_db->aolfd = 0;
 
     /* Function pointers for feature flags */
     new_db->enable = &_ol_enable;
@@ -63,21 +62,39 @@ ol_database *ol_open(char *path, char *name, int features){
     /* Function pointer building file paths based on db name */
     new_db->get_db_file_name = &_ol_get_file_name;
 
+    /* Zero out the db name and path strings */
     memset(new_db->name, '\0', DB_NAME_SIZE);
     strncpy(new_db->name, name, DB_NAME_SIZE);
     memset(new_db->path, '\0', PATH_LENGTH);
     strncpy(new_db->path, path, PATH_LENGTH);
+
+    /* mmap() the hashes/values into memory. */
+    size_t to_alloc = HASH_MALLOC;
+    new_db->cur_ht_size = to_alloc;
+    new_db->hashes = NULL;
+    new_db->values = NULL;
+
+    int hashes_fd = { 0 };
+    char hashes_filename[DB_NAME_SIZE] = { 0 };
+
+    /* Figure out the filename */
+    new_db->get_db_file_name(new_db, HASHES_FILENAME, hashes_filename);
+    int filesize = _ol_get_file_size(hashes_filename);
+    int to_mmap = filesize == -1 ? to_alloc : (size_t)filesize;
+
+    debug("Opening %s for hashes", hashes_filename);
+    hashes_fd = open(hashes_filename, O_RDWR | O_CREAT, O_SYNC);
+    check(hashes_fd > 0, "Could not open file.");
+    new_db->hashes = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_PRIVATE,
+                          hashes_fd, 0);
+    check(new_db->hashes != MAP_FAILED, "Could not mmap hashes file.");
+    close(hashes_fd);
 
     /* Make sure that the directory the database is in exists */
     struct stat st = {0};
     if (stat(path, &st) == -1) /* Check to see if the DB exists */
         mkdir(path, 0755);
 
-    //new_db->get_db_file_name(new_db, "dump", new_db->dump_file);
-
-    new_db->aol_file = calloc(1, 512);
-    check_mem(new_db->aol_file);
-    new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
     new_db->feature_set = features;
     new_db->state = OL_S_STARTUP;
     /* Allocate a splay tree if we're into that */
@@ -86,8 +103,14 @@ ol_database *ol_open(char *path, char *name, int features){
         new_db->tree->root = NULL;
         new_db->tree->rcrd_cnt = 0;
     }
+
     /* Lets use an append-only log file */
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
+        new_db->aol_file = calloc(1, 512);
+        check_mem(new_db->aol_file);
+
+        new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
+
         ol_aol_init(new_db);
         check(ol_aol_restore(new_db) == 0, "Error restoring from AOL file");
     }
@@ -138,7 +161,9 @@ int _ol_close(ol_database *db){
         debug("Files flushed to disk");
     }
 
-    free(db->hashes);
+    munmap(db->hashes, db->cur_ht_size);
+    /* TODO: Track and record the values size. */
+    // munmap(db->values);
     free(db->aol_file);
     free(db->meta);
     db->feature_set = 0;

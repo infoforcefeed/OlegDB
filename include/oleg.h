@@ -18,6 +18,7 @@ extern "C" {
 #include <time.h>
 #include "defs.h"
 #include "tree.h"
+#define DEBUG
 
 /* xXx ENUM=ol_feature_flags xXx
 * xXx DESCRIPTION=Feature flags tell the database what it should be doing. xXx
@@ -104,7 +105,8 @@ typedef struct ol_meta {
 * xXx key_collisions=Number of key collisions this database has had since initialization. xXx
 * xXx created=Timestamp of when the database was initialized. xXx
 * xXx cur_ht_size=The current amount, in bytes, of space allocated for storing <a href="#ol_bucket">ol_bucket</a> objects. xXx
-* xXx **hashes=The actual hashtable. Stores <a href="#ol_bucket">ol_bucket</a> instances. xXx
+* xXx **hashes=The actual hashtable. Stores <a href="#ol_bucket">ol_bucket</a> instances. mmap()'d to disk. xXx
+* xXx **values=This is where values for hashes are stored. This is a pointer to an mmap()'d region of memory. xXx
 * xXx *tree=A pointer to the splay tree holding the ordered list of keys. xXx
 * xXx *meta=A pointer to a struct holding extra meta information. See <a href="#ol_meta">oleg_meta</a> for more information. xXx
 */
@@ -122,6 +124,7 @@ typedef struct ol_database {
     int       rcrd_cnt;
     size_t    cur_ht_size;
     ol_bucket **hashes;
+    unsigned char **values;
     ol_splay_tree *tree;
     ol_meta   *meta;
 } ol_database;
