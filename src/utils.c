@@ -34,16 +34,21 @@ int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
     return index;
 }
 
-int _ol_get_file_size(const char *filepath) {
+int _ol_get_stat(const char *filepath, struct stat *sb) {
     int fd;
     fd = open(filepath, O_RDONLY);
     if (fd == -1)
-        return -1;
+        return 0;
 
-    struct stat sb;
-    if (fstat(fd, &sb) == -1)
-        return -1;
+    if (fstat(fd, sb) == -1)
+        return 0;
     close(fd);
+    return 1;
+}
+
+int _ol_get_file_size(const char *filepath) {
+    struct stat sb;
+    _ol_get_stat(filepath, &sb);
 
     return (int)sb.st_size;
 }

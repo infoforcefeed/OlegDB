@@ -43,6 +43,11 @@ ol_database *ol_open(char *path, char *name, int features){
     debug("Opening \"%s\" database", name);
     ol_database *new_db = malloc(sizeof(ol_database));
 
+    /* Make sure that the directory the database is in exists */
+    struct stat st = {0};
+    if (!_ol_get_stat(path, &st) || !S_ISDIR(st.st_mode)) /* Check to see if the DB exists */
+        mkdir(path, 0755);
+
     time_t created;
     time(&created);
     new_db->meta = malloc(sizeof(ol_meta));
@@ -89,11 +94,6 @@ ol_database *ol_open(char *path, char *name, int features){
                           hashes_fd, 0);
     check(new_db->hashes != MAP_FAILED, "Could not mmap hashes file.");
     close(hashes_fd);
-
-    /* Make sure that the directory the database is in exists */
-    struct stat st = {0};
-    if (stat(path, &st) == -1) /* Check to see if the DB exists */
-        mkdir(path, 0755);
 
     new_db->feature_set = features;
     new_db->state = OL_S_STARTUP;

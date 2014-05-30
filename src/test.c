@@ -21,9 +21,14 @@ ol_database *_test_db_open() {
     return db;
 }
 
+static int _test_db_close(ol_database *db) {
+    int ret = ol_close(db);
+    return ret;
+}
+
 int test_open_close() {
     ol_database *db = _test_db_open();
-    int ret = ol_close(db);
+    int ret = _test_db_close(db);
     if (ret > 0){
         ol_log_msg(LOG_INFO, "Couldn't free all memory.");
     } else {
@@ -40,11 +45,11 @@ int test_bucket_max() {
     int generated_bucket_max = ol_ht_bucket_max(db->cur_ht_size);
     if (expected_bucket_max != generated_bucket_max) {
         ol_log_msg(LOG_INFO, "Unexpected bucket max. Got: %d", generated_bucket_max);
-        ol_close(db);
+        _test_db_close(db);
         return 1;
     }
     ol_log_msg(LOG_INFO, "Generated max is: %i", expected_bucket_max);
-    ol_close(db);
+    _test_db_close(db);
     return 0;
 }
 
@@ -66,20 +71,20 @@ int test_jar() {
 
         if (insert_result > 0) {
             ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
-            ol_close(db);
+            _test_db_close(db);
             return 2;
         }
 
         if (db->rcrd_cnt != i+1) {
             ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
-            ol_close(db);
+            _test_db_close(db);
             return 3;
         }
     }
     ol_log_msg(LOG_INFO, "Records inserted: %i.", db->rcrd_cnt);
     ol_log_msg(LOG_INFO, "Saw %d collisions.", db->meta->key_collisions);
 
-    if (ol_close(db) != 0) {
+    if (_test_db_close(db) != 0) {
         ol_log_msg(LOG_ERR, "Couldn't free all memory.\n");
         return 1;
     }
@@ -105,13 +110,13 @@ int test_can_find_all_nodes() {
 
         if (insert_result > 0) {
             ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
-            ol_close(db);
+            _test_db_close(db);
             return 2;
         }
 
         if (db->rcrd_cnt != i+1) {
             ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
-            ol_close(db);
+            _test_db_close(db);
             return 3;
         }
 
@@ -119,14 +124,14 @@ int test_can_find_all_nodes() {
         ol_splay_tree_node *found = ols_find(db->tree, key, klen);
         if (found == NULL) {
             ol_log_msg(LOG_ERR, "Could not find key we just inserted!");
-            ol_close(db);
+            _test_db_close(db);
             return 4;
         }
 
         if (found->klen != klen ||
             strncmp(found->key, key, klen) != 0) {
             ol_log_msg(LOG_ERR, "The bucket we got back isn't actuall what we asked for.");
-            ol_close(db);
+            _test_db_close(db);
             return 5;
         }
 
@@ -148,20 +153,20 @@ int test_can_find_all_nodes() {
         ol_splay_tree_node *found = ols_find(db->tree, key, length);
         if (found == NULL) {
             ol_log_msg(LOG_ERR, "Could not find key: %s", key);
-            ol_close(db);
+            _test_db_close(db);
             return 6;
         }
 
         if (found->klen != strlen(key) ||
             strncmp(found->key, key, strlen(key)) != 0) {
             ol_log_msg(LOG_ERR, "The bucket we got back isn't actuall what we asked for.");
-            ol_close(db);
+            _test_db_close(db);
             return 7;
         }
     }
     */
 
-    if (ol_close(db) != 0) {
+    if (_test_db_close(db) != 0) {
         ol_log_msg(LOG_ERR, "Couldn't free all memory.\n");
         return 1;
     }
@@ -185,13 +190,13 @@ int test_lots_of_deletes() {
 
         if (insert_result > 0) {
             ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
-            ol_close(db);
+            _test_db_close(db);
             return 2;
         }
 
         if (db->rcrd_cnt != i+1) {
             ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
-            ol_close(db);
+            _test_db_close(db);
             return 3;
         }
     }
@@ -209,19 +214,19 @@ int test_lots_of_deletes() {
 
         if (delete_result > 0) {
             ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", delete_result);
-            ol_close(db);
+            _test_db_close(db);
             return 2;
         }
 
         if (db->rcrd_cnt != max_records - i - 1) {
             ol_log_msg(LOG_INFO, "Record count: %i max_records - i: %i", db->rcrd_cnt, max_records - i);
             ol_log_msg(LOG_ERR, "Record count is not lower. Error code: %i", delete_result);
-            ol_close(db);
+            _test_db_close(db);
             return 3;
         }
     }
 
-    if (ol_close(db) != 0) {
+    if (_test_db_close(db) != 0) {
         ol_log_msg(LOG_ERR, "Couldn't free all memory.\n");
         return 1;
     }
@@ -238,7 +243,7 @@ int test_unjar_ds() {
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        ol_close(db);
+        _test_db_close(db);
         return 1;
     }
 
@@ -249,25 +254,25 @@ int test_unjar_ds() {
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         free(item);
-        ol_close(db);
+        _test_db_close(db);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
         free(item);
-        ol_close(db);
+        _test_db_close(db);
         return 3;
     }
 
     if (to_test != val_len) {
         ol_log_msg(LOG_ERR, "Sizes were not the same. %p (to_test) vs. %p (val_len)\n", to_test, val_len);
         free(item);
-        ol_close(db);
+        _test_db_close(db);
         return 4;
     }
 
-    ol_close(db);
+    _test_db_close(db);
     free(item);
     return 0;
 }
@@ -284,7 +289,7 @@ int test_unjar() {
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        ol_close(db);
+        _test_db_close(db);
         return 1;
     }
 
@@ -294,18 +299,18 @@ int test_unjar() {
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         free(item);
-        ol_close(db);
+        _test_db_close(db);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
         free(item);
-        ol_close(db);
+        _test_db_close(db);
         return 3;
     }
 
-    ol_close(db);
+    _test_db_close(db);
     free(item);
     return 0;
 }
@@ -327,7 +332,7 @@ int test_scoop() {
         ol_log_msg(LOG_INFO, "Deleted record.");
     } else {
         ol_log_msg(LOG_ERR, "Could not delete record.\n");
-        ol_close(db);
+        _test_db_close(db);
         return 1;
     }
 
@@ -337,7 +342,7 @@ int test_scoop() {
     }
 
     ol_log_msg(LOG_INFO, "Record count is: %i", db->rcrd_cnt);
-    ol_close(db);
+    _test_db_close(db);
     return 0;
 }
 
@@ -350,11 +355,11 @@ int test_uptime() {
 
     if (uptime < 3) {
         ol_log_msg(LOG_ERR, "Uptime incorrect.\n");
-        ol_close(db);
+        _test_db_close(db);
         return 1;
     }
 
-    ol_close(db);
+    _test_db_close(db);
     return 0;
 }
 
@@ -367,7 +372,7 @@ int test_update() {
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        ol_close(db);
+        _test_db_close(db);
         return 1;
     }
 
@@ -375,14 +380,14 @@ int test_update() {
     ol_unjar(db, key, strlen(key), &item);
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
-        ol_close(db);
+        _test_db_close(db);
         free(item);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
-        ol_close(db);
+        _test_db_close(db);
         free(item);
         return 3;
     }
@@ -392,13 +397,13 @@ int test_update() {
     inserted = ol_jar(db, key, strlen(key), new_val, strlen((char*)new_val));
     if (inserted != 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        ol_close(db);
+        _test_db_close(db);
         return 1;
     }
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        ol_close(db);
+        _test_db_close(db);
         return 1;
     }
 
@@ -406,20 +411,20 @@ int test_update() {
     ol_unjar(db, key, strlen(key), &item);
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
-        ol_close(db);
+        _test_db_close(db);
         free(item);
         return 2;
     }
 
     if (memcmp(item, new_val, strlen((char*)new_val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the new value.\nVal: %s\n", item);
-        ol_close(db);
+        _test_db_close(db);
         free(item);
         return 3;
     }
     ol_log_msg(LOG_INFO, "New value returned successfully.");
 
-    ol_close(db);
+    _test_db_close(db);
     free(item);
     return 0;
 }
@@ -443,13 +448,13 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
 
         if (insert_result > 0) {
             ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
-            ol_close(db);
+            _test_db_close(db);
             return 2;
         }
 
         if (db->rcrd_cnt != i+1) {
             ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
-            ol_close(db);
+            _test_db_close(db);
             return 3;
         }
     }
@@ -469,7 +474,7 @@ int test_ct() {
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        ol_close(db);
+        _test_db_close(db);
         return 1;
     }
 
@@ -479,21 +484,21 @@ int test_ct() {
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        ol_close(db);
+        _test_db_close(db);
         return 1;
     }
 
     int ret = ol_exists(db, key1, strlen(key1));
     if (ret != 0) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key1);
-        ol_close(db);
+        _test_db_close(db);
         return 2;
     }
 
     ret = ol_exists(db, key2, strlen(key2));
     if (ret != 0) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key2);
-        ol_close(db);
+        _test_db_close(db);
         return 2;
     }
 
@@ -510,7 +515,7 @@ int test_ct() {
     }
     ol_log_msg(LOG_INFO, "Content type retrieved successfully.");
 
-    ol_close(db);
+    _test_db_close(db);
     return 0;
 }
 
@@ -554,7 +559,7 @@ int test_aol() {
         ol_log_msg(LOG_INFO, "Deleted record.");
     } else {
         ol_log_msg(LOG_ERR, "Could not delete record.");
-        ol_close(db);
+        _test_db_close(db);
         return 2;
     }
 
@@ -568,34 +573,34 @@ int test_aol() {
         ol_log_msg(LOG_INFO, "Spoiled record.");
     } else {
         ol_log_msg(LOG_ERR, "Could not spoil record.");
-        ol_close(db);
+        _test_db_close(db);
         return 2;
     }
 
     if (db->rcrd_cnt != max_records - 1) {
         ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
-        ol_close(db);
+        _test_db_close(db);
         return 4;
     }
 
-    ol_close(db);
+    _test_db_close(db);
 
     db = ol_open(DB_PATH, DB_NAME, OL_F_APPENDONLY);
 
     if (db->rcrd_cnt != max_records - 1) {
         ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
-        ol_close(db);
+        _test_db_close(db);
         return 6;
     }
 
     ol_log_msg(LOG_INFO, "Cleaning up files created...");
     if (unlink(db->aol_file) != 0) {
         ol_log_msg(LOG_ERR, "Could not remove file: %s", db->aol_file);
-        ol_close(db);
+        _test_db_close(db);
         return 7;
     }
 
-    ol_close(db);
+    _test_db_close(db);
     return 0;
 }
 
@@ -617,7 +622,7 @@ int test_expiration() {
     check(ol_spoil(db, key, strlen(key), &now) == 0, "Could not set expiration");
     check(ol_exists(db, key, strlen(key)) == 1, "Key did not expire properly.");
 
-    ol_close(db);
+    _test_db_close(db);
 
     return 0;
 
@@ -640,7 +645,7 @@ int test_lz4() {
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        ol_close(db);
+        _test_db_close(db);
         return 1;
     }
 
@@ -650,27 +655,27 @@ int test_lz4() {
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
-        ol_close(db);
+        _test_db_close(db);
         free(item);
         return 2;
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
-        ol_close(db);
+        _test_db_close(db);
         free(item);
         return 3;
     }
 
     if (to_test != val_len) {
         ol_log_msg(LOG_ERR, "Sizes were not the same. %p (to_test) vs. %p (val_len)\n", to_test, val_len);
-        ol_close(db);
+        _test_db_close(db);
         free(item);
         return 4;
     }
 
     free(item);
-    ol_close(db);
+    _test_db_close(db);
     return 0;
 }
 
@@ -699,12 +704,12 @@ int test_can_get_next_in_tree() {
 
     check(found == next_records, "Did not find enough records. Only found %i.", found);
 
-    ol_close(db);
+    _test_db_close(db);
     return 0;
 
 error:
     if (db)
-        ol_close(db);
+        _test_db_close(db);
     return 1;
 }
 
@@ -751,7 +756,7 @@ int test_can_match_prefixes() {
 
         if (insert_result > 0) {
             ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
-            ol_close(db);
+            _test_db_close(db);
             return 2;
         }
     }
@@ -775,7 +780,7 @@ int test_can_match_prefixes() {
         free(matches_list[i]);
     }
     free(matches_list);
-    ol_close(db);
+    _test_db_close(db);
     return 0;
 
 }
