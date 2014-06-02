@@ -115,13 +115,15 @@ ol_database *ol_open(char *path, char *name, int features){
         new_db->tree->rcrd_cnt = 0;
     }
 
+    /* We figure out the filename now incase someone flips the aol_init bit
+     * later.
+     */
+    new_db->aol_file = calloc(1, 512);
+    check_mem(new_db->aol_file);
+    new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
+
     /* Lets use an append-only log file */
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
-        new_db->aol_file = calloc(1, 512);
-        check_mem(new_db->aol_file);
-
-        new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
-
         ol_aol_init(new_db);
         check(ol_aol_restore(new_db) == 0, "Error restoring from AOL file");
     }
