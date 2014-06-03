@@ -56,9 +56,9 @@ int _ol_get_file_size(const char *filepath) {
     return -1;
 }
 
-ol_bucket *_ol_mmap(size_t to_mmap, int fd) {
+void *_ol_mmap(size_t to_mmap, int fd) {
     /* TODO: Investigate usage of madvise here. */
-    ol_bucket *to_return = NULL;
+    void *to_return = NULL;
 
     to_return = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED,
                           fd, 0);

@@ -39,13 +39,17 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     int new_hashes_fd = { 0 };
     char new_hashes_filename[DB_NAME_SIZE] = { 0 };
 
-    db->get_db_file_name(db, ".ht.tmp", new_hashes_filename);
+    db->get_db_file_name(db, "ht.tmp", new_hashes_filename);
     new_hashes_fd = open(new_hashes_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
     check(new_hashes_fd > 0, "Could not open file.");
 
-    (*tmp_hashes) = _ol_mmap(to_alloc, new_hashes_fd);
-    //tmp_hashes = calloc(1, to_alloc);
-    //check_mem(tmp_hashes);
+    /* Make sure it's big enough */
+    if (_ol_get_file_size(new_hashes_filename) == 0)
+         check(ftruncate(new_hashes_fd, to_alloc) != -1, "Could not truncate file for new hashes.");
+
+    tmp_hashes = _ol_mmap(to_alloc, new_hashes_fd);
+    check(tmp_hashes != NULL, "Could not create not temporary rehash table.");
+    close(new_hashes_fd);
 
     ol_stack *orphans = NULL;
     orphans = malloc(sizeof(ol_stack));

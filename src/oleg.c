@@ -91,7 +91,7 @@ ol_database *ol_open(char *path, char *name, int features){
     hashes_fd = open(hashes_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
 
     check(hashes_fd > 0, "Could not open file.");
-    *new_db->hashes = _ol_mmap(to_mmap, hashes_fd);
+    new_db->hashes = _ol_mmap(to_mmap, hashes_fd);
     check(new_db->hashes != NULL, "Could not mmap hashes file.");
 
     /* Make sure the file is at least as big as HASH_MALLOC */
