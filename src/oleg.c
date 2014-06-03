@@ -96,7 +96,7 @@ ol_database *ol_open(char *path, char *name, int features){
 
     /* Make sure the file is at least as big as HASH_MALLOC */
     if (_ol_get_file_size(hashes_filename) == 0) {
-         check(ftruncate(hashes_fd, HASH_MALLOC) != -1, "Could not allocate file for hashes.");
+         check(ftruncate(hashes_fd, HASH_MALLOC) != -1, "Could not truncate file for hashes.");
          int i;
          /* Null out the stragglers */
          for (i = 0; i < ol_ht_bucket_max(new_db->cur_ht_size); i++)
