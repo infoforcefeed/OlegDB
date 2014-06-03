@@ -91,10 +91,8 @@ ol_database *ol_open(char *path, char *name, int features){
     hashes_fd = open(hashes_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
 
     check(hashes_fd > 0, "Could not open file.");
-    /* TODO: Investigate usage of madvise here. */
-    new_db->hashes = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED,
-                          hashes_fd, 0);
-    check(new_db->hashes != MAP_FAILED, "Could not mmap hashes file.");
+    *new_db->hashes = _ol_mmap(to_mmap, hashes_fd);
+    check(new_db->hashes != NULL, "Could not mmap hashes file.");
 
     /* Make sure the file is at least as big as HASH_MALLOC */
     if (_ol_get_file_size(hashes_filename) == 0) {

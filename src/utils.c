@@ -1,8 +1,10 @@
 /* Common utility functions. */
 #include <fcntl.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "errhandle.h"
 #include "oleg.h"
 #include "utils.h"
 #include "logging.h"
@@ -52,4 +54,17 @@ int _ol_get_file_size(const char *filepath) {
     if (ret) /* Maybe the file doesn't exist. */
         return sb.st_size;
     return -1;
+}
+
+ol_bucket *_ol_mmap(size_t to_mmap, int fd) {
+    /* TODO: Investigate usage of madvise here. */
+    ol_bucket *to_return = NULL;
+
+    to_return = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED,
+                          fd, 0);
+    check(to_return != MAP_FAILED, "Could not mmap hashes file.");
+    return to_return;
+
+error:
+    return NULL;
 }

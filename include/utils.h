@@ -18,3 +18,6 @@ int _ol_get_stat(const char *filepath, struct stat *sb);
 
 /* Gets the size of a file. Duh. */
 int _ol_get_file_size(const char *filepath);
+
+/* Wrapps mmap so that we mmap() consistently. */
+ol_bucket *_ol_mmap(size_t to_mmap, int fd);

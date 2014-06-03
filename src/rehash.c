@@ -1,6 +1,9 @@
 /* Functions needed to rehash the main hash table. */
+#include <fcntl.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "oleg.h"
 #include "rehash.h"
 #include "utils.h"
@@ -29,8 +32,20 @@ int _ol_grow_and_rehash_db(ol_database *db) {
 
     size_t to_alloc = db->cur_ht_size * 2;
     debug("Growing DB to %zu bytes.", to_alloc);
-    tmp_hashes = calloc(1, to_alloc);
-    check_mem(tmp_hashes);
+
+    /* Flush any changes we have to disk */
+    msync(db->hashes, db->cur_ht_size, MS_SYNC);
+    /* Reallocate new memory size */
+    int new_hashes_fd = { 0 };
+    char new_hashes_filename[DB_NAME_SIZE] = { 0 };
+
+    db->get_db_file_name(db, ".ht.tmp", new_hashes_filename);
+    new_hashes_fd = open(new_hashes_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
+    check(new_hashes_fd > 0, "Could not open file.");
+
+    (*tmp_hashes) = _ol_mmap(to_alloc, new_hashes_fd);
+    //tmp_hashes = calloc(1, to_alloc);
+    //check_mem(tmp_hashes);
 
     ol_stack *orphans = NULL;
     orphans = malloc(sizeof(ol_stack));
