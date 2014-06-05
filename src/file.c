@@ -49,10 +49,10 @@ int _ol_open_values_with_fd(ol_database *db, const int fd, const size_t filesize
     if (filesize <= 0) {
          check(ftruncate(fd, to_mmap) != -1, "Could not truncate file for values.");
          int i;
-         unsigned char **values_array = db->values;
+         const int max = to_mmap / sizeof(unsigned char *);
          /* Null out the stragglers */
-         for (i = 0; i < to_mmap; i++)
-             values_array[i] = NULL;
+         for (i = 0; i < max; i++)
+             ((unsigned char **)db->values)[i] = NULL;
     }
 
     close(fd);
