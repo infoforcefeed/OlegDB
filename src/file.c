@@ -23,7 +23,7 @@ size_t _ol_get_file_size(const char *filepath) {
     int ret = _ol_get_stat(filepath, &sb);
     if (ret) /* Maybe the file doesn't exist. */
         return sb.st_size;
-    return -1;
+    return 0;
 }
 
 void *_ol_mmap(size_t to_mmap, int fd) {
@@ -31,7 +31,7 @@ void *_ol_mmap(size_t to_mmap, int fd) {
     void *to_return = NULL;
 
     to_return = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    check(to_return != MAP_FAILED, "Could not mmap hashes file.");
+    check(to_return != MAP_FAILED, "Could not mmap file.");
     return to_return;
 
 error:
@@ -39,14 +39,14 @@ error:
 }
 
 int _ol_open_values_with_fd(ol_database *db, const int fd, const size_t filesize) {
-    const size_t to_mmap = filesize >= 0 ? filesize : VALUES_DEFAULT_SIZE;
+    const size_t to_mmap = filesize <= 0 ? VALUES_DEFAULT_SIZE : filesize;
 
     /* TODO: Do we need madivse(MADV_HUGEPAGE); here? */
     db->values = _ol_mmap(to_mmap, fd);
     check(db->values != NULL, "Could not mmap values file.");
 
     /* Make sure the file is at least as big as HASH_MALLOC */
-    if (filesize) {
+    if (filesize <= 0) {
          check(ftruncate(fd, to_mmap) != -1, "Could not truncate file for values.");
          int i;
          unsigned char **values_array = db->values;
