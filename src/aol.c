@@ -68,16 +68,16 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
             ":%zu:%s:"      /* cmd length, cmd */
             "%zu:%.*s:"     /* klen size, key */
             "%zu:%.*s:"     /* ctype size, content_type */
-            "%zu:%0*i:"     /* sizeof(original_size, original_size */
-            "%zu:";         /* data size, to be followed by data */
+            "%zu:%0*i:"     /* sizeof(original_size), original_size */
+            "%zu:%0*i:"     /* sizeof(size_t), data_size */
+            "%zu:%0*i";     /* sizeof(size_t), offset into file */
         ret = fprintf(db->aolfd, aol_str,
                 strlen(cmd), cmd,
                 bct->klen, (int)bct->klen, bct->key,
                 bct->ctype_size, (int)bct->ctype_size, bct->content_type,
                 sizeof(size_t), (int)sizeof(size_t), bct->original_size,
-                bct->data_size);
-        check(ret > -1, "Error writing to file.");
-        ret = fwrite(bct->data_ptr, bct->data_size, 1, db->aolfd);
+                sizeof(size_t), (int)sizeof(size_t), bct->data_size,
+                sizeof(size_t), (int)sizeof(size_t), bct->data_offset);
         check(ret > -1, "Error writing to file.");
         ret = fprintf(db->aolfd, "\n");
     } else if (strncmp(cmd, "SCOOP", 5) == 0) {
@@ -151,6 +151,7 @@ int ol_aol_restore(ol_database *db) {
               *key = NULL,
               *value = NULL,
               *ct = NULL,
+              *read_data_size = NULL,
               *read_org_size = NULL;
     fd = fopen(db->aol_file, "r");
     check(fd, "Error opening file");
@@ -175,29 +176,38 @@ int ol_aol_restore(ol_database *db) {
             read_org_size = _ol_read_data(fd);
             check(read_org_size, "Error reading");
 
+            read_data_size = _ol_read_data(fd);
+            check(read_org_size, "Error reading");
+
             value = _ol_read_data(fd);
             check(value, "Error reading");
 
             size_t original_size = (size_t)atoi(read_org_size->data);
-            if (original_size != (size_t)value->dlen) {
+            size_t current_size = (size_t)atoi(read_data_size->data);
+            size_t data_offset = (size_t)atoi(value->data);
+            unsigned char *data_ptr = db->values + data_offset;
+
+            if (original_size != current_size) {
                 /* Data is compressed, gotta deal with that. */
                 unsigned char tmp_data[original_size];
                 unsigned char *ret = memset(&tmp_data, 0, original_size);
                 check(ret == tmp_data, "Could not initialize tmp_data parameter.");
 
                 int processed = 0;
-                processed = LZ4_decompress_fast((const char*)value->data,
+                processed = LZ4_decompress_fast((const char*)data_ptr,
                                                 (char *)&tmp_data, original_size);
-                check(processed == value->dlen, "Could not decompress data.");
+                check(processed == current_size, "Could not decompress data.");
                 ol_jar_ct(db, key->data, key->dlen, tmp_data, original_size,
                         ct->data, ct->dlen);
             } else {
                 /* Data is uncompressed, no need for trickery. */
-                ol_jar_ct(db, key->data, key->dlen, (unsigned char*)value->data, value->dlen,
+                ol_jar_ct(db, key->data, key->dlen, (unsigned char*)data_ptr, current_size,
                         ct->data, ct->dlen);
             }
             free(read_org_size->data);
             free(read_org_size);
+            free(read_data_size->data);
+            free(read_data_size);
             free(ct->data);
             free(ct);
             free(value->data);
