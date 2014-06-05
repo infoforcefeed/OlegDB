@@ -26,13 +26,13 @@ static int _test_db_close(ol_database *db) {
     if (!db)
         return -1;
 
-    char hashes_filename[DB_NAME_SIZE] = { 0 };
-    db->get_db_file_name(db, HASHES_FILENAME, hashes_filename);
+    char values_filename[DB_NAME_SIZE] = { 0 };
+    db->get_db_file_name(db, VALUES_FILENAME, values_filename);
 
     int ret = ol_close(db);
 
-    ol_log_msg(LOG_INFO, "Unlinking %s", hashes_filename);
-    unlink(hashes_filename);
+    ol_log_msg(LOG_INFO, "Unlinking %s", values_filename);
+    unlink(values_filename);
 
     return ret;
 }

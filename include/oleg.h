@@ -56,7 +56,7 @@ typedef char ** ol_val_array;
 * xXx klen=Length of the key. xXx
 * xXx *content_type=The content-type of this object. If using the server, this defaults to "application/octet-stream". xXx
 * xXx ctype_size=Length of the string representing content-type. xXx
-* xXx data_ptr=Location of this key's value (data). xXx
+* xXx data_ptr=Location of this key's value (data) in the values file on disk. xXx
 * xXx data_size=Length of the value (data) in bytes. This is the size of the data stored in memory. xXx
 * xXx original_size=Length of the value (data) in bytes. This is the original length of the data we receieved, non-compressed. xXx
 * xXx hash=Hashed value of this key. xXx
@@ -69,7 +69,7 @@ typedef struct ol_bucket {
     size_t              klen;
     char                *content_type;
     size_t              ctype_size;
-    unsigned char       *data_ptr;
+    off_t               data_ptr;
     size_t              data_size;
     size_t              original_size;
     uint32_t            hash;
@@ -104,8 +104,9 @@ typedef struct ol_meta {
 * xXx key_collisions=Number of key collisions this database has had since initialization. xXx
 * xXx created=Timestamp of when the database was initialized. xXx
 * xXx cur_ht_size=The current amount, in bytes, of space allocated for storing <a href="#ol_bucket">ol_bucket</a> objects. xXx
-* xXx **hashes=The actual hashtable. Stores <a href="#ol_bucket">ol_bucket</a> instances. mmap()'d to disk. xXx
+* xXx **hashes=The actual hashtable. Stores <a href="#ol_bucket">ol_bucket</a> instances. xXx
 * xXx **values=This is where values for hashes are stored. This is a pointer to an mmap()'d region of memory. xXx
+* xXx val_size=The size of the sum total of records in the db, in bytes. It is <strong>not</strong> the size of the file on disk. xXx
 * xXx *tree=A pointer to the splay tree holding the ordered list of keys. xXx
 * xXx *meta=A pointer to a struct holding extra meta information. See <a href="#ol_meta">oleg_meta</a> for more information. xXx
 */
@@ -124,6 +125,7 @@ typedef struct ol_database {
     size_t    cur_ht_size;
     ol_bucket **hashes;
     unsigned char **values;
+    size_t val_size;
     ol_splay_tree *tree;
     ol_meta   *meta;
 } ol_database;

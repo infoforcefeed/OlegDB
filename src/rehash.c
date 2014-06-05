@@ -1,11 +1,5 @@
 /* Functions needed to rehash the main hash table. */
-#include <fcntl.h>
 #include <stdlib.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include "file.h"
 #include "oleg.h"
 #include "rehash.h"
 #include "utils.h"
@@ -34,27 +28,9 @@ int _ol_grow_and_rehash_db(ol_database *db) {
 
     size_t to_alloc = db->cur_ht_size * 2;
     debug("Growing DB to %zu bytes.", to_alloc);
+    tmp_hashes = calloc(1, to_alloc);
+    check_mem(tmp_hashes);
 
-    /* Flush any changes we have to disk */
-    msync(db->hashes, db->cur_ht_size, MS_SYNC);
-    /* Reallocate new memory size */
-    int new_hashes_fd = { 0 };
-    char new_hashes_filename[DB_NAME_SIZE] = { 0 };
-
-    /* Create the temporary hash table */
-    db->get_db_file_name(db, "ht.tmp", new_hashes_filename);
-    new_hashes_fd = open(new_hashes_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
-    check(new_hashes_fd > 0, "Could not open file.");
-
-    /* Make sure it's big enough */
-    if (_ol_get_file_size(new_hashes_filename) == 0)
-         check(ftruncate(new_hashes_fd, to_alloc) != -1, "Could not truncate file for new hashes.");
-
-    tmp_hashes = _ol_mmap(to_alloc, new_hashes_fd);
-    check(tmp_hashes != NULL, "Could not create not temporary rehash table.");
-    close(new_hashes_fd);
-
-    /* Track orphans as we go through */
     ol_stack *orphans = NULL;
     orphans = malloc(sizeof(ol_stack));
     check_mem(orphans);
@@ -94,16 +70,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     ol_log_msg(LOG_INFO, "We now have %i orphans not accounted for.", orphans_found);
 
     free(orphans);
-    munmap(db->hashes, db->cur_ht_size);
-
-    char hashes_filename[DB_NAME_SIZE] = { 0 };
-    db->get_db_file_name(db, HASHES_FILENAME, hashes_filename);
-    /* Delete old hash table */
-    unlink(hashes_filename);
-    /* Rename temp table to new table. */
-    rename(new_hashes_filename, hashes_filename);
-
-    /* Make the pointers point */
+    free(db->hashes);
     db->hashes = tmp_hashes;
     db->cur_ht_size = to_alloc;
     debug("Current hash table size is now: %zu bytes.", to_alloc);

@@ -31,12 +31,12 @@
 */
 #define DEVILS_SEED 666
 
-/* xXx DEFINE=HASHES_FILENAME xXx
-* xXx DESCRIPTION=The file extension used on the hashtable on disk. xXx
- */
-#define HASHES_FILENAME "ht"
-
 /* xXx DEFINE=VALUES_FILENAME xXx
 * xXx DESCRIPTION=The file extension used for the values file on disk. xXx
- */
+*/
 #define VALUES_FILENAME "val"
+
+/* xXx DEFINE=VALUES_DEFAULT_SIZE xXx
+* xXx DESCRIPTION=The default size of the values file on disk. 16 Megabytes by default. xXx
+*/
+#define VALUES_DEFAULT_SIZE 16777216

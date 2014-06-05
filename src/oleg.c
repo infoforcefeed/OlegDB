@@ -58,6 +58,7 @@ ol_database *ol_open(char *path, char *name, int features){
     new_db->meta->key_collisions = 0;
     new_db->rcrd_cnt = 0;
     new_db->cur_ht_size = 0;
+    new_db->val_size = 0;
 
     /* Null every pointer before initialization in case something goes wrong */
     new_db->aol_file = NULL;
@@ -81,7 +82,6 @@ ol_database *ol_open(char *path, char *name, int features){
     new_db->hashes = NULL;
     new_db->values = NULL;
 
-    _ol_open_hashtable(new_db);
     _ol_open_values(new_db);
 
     new_db->feature_set = features;
@@ -152,12 +152,12 @@ int _ol_close(ol_database *db){
         debug("Files flushed to disk");
     }
 
-    munmap(db->hashes, db->cur_ht_size);
-    /* TODO: Track and record the values size. */
-    // munmap(db->values);
+    db->feature_set = 0;
+
+    munmap(db->values, db->val_size);
     free(db->aol_file);
     free(db->meta);
-    db->feature_set = 0;
+    free(db->hashes);
     free(db);
     if (freed != rcrd_cnt) {
         ol_log_msg(LOG_INFO, "Error: Couldn't free all records.");
