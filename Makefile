@@ -69,7 +69,7 @@ install: erlinstall
 # The reason we have install twice here is because the variable needs to be compiled install
 # when we are installing. It tells erlang where to look
 erlinstall: ERL_LIB_LOOKFOR=-DLIBLOCATION=\"$(INSTALL_LIB)\"
-erlinstall: install server
+erlinstall: libinstall server
 	@mkdir -p $(INSTALL_BIN)
 	install $(LIB_DIR)libolegserver.so $(INSTALL_LIB)libolegserver.so.$(VERSION)
 	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so
