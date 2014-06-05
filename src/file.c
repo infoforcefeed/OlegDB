@@ -30,8 +30,7 @@ void *_ol_mmap(size_t to_mmap, int fd) {
     /* TODO: Investigate usage of madvise here. */
     void *to_return = NULL;
 
-    to_return = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED,
-                          fd, 0);
+    to_return = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     check(to_return != MAP_FAILED, "Could not mmap hashes file.");
     return to_return;
 
@@ -89,7 +88,7 @@ int _ol_open_values(ol_database *db) {
     check(values_fd > 0, "Could not open file.");
     /* TODO: Do we need madivse(MADV_HUGEPAGE); here? */
     db->values = _ol_mmap(filesize, values_fd);
-    check(db->values != NULL, "Could not mmap hashes file.");
+    check(db->values != NULL, "Could not mmap values file.");
 
     close(values_fd);
     return 1;
