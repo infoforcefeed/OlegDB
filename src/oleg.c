@@ -488,7 +488,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         }
 
         /* Remember to increment the tracked data size of the DB. */
-        db->val_size += bucket->data_size;
+        db->val_size += new_bucket->data_size;
     }
 
     ret = _ol_set_bucket(db, new_bucket);
