@@ -18,7 +18,7 @@ int _ol_get_stat(const char *filepath, struct stat *sb) {
     return 1;
 }
 
-int _ol_get_file_size(const char *filepath) {
+size_t _ol_get_file_size(const char *filepath) {
     struct stat sb = {0};
     int ret = _ol_get_stat(filepath, &sb);
     if (ret) /* Maybe the file doesn't exist. */
@@ -38,6 +38,37 @@ error:
     return NULL;
 }
 
+int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size) {
+    int values_fd = { 0 };
+    char values_filename[DB_NAME_SIZE] = { 0 };
+
+    /* Figure out the filename */
+    db->get_db_file_name(db, VALUES_FILENAME, values_filename);
+    size_t filesize = _ol_get_file_size(values_filename);
+    const size_t size_needed = db->val_size + desired_size;
+
+    if (filesize > size_needed)
+        return 1;
+
+    /* Sync everything to disk before we fuck with it */
+    msync(db->values, filesize, MS_SYNC);
+
+    size_t to_add = VALUES_DEFAULT_SIZE;
+    while (filesize + to_add < size_needed) {
+        to_add += VALUES_DEFAULT_SIZE;
+    }
+
+    const size_t truncate_total = filesize + to_add;
+    if (_ol_get_file_size(values_filename) == 0) {
+        check(ftruncate(values_fd, to_mmap) != -1, "Could not truncate file to new size for values.");
+        /* TODO: Can we use realloc here instead of munmapping and then remapping? */
+        munmap(db->values, db->val_size);
+    }
+
+    return _ol_open_values_with_fd(db, values_fd, truncate_total);
+}
+
+
 int _ol_open_values(ol_database *db) {
     check(db != NULL, "DB is NULL.");
     int values_fd = { 0 };
@@ -45,32 +76,42 @@ int _ol_open_values(ol_database *db) {
 
     /* Figure out the filename */
     db->get_db_file_name(db, VALUES_FILENAME, values_filename);
-    int filesize = _ol_get_file_size(values_filename);
-    const int to_mmap = filesize >= 0 ? filsize : VALUES_DEFAULT_SIZE;
+    size_t filesize = _ol_get_file_size(values_filename);
 
     debug("Opening %s for values", values_filename);
     values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
+    check(fd > 0, "Could not open file.");
 
-    check(values_fd > 0, "Could not open file.");
+    return _ol_open_values_with_fd(db, values_fd, filesize);
+error:
+    if (values_fd > 0)
+        close(values_fd);
+
+    return 0;
+}
+
+int _ol_open_values_with_fd(ol_database *db, const int fd, const size_t filesize) {
+    const size_t to_mmap = filesize >= 0 ? filsize : VALUES_DEFAULT_SIZE;
+
     /* TODO: Do we need madivse(MADV_HUGEPAGE); here? */
-    db->values = _ol_mmap(to_mmap, values_fd);
+    db->values = _ol_mmap(to_mmap, fd);
     check(db->values != NULL, "Could not mmap values file.");
 
     /* Make sure the file is at least as big as HASH_MALLOC */
     if (_ol_get_file_size(values_filename) == 0) {
-         check(ftruncate(values_fd, to_mmap) != -1, "Could not truncate file for values.");
+         check(ftruncate(fd, to_mmap) != -1, "Could not truncate file for values.");
          int i;
          /* Null out the stragglers */
          for (i = 0; i < to_mmap; i++)
              db->values[i] = NULL;
     }
 
-    close(values_fd);
+    close(fd);
     return 1;
 
 error:
-    if (values_fd)
-        close(values_fd);
+    if (fd)
+        close(fd);
     return 0;
 }
 

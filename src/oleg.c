@@ -296,16 +296,17 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
                 check(ret == dsize, "Could not copy data size into input data_size param.");
             }
 
+            unsigned char *data_ptr = db->values + bucket->data_offset;
             /* Decomperss with LZ4 if enabled */
             if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
                 int processed = 0;
-                processed = LZ4_decompress_fast((char *)bucket->data_ptr,
+                processed = LZ4_decompress_fast((char *)data_ptr,
                                                 (char *)*data,
                                                 bucket->original_size);
                 check(processed == bucket->data_size, "Could not decompress data.");
             } else {
                 /* We know data isn't NULL by this point. */
-                char *ret = strncpy((char *)*data, (char *)bucket->data_ptr, bucket->original_size);
+                char *ret = strncpy((char *)*data, (char *)data_ptr, bucket->original_size);
                 check(ret == (char *)*data, "Could not copy data into output data param.");
             }
 
@@ -327,25 +328,28 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
         unsigned char *value, size_t vsize, const char *ct, const size_t ctsize) {
     debug("Reallocating bucket.");
 
-    unsigned char *data = NULL;
+    unsigned char *old_data_ptr = db->values + bucket->data_offset;
+    /* Clear out the old data in the file. */
+    memset(old_data_ptr, '\0', bucket->data_size);
+    /* Compute the new position of the data in the values file: */
+    const size_t new_offset = db->val_size;
+    unsigned char *new_data_ptr = db->values + db->val_size;
 
     /* Compress using LZ4 if enabled */
     size_t cmsize = 0;
     if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         int maxoutsize = LZ4_compressBound(vsize);
-        data = realloc(bucket->data_ptr, maxoutsize);
-        cmsize = (size_t)LZ4_compress((char*)value, (char*)data,
+        _ol_ensure_values_file_size(db, maxoutsize);
+
+        cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
                                       (int)vsize);
     } else {
-        data = realloc(bucket->data_ptr, vsize);
-
-        if (memcpy(data, value, vsize) != data)
+        if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
             return 4;
     }
 
     char *ct_real = realloc(bucket->content_type, ctsize+1);
     if (strncpy(ct_real, ct, ctsize) != ct_real) {
-        free(data);
         free(ct_real);
         return 5;
     }
@@ -366,7 +370,10 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     } else {
         bucket->data_size = vsize;
     }
-    bucket->data_ptr = data;
+    bucket->data_offset = new_offset;
+
+    /* Remember to increment the tracked data size of the DB. */
+    db->val_size += bucket->data_size;
 
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
             db->state != OL_S_STARTUP) {
@@ -434,42 +441,45 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
 
     new_bucket->original_size = vsize;
-    unsigned char *compressed = NULL;
+
+    /* Compute the new position of the data in the values file: */
+    const size_t new_offset = db->val_size;
+    unsigned char *new_data_ptr = db->values + db->val_size;
+
     if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         /* Compress using LZ4 if enabled */
         int maxoutsize = LZ4_compressBound(vsize);
-        compressed = calloc(1, maxoutsize);
-        size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)compressed,
-                                      (int)vsize);
+        _ol_ensure_values_file_size(db, maxoutsize);
+        memset(new_data_ptr, '\0', maxoutsize);
+
+        /* All these fucking casts */
+        size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
+                                             (int)vsize);
         if (cmsize == 0) {
             /* Free allocated data */
             free(new_bucket->content_type);
             free(new_bucket);
-            free(compressed);
             return 1;
         }
 
-        unsigned char *ret = realloc(compressed, cmsize);
-        if (ret == NULL) {
-            ol_log_msg(LOG_ERR, "Could not slim down memory for compressed data.");
-        } else {
-            compressed = ret;
-        }
-
         new_bucket->data_size = cmsize;
-        new_bucket->data_ptr = compressed;
+        new_bucket->data_offset = new_offset;
     } else {
         new_bucket->data_size = vsize;
-        unsigned char *data = calloc(1, vsize);
-        if (memcpy(data, value, vsize) != data) {
+        _ol_ensure_values_file_size(db, new_bucket->data_size);
+        memset(new_data_ptr, '\0', new_bucket->data_size);
+
+        if (memcpy(new_data_ptr, value, vsize) != new_data_ptr) {
             /* Free allocated memory since we're not going to use them */
             free(new_bucket->content_type);
             free(new_bucket);
-            free(data);
             return 3;
         }
-        new_bucket->data_ptr = data;
+        new_bucket->data_offset = new_offset;
     }
+
+    /* Remember to increment the tracked data size of the DB. */
+    db->val_size += bucket->data_size;
 
     ret = _ol_set_bucket(db, new_bucket);
 
