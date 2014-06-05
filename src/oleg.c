@@ -162,6 +162,8 @@ int _ol_close(ol_database *db){
 
     db->feature_set = 0;
 
+    /* Sync and close values file. */
+    msync(db->values, db->val_size, MS_SYNC);
     munmap(db->values, db->val_size);
     free(db->aol_file);
     free(db->meta);
