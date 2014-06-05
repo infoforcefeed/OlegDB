@@ -46,6 +46,16 @@ ol_database *ol_open(char *path, char *name, int features){
     debug("Opening \"%s\" database", name);
     ol_database *new_db = malloc(sizeof(ol_database));
 
+    size_t to_alloc = HASH_MALLOC;
+    new_db->hashes = calloc(1, to_alloc);
+    new_db->cur_ht_size = to_alloc;
+
+    /* NULL everything */
+    int i;
+    for (i = 0; i < ol_ht_bucket_max(to_alloc); i++){
+        new_db->hashes[i] = NULL;
+    }
+
     /* Make sure that the directory the database is in exists */
     struct stat st = {0};
     if (!_ol_get_stat(path, &st) || !S_ISDIR(st.st_mode)) /* Check to see if the DB exists */
@@ -57,7 +67,6 @@ ol_database *ol_open(char *path, char *name, int features){
     new_db->meta->created = created;
     new_db->meta->key_collisions = 0;
     new_db->rcrd_cnt = 0;
-    new_db->cur_ht_size = 0;
     new_db->val_size = 0;
 
     /* Null every pointer before initialization in case something goes wrong */
@@ -78,8 +87,7 @@ ol_database *ol_open(char *path, char *name, int features){
     memset(new_db->path, '\0', PATH_LENGTH);
     strncpy(new_db->path, path, PATH_LENGTH);
 
-    /* mmap() the hashes/values into memory. */
-    new_db->hashes = NULL;
+    /* mmap() the values into memory. */
     new_db->values = NULL;
 
     _ol_open_values(new_db);
@@ -446,40 +454,42 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     const size_t new_offset = db->val_size;
     unsigned char *new_data_ptr = db->values + db->val_size;
 
-    if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-        /* Compress using LZ4 if enabled */
-        int maxoutsize = LZ4_compressBound(vsize);
-        _ol_ensure_values_file_size(db, maxoutsize);
-        memset(new_data_ptr, '\0', maxoutsize);
+    if (db->state != OL_S_STARTUP) {
+        if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+            /* Compress using LZ4 if enabled */
+            int maxoutsize = LZ4_compressBound(vsize);
+            _ol_ensure_values_file_size(db, maxoutsize);
+            memset(new_data_ptr, '\0', maxoutsize);
 
-        /* All these fucking casts */
-        size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
-                                             (int)vsize);
-        if (cmsize == 0) {
-            /* Free allocated data */
-            free(new_bucket->content_type);
-            free(new_bucket);
-            return 1;
+            /* All these fucking casts */
+            size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
+                                                 (int)vsize);
+            if (cmsize == 0) {
+                /* Free allocated data */
+                free(new_bucket->content_type);
+                free(new_bucket);
+                return 1;
+            }
+
+            new_bucket->data_size = cmsize;
+            new_bucket->data_offset = new_offset;
+        } else {
+            new_bucket->data_size = vsize;
+            _ol_ensure_values_file_size(db, new_bucket->data_size);
+            memset(new_data_ptr, '\0', new_bucket->data_size);
+
+            if (memcpy(new_data_ptr, value, vsize) != new_data_ptr) {
+                /* Free allocated memory since we're not going to use them */
+                free(new_bucket->content_type);
+                free(new_bucket);
+                return 3;
+            }
+            new_bucket->data_offset = new_offset;
         }
 
-        new_bucket->data_size = cmsize;
-        new_bucket->data_offset = new_offset;
-    } else {
-        new_bucket->data_size = vsize;
-        _ol_ensure_values_file_size(db, new_bucket->data_size);
-        memset(new_data_ptr, '\0', new_bucket->data_size);
-
-        if (memcpy(new_data_ptr, value, vsize) != new_data_ptr) {
-            /* Free allocated memory since we're not going to use them */
-            free(new_bucket->content_type);
-            free(new_bucket);
-            return 3;
-        }
-        new_bucket->data_offset = new_offset;
+        /* Remember to increment the tracked data size of the DB. */
+        db->val_size += bucket->data_size;
     }
-
-    /* Remember to increment the tracked data size of the DB. */
-    db->val_size += bucket->data_size;
 
     ret = _ol_set_bucket(db, new_bucket);
 
