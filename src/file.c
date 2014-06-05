@@ -53,9 +53,9 @@ int _ol_open_hashtable(ol_database *db) {
     debug("Opening %s for hashes", hashes_filename);
     hashes_fd = open(hashes_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
 
-    check(hashes_fd <= 0, "Could not open file.");
+    check(hashes_fd > 0, "Could not open hashtable file.");
     db->hashes = _ol_mmap(to_mmap, hashes_fd);
-    check(db->hashes != NULL, "Could not mmap hashes file.");
+    check(db->hashes != NULL, "Could not mmap hashtable file.");
 
     /* Make sure the file is at least as big as HASH_MALLOC */
     if (_ol_get_file_size(hashes_filename) == 0) {
