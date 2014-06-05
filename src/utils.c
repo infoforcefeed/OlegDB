@@ -1,10 +1,5 @@
 /* Common utility functions. */
-#include <fcntl.h>
 #include <stdlib.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include "errhandle.h"
 #include "oleg.h"
 #include "utils.h"
 #include "logging.h"
@@ -34,37 +29,4 @@ int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
     /* Powers of two, baby! */
     index = hash & (ol_ht_bucket_max(ht_size) - 1);
     return index;
-}
-
-int _ol_get_stat(const char *filepath, struct stat *sb) {
-    int fd;
-    fd = open(filepath, O_RDONLY);
-    if (fd == -1)
-        return 0;
-
-    if (fstat(fd, sb) == -1)
-        return 0;
-    close(fd);
-    return 1;
-}
-
-int _ol_get_file_size(const char *filepath) {
-    struct stat sb = {0};
-    int ret = _ol_get_stat(filepath, &sb);
-    if (ret) /* Maybe the file doesn't exist. */
-        return sb.st_size;
-    return -1;
-}
-
-void *_ol_mmap(size_t to_mmap, int fd) {
-    /* TODO: Investigate usage of madvise here. */
-    void *to_return = NULL;
-
-    to_return = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED,
-                          fd, 0);
-    check(to_return != MAP_FAILED, "Could not mmap hashes file.");
-    return to_return;
-
-error:
-    return NULL;
 }

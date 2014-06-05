@@ -32,5 +32,11 @@
 #define DEVILS_SEED 666
 
 /* xXx DEFINE=HASHES_FILENAME xXx
+* xXx DESCRIPTION=The file extension used on the hashtable on disk. xXx
  */
 #define HASHES_FILENAME "ht"
+
+/* xXx DEFINE=VALUES_FILENAME xXx
+* xXx DESCRIPTION=The file extension used for the values file on disk. xXx
+ */
+#define VALUES_FILENAME "val"

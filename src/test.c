@@ -23,6 +23,9 @@ ol_database *_test_db_open() {
 }
 
 static int _test_db_close(ol_database *db) {
+    if (!db)
+        return -1;
+
     char hashes_filename[DB_NAME_SIZE] = { 0 };
     db->get_db_file_name(db, HASHES_FILENAME, hashes_filename);
 

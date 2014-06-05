@@ -10,7 +10,9 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+
 #include "oleg.h"
+#include "file.h"
 #include "aol.h"
 #include "logging.h"
 #include "murmur3.h"
@@ -55,6 +57,7 @@ ol_database *ol_open(char *path, char *name, int features){
     new_db->meta->created = created;
     new_db->meta->key_collisions = 0;
     new_db->rcrd_cnt = 0;
+    new_db->cur_ht_size = 0;
 
     /* Null every pointer before initialization in case something goes wrong */
     new_db->aol_file = NULL;
@@ -78,31 +81,8 @@ ol_database *ol_open(char *path, char *name, int features){
     new_db->hashes = NULL;
     new_db->values = NULL;
 
-    int hashes_fd = { 0 };
-    char hashes_filename[DB_NAME_SIZE] = { 0 };
-
-    /* Figure out the filename */
-    new_db->get_db_file_name(new_db, HASHES_FILENAME, hashes_filename);
-    int filesize = _ol_get_file_size(hashes_filename);
-    int to_mmap = filesize <= 0 ? HASH_MALLOC : (size_t)filesize;
-    new_db->cur_ht_size = to_mmap;
-
-    debug("Opening %s for hashes", hashes_filename);
-    hashes_fd = open(hashes_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
-
-    check(hashes_fd > 0, "Could not open file.");
-    new_db->hashes = _ol_mmap(to_mmap, hashes_fd);
-    check(new_db->hashes != NULL, "Could not mmap hashes file.");
-
-    /* Make sure the file is at least as big as HASH_MALLOC */
-    if (_ol_get_file_size(hashes_filename) == 0) {
-         check(ftruncate(hashes_fd, HASH_MALLOC) != -1, "Could not truncate file for hashes.");
-         int i;
-         /* Null out the stragglers */
-         for (i = 0; i < ol_ht_bucket_max(new_db->cur_ht_size); i++)
-             new_db->hashes[i] = NULL;
-    }
-    close(hashes_fd);
+    _ol_open_hashtable(new_db);
+    _ol_open_values(new_db);
 
     new_db->feature_set = features;
     new_db->state = OL_S_STARTUP;

@@ -4,6 +4,8 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include "file.h"
 #include "oleg.h"
 #include "rehash.h"
 #include "utils.h"
