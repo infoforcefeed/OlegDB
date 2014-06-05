@@ -612,6 +612,9 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             ols_delete(db->tree, to_free->node);
             to_free->node = NULL;
         }
+        unsigned char *data_ptr = db->values + to_free->data_offset;
+        const size_t data_size = to_free->data_size;
+        memset(data_ptr, '\0', data_size);
         _ol_free_bucket(&to_free);
         db->rcrd_cnt -= 1;
     }
