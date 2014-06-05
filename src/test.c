@@ -594,7 +594,9 @@ int test_aol() {
         return 4;
     }
 
-    _test_db_close(db);
+    /* We don't want to use test_db_close here because we want to retrieve
+     * values again. */
+    ol_close(db);
 
     db = ol_open(DB_PATH, DB_NAME, OL_F_APPENDONLY);
 

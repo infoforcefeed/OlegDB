@@ -177,7 +177,7 @@ int ol_aol_restore(ol_database *db) {
             check(read_org_size, "Error reading");
 
             read_data_size = _ol_read_data(fd);
-            check(read_org_size, "Error reading");
+            check(read_data_size, "Error reading");
 
             value = _ol_read_data(fd);
             check(value, "Error reading");
