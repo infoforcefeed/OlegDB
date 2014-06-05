@@ -64,20 +64,16 @@ uninstall:
 	rm -rf $(INSTALL_BIN)/olegdb
 	rm -rf $(ERL_ODB_INSTALL_DIR)
 
+install: erlinstall
+
 # The reason we have install twice here is because the variable needs to be compiled install
 # when we are installing. It tells erlang where to look
-install: ERL_LIB_LOOKFOR=-DLIBLOCATION=\"$(INSTALL_LIB)\"
-install: liboleg server
-	@mkdir -p $(INSTALL_LIB)
+erlinstall: ERL_LIB_LOOKFOR=-DLIBLOCATION=\"$(INSTALL_LIB)\"
+erlinstall: libinstall server
 	@mkdir -p $(INSTALL_BIN)
-	@mkdir -p $(INSTALL_INCLUDE)
-	install $(LIB_DIR)liboleg.so $(INSTALL_LIB)liboleg.so.$(VERSION)
-	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so
-	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
 	install $(LIB_DIR)libolegserver.so $(INSTALL_LIB)libolegserver.so.$(VERSION)
 	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so
 	ln -fs $(INSTALL_LIB)libolegserver.so.$(VERSION) $(INSTALL_LIB)libolegserver.so.$(SOVERSION)
-	install ./include/*.h $(INSTALL_INCLUDE)
 	@mkdir -p $(ERL_ODB_INSTALL_DIR)/src
 	@mkdir -p $(ERL_ODB_INSTALL_DIR)/include
 	@mkdir -p $(ERL_ODB_INSTALL_DIR)/ebin
@@ -86,6 +82,14 @@ install: liboleg server
 	install ./src/*.erl $(ERL_ODB_INSTALL_DIR)/src
 	install ./src/*.app.src $(ERL_ODB_INSTALL_DIR)/ebin
 	cp ./run_server.sh $(INSTALL_BIN)olegdb
+
+libinstall: liboleg
+	@mkdir -p $(INSTALL_LIB)
+	@mkdir -p $(INSTALL_INCLUDE)
+	install $(LIB_DIR)liboleg.so $(INSTALL_LIB)liboleg.so.$(VERSION)
+	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so
+	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
+	install ./include/*.h $(INSTALL_INCLUDE)
 
 test: all
 	./run_tests.sh
