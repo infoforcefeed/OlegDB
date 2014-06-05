@@ -84,15 +84,17 @@ int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size) {
         to_add += VALUES_DEFAULT_SIZE;
     }
 
+    /* New total size */
     const size_t truncate_total = filesize + to_add;
-    if (_ol_get_file_size(values_filename) == 0) {
-        check(ftruncate(values_fd, truncate_total) != -1, "Could not truncate file to new size for values.");
-        /* TODO: Can we use realloc here instead of munmapping and then remapping? */
-        munmap(db->values, db->val_size);
-    }
 
     values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
     check(values_fd > 0, "Could not open values file.");
+
+    /* Set new size */
+    check(ftruncate(values_fd, truncate_total) != -1, "Could not truncate file to new size for values.");
+    /* TODO: Can we use realloc here instead of munmapping and then remapping? */
+    munmap(db->values, db->val_size);
+
     return _ol_open_values_with_fd(db, values_fd, truncate_total);
 
 error:

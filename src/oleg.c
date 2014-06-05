@@ -452,13 +452,14 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     /* Compute the new position of the data in the values file: */
     const size_t new_offset = db->val_size;
-    unsigned char *new_data_ptr = db->values + db->val_size;
+    unsigned char *new_data_ptr = NULL;
 
     if (db->state != OL_S_STARTUP) {
         if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
             /* Compress using LZ4 if enabled */
             int maxoutsize = LZ4_compressBound(vsize);
             _ol_ensure_values_file_size(db, maxoutsize);
+            new_data_ptr = db->values + db->val_size;
             memset(new_data_ptr, '\0', maxoutsize);
 
             /* All these fucking casts */
@@ -476,6 +477,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         } else {
             new_bucket->data_size = vsize;
             _ol_ensure_values_file_size(db, new_bucket->data_size);
+            new_data_ptr = db->values + db->val_size;
             memset(new_data_ptr, '\0', new_bucket->data_size);
 
             if (memcpy(new_data_ptr, value, vsize) != new_data_ptr) {
