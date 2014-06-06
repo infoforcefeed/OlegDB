@@ -87,8 +87,6 @@ typedef struct ol_bucket {
 * xXx name=The name of the database. xXx
 * xXx path[PATH_LENGTH]=Path to the database's working directory. xXx
 * xXx dump_file=Path and filename of db dump. xXx
-* xXx aol_file=Path and filename of the append only log. xXx
-* xXx aolfd=Pointer of FILE type to append only log. xXx
 * xXx feature_set=Bitmask holding enabled/disabled status of various features. See ol_feature_flags. xXx
 * xXx state=Current state of the database. See ol_state_flags. xXx
 * xXx rcrd_cnt=Number of records in the database. xXx
@@ -106,8 +104,6 @@ typedef struct ol_database {
     char      name[DB_NAME_SIZE];
     char      path[PATH_LENGTH];
     char      *dump_file;
-    char      *aol_file;
-    FILE      *aolfd;
     int       feature_set;
     short int state;
     int       rcrd_cnt;

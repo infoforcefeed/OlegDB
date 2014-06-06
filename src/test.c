@@ -1,6 +1,5 @@
 /* Unit tests. */
 #include <stdlib.h>
-#include "aol.h"
 #include "cursor.h"
 #include "errhandle.h"
 #include "logging.h"
@@ -647,69 +646,6 @@ int test_feature_flags() {
     return 0;
 }
 
-int test_aol() {
-    ol_database *db = _test_db_open();
-    db->enable(OL_F_APPENDONLY, &db->feature_set);
-    ol_aol_init(db);
-
-    const int max_records = 3;
-    ol_log_msg(LOG_INFO, "Inserting %i records.", max_records);
-    int ret = _insert_keys(db, max_records);
-    if (ret > 0) {
-        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
-        return 1;
-    }
-
-    /* Delete a key */
-    if (ol_scoop(db, "crazy hash2", strlen("crazy hash2")) == 0) {
-        ol_log_msg(LOG_INFO, "Deleted record.");
-    } else {
-        ol_log_msg(LOG_ERR, "Could not delete record.");
-        ol_close(db);
-        return 2;
-    }
-
-    struct tm *now;
-    time_t current_time;
-    time(&current_time);
-    now = gmtime(&current_time);
-
-    /* Expire a key */
-    if (ol_spoil(db, "crazy hash1", strlen("crazy hash1"), now) == 0) {
-        ol_log_msg(LOG_INFO, "Spoiled record.");
-    } else {
-        ol_log_msg(LOG_ERR, "Could not spoil record.");
-        ol_close(db);
-        return 2;
-    }
-
-    if (db->rcrd_cnt != max_records - 1) {
-        ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
-        ol_close(db);
-        return 4;
-    }
-
-    ol_close(db);
-
-    db = ol_open(DB_PATH, DB_NAME, OL_F_APPENDONLY);
-
-    if (db->rcrd_cnt != max_records - 1) {
-        ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
-        ol_close(db);
-        return 6;
-    }
-
-    ol_log_msg(LOG_INFO, "Cleaning up files created...");
-    if (unlink(db->aol_file) != 0) {
-        ol_log_msg(LOG_ERR, "Could not remove file: %s", db->aol_file);
-        ol_close(db);
-        return 7;
-    }
-
-    ol_close(db);
-    return 0;
-}
-
 int test_expiration() {
     ol_database *db = _test_db_open();
 
@@ -897,7 +833,6 @@ void run_tests(int results[2]) {
 
     ol_test_start();
     ol_run_test(test_expiration);
-    ol_run_test(test_aol);
     ol_run_test(test_open_close);
     ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
