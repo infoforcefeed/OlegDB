@@ -201,7 +201,7 @@ int ol_aol_restore(ol_database *db) {
                         ct->data, ct->dlen);
             } else {
                 /* Data is uncompressed, no need for trickery. */
-                ol_jar_ct(db, key->data, key->dlen, (unsigned char*)data_ptr, current_size,
+                ol_jar_ct(db, key->data, key->dlen, data_ptr, current_size,
                         ct->data, ct->dlen);
             }
             free(read_org_size->data);
