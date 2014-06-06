@@ -50,12 +50,6 @@ ol_database *ol_open(char *path, char *name, int features){
     new_db->hashes = calloc(1, to_alloc);
     new_db->cur_ht_size = to_alloc;
 
-    /* NULL everything */
-    int i;
-    for (i = 0; i < ol_ht_bucket_max(to_alloc); i++){
-        new_db->hashes[i] = NULL;
-    }
-
     /* Make sure that the directory the database is in exists */
     struct stat st = {0};
     if (!_ol_get_stat(path, &st) || !S_ISDIR(st.st_mode)) /* Check to see if the DB exists */
