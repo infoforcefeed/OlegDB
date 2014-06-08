@@ -56,7 +56,7 @@ typedef char ** ol_val_array;
 * xXx klen=Length of the key. xXx
 * xXx *content_type=The content-type of this object. If using the server, this defaults to "application/octet-stream". xXx
 * xXx ctype_size=Length of the string representing content-type. xXx
-* xXx data_ptr=Location of this key's value (data). xXx
+* xXx data_offset=Location of this key's value (data) in the values file on disk. xXx
 * xXx data_size=Length of the value (data) in bytes. This is the size of the data stored in memory. xXx
 * xXx original_size=Length of the value (data) in bytes. This is the original length of the data we receieved, non-compressed. xXx
 * xXx hash=Hashed value of this key. xXx
@@ -69,7 +69,7 @@ typedef struct ol_bucket {
     size_t              klen;
     char                *content_type;
     size_t              ctype_size;
-    unsigned char       *data_ptr;
+    size_t              data_offset;
     size_t              data_size;
     size_t              original_size;
     uint32_t            hash;
@@ -77,6 +77,16 @@ typedef struct ol_bucket {
     struct tm           *expiration;
     ol_splay_tree_node  *node;
 } ol_bucket;
+
+/* xXx STRUCT=ol_meta xXx
+* xXx DESCRIPTION=Structure used to record meta-information about the database. xXx
+* xXx created=When the database was created. xXx
+* xXx key_collisions=The number of keys that have collided over the lifetime of this database. xXx
+*/
+typedef struct ol_meta {
+    time_t      created;
+    int         key_collisions;
+} ol_meta;
 
 /* xXx STRUCT=ol_database xXx
 * xXx DESCRIPTION=The object representing a database. This is used in almost every ol_* function to store state and your data. xXx
@@ -86,7 +96,6 @@ typedef struct ol_bucket {
 * xXx is_enabled=Helper function that checks weather or not a feature flag is enabled. xXx
 * xXx name=The name of the database. xXx
 * xXx path[PATH_LENGTH]=Path to the database's working directory. xXx
-* xXx dump_file=Path and filename of db dump. xXx
 * xXx aol_file=Path and filename of the append only log. xXx
 * xXx aolfd=Pointer of FILE type to append only log. xXx
 * xXx feature_set=Bitmask holding enabled/disabled status of various features. See ol_feature_flags. xXx
@@ -96,7 +105,10 @@ typedef struct ol_bucket {
 * xXx created=Timestamp of when the database was initialized. xXx
 * xXx cur_ht_size=The current amount, in bytes, of space allocated for storing <a href="#ol_bucket">ol_bucket</a> objects. xXx
 * xXx **hashes=The actual hashtable. Stores <a href="#ol_bucket">ol_bucket</a> instances. xXx
+* xXx *values=This is where values for hashes are stored. This is a pointer to an mmap()'d region of memory. xXx
+* xXx val_size=The size of the sum total of records in the db, in bytes. It is <strong>not</strong> the size of the file on disk. xXx
 * xXx *tree=A pointer to the splay tree holding the ordered list of keys. xXx
+* xXx *meta=A pointer to a struct holding extra meta information. See <a href="#ol_meta">oleg_meta</a> for more information. xXx
 */
 typedef struct ol_database {
     void      (*get_db_file_name)(struct ol_database *db,const char *p,char*);
@@ -105,25 +117,18 @@ typedef struct ol_database {
     bool      (*is_enabled)(int, int*);
     char      name[DB_NAME_SIZE];
     char      path[PATH_LENGTH];
-    char      *dump_file;
     char      *aol_file;
     FILE      *aolfd;
     int       feature_set;
     short int state;
     int       rcrd_cnt;
-    int       key_collisions;
-    time_t    created;
     size_t    cur_ht_size;
     ol_bucket **hashes;
+    void      *values;
+    size_t    val_size;
     ol_splay_tree *tree;
+    ol_meta   *meta;
 } ol_database;
-
-/* xXx STRUCT=ol_meta xXx
-* xXx DESCRIPTION=Structure used to record meta-information about the database. xXx
-*/
-typedef struct ol_meta {
-    time_t uptime;
-} ol_meta;
 
 /* xXx FUNCTION=ol_open xXx
  * xXx DESCRIPTION=Opens a database for use. xXx

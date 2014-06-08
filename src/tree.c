@@ -312,7 +312,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
         ol_splay_tree_node *cur_node = (ol_splay_tree_node *)spop(&matches);
         ol_bucket *deref = (ol_bucket *)cur_node->ref_obj;
 
-        unsigned char *data_ptr = deref->data_ptr;
+        unsigned char *data_ptr = db->values + deref->data_offset;
         size_t data_len = deref->original_size;
 
         dest = malloc(data_len);

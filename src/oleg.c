@@ -1,29 +1,25 @@
 /* Main oleg source code. See corresponding header file for more info. */
 #include <assert.h>
+#include <fcntl.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
+#include <unistd.h>
+
 #include "oleg.h"
+#include "file.h"
 #include "aol.h"
 #include "logging.h"
-#include "dump.h"
 #include "murmur3.h"
 #include "errhandle.h"
 #include "rehash.h"
 #include "utils.h"
 #include "lz4.h"
-
-/* Fix for the GNU extension strnlen not being available on some platforms */
-#if defined(__MINGW32_VERSION) || (defined(__APPLE__) && \
-    __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1070)
-size_t strnlen(char *text, size_t maxlen) {
-    const char *last = memchr(text, '\0', maxlen);
-    return last ? (size_t) (last - text) : maxlen;
-}
-#endif
 
 
 inline int ol_ht_bucket_max(size_t ht_size) {
@@ -48,28 +44,28 @@ bool _ol_is_enabled(int feature, int *feature_set) {
 
 ol_database *ol_open(char *path, char *name, int features){
     debug("Opening \"%s\" database", name);
-    ol_database *new_db = malloc(sizeof(struct ol_database));
+    ol_database *new_db = malloc(sizeof(ol_database));
 
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = calloc(1, to_alloc);
     new_db->cur_ht_size = to_alloc;
 
-    /* NULL everything */
-    int i;
-    for (i = 0; i < ol_ht_bucket_max(to_alloc); i++){
-        new_db->hashes[i] = NULL;
-    }
+    /* Make sure that the directory the database is in exists */
+    struct stat st = {0};
+    if (!_ol_get_stat(path, &st) || !S_ISDIR(st.st_mode)) /* Check to see if the DB exists */
+        mkdir(path, 0755);
 
     time_t created;
     time(&created);
-    new_db->created = created;
+    new_db->meta = malloc(sizeof(ol_meta));
+    new_db->meta->created = created;
+    new_db->meta->key_collisions = 0;
     new_db->rcrd_cnt = 0;
-    new_db->key_collisions = 0;
-    new_db->aolfd = 0;
+    new_db->val_size = 0;
 
     /* Null every pointer before initialization in case something goes wrong */
-    new_db->dump_file = NULL;
     new_db->aol_file = NULL;
+    new_db->aolfd = 0;
 
     /* Function pointers for feature flags */
     new_db->enable = &_ol_enable;
@@ -79,23 +75,17 @@ ol_database *ol_open(char *path, char *name, int features){
     /* Function pointer building file paths based on db name */
     new_db->get_db_file_name = &_ol_get_file_name;
 
+    /* Zero out the db name and path strings */
     memset(new_db->name, '\0', DB_NAME_SIZE);
     strncpy(new_db->name, name, DB_NAME_SIZE);
     memset(new_db->path, '\0', PATH_LENGTH);
     strncpy(new_db->path, path, PATH_LENGTH);
 
-    /* Make sure that the directory the database is in exists */
-    struct stat st = {0};
-    if (stat(path, &st) == -1) /* Check to see if the DB exists */
-        mkdir(path, 0755);
+    /* mmap() the values into memory. */
+    new_db->values = NULL;
 
-    new_db->dump_file = calloc(1, 512);
-    check_mem(new_db->dump_file);
-    new_db->get_db_file_name(new_db, "dump", new_db->dump_file);
+    _ol_open_values(new_db);
 
-    new_db->aol_file = calloc(1, 512);
-    check_mem(new_db->aol_file);
-    new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
     new_db->feature_set = features;
     new_db->state = OL_S_STARTUP;
     /* Allocate a splay tree if we're into that */
@@ -104,6 +94,14 @@ ol_database *ol_open(char *path, char *name, int features){
         new_db->tree->root = NULL;
         new_db->tree->rcrd_cnt = 0;
     }
+
+    /* We figure out the filename now incase someone flips the aol_init bit
+     * later.
+     */
+    new_db->aol_file = calloc(1, 512);
+    check_mem(new_db->aol_file);
+    new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
+
     /* Lets use an append-only log file */
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
         ol_aol_init(new_db);
@@ -116,8 +114,6 @@ ol_database *ol_open(char *path, char *name, int features){
 error:
     /* Make sure we free the database first */
     if (new_db != NULL) {
-        if (new_db->dump_file != NULL)
-            free(new_db->dump_file);
         if (new_db->aol_file != NULL)
             free(new_db->aol_file);
         free(new_db);
@@ -158,10 +154,14 @@ int _ol_close(ol_database *db){
         debug("Files flushed to disk");
     }
 
-    free(db->hashes);
-    free(db->dump_file);
-    free(db->aol_file);
     db->feature_set = 0;
+
+    /* Sync and close values file. */
+    msync(db->values, db->val_size, MS_SYNC);
+    munmap(db->values, db->val_size);
+    free(db->aol_file);
+    free(db->meta);
+    free(db->hashes);
     free(db);
     if (freed != rcrd_cnt) {
         ol_log_msg(LOG_INFO, "Error: Couldn't free all records.");
@@ -173,7 +173,6 @@ int _ol_close(ol_database *db){
 
 int ol_close_save(ol_database *db) {
     debug("Saving and closing \"%s\" database.", db->name);
-    check(ol_save_db(db) == 0, "Could not save DB.");
     check(_ol_close(db) == 0, "Could not close DB.");
 
     return 0;
@@ -227,7 +226,7 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
     /* TODO: error codes? */
     int index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
     if (db->hashes[index] != NULL) {
-        db->key_collisions++;
+        db->meta->key_collisions++;
         ol_bucket *tmp_bucket = db->hashes[index];
         tmp_bucket = _ol_get_last_bucket_in_slot(tmp_bucket);
         tmp_bucket->next = bucket;
@@ -301,16 +300,17 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
                 check(ret == dsize, "Could not copy data size into input data_size param.");
             }
 
+            unsigned char *data_ptr = db->values + bucket->data_offset;
             /* Decomperss with LZ4 if enabled */
             if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
                 int processed = 0;
-                processed = LZ4_decompress_fast((char *)bucket->data_ptr,
+                processed = LZ4_decompress_fast((char *)data_ptr,
                                                 (char *)*data,
                                                 bucket->original_size);
                 check(processed == bucket->data_size, "Could not decompress data.");
             } else {
                 /* We know data isn't NULL by this point. */
-                char *ret = strncpy((char *)*data, (char *)bucket->data_ptr, bucket->original_size);
+                char *ret = strncpy((char *)*data, (char *)data_ptr, bucket->original_size);
                 check(ret == (char *)*data, "Could not copy data into output data param.");
             }
 
@@ -332,25 +332,31 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
         unsigned char *value, size_t vsize, const char *ct, const size_t ctsize) {
     debug("Reallocating bucket.");
 
-    unsigned char *data = NULL;
+    unsigned char *old_data_ptr = db->values + bucket->data_offset;
+    /* Clear out the old data in the file. */
+    memset(old_data_ptr, '\0', bucket->data_size);
+    /* Compute the new position of the data in the values file: */
+    const size_t new_offset = db->val_size;
+    unsigned char *new_data_ptr = NULL;
 
     /* Compress using LZ4 if enabled */
     size_t cmsize = 0;
     if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         int maxoutsize = LZ4_compressBound(vsize);
-        data = realloc(bucket->data_ptr, maxoutsize);
-        cmsize = (size_t)LZ4_compress((char*)value, (char*)data,
+        _ol_ensure_values_file_size(db, maxoutsize);
+        new_data_ptr = db->values + db->val_size;
+
+        cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
                                       (int)vsize);
     } else {
-        data = realloc(bucket->data_ptr, vsize);
-
-        if (memcpy(data, value, vsize) != data)
+        _ol_ensure_values_file_size(db, vsize);
+        new_data_ptr = db->values + db->val_size;
+        if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
             return 4;
     }
 
     char *ct_real = realloc(bucket->content_type, ctsize+1);
     if (strncpy(ct_real, ct, ctsize) != ct_real) {
-        free(data);
         free(ct_real);
         return 5;
     }
@@ -371,7 +377,10 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     } else {
         bucket->data_size = vsize;
     }
-    bucket->data_ptr = data;
+    bucket->data_offset = new_offset;
+
+    /* Remember to increment the tracked data size of the DB. */
+    db->val_size += bucket->data_size;
 
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
             db->state != OL_S_STARTUP) {
@@ -439,41 +448,48 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
 
     new_bucket->original_size = vsize;
-    unsigned char *compressed = NULL;
-    if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-        /* Compress using LZ4 if enabled */
-        int maxoutsize = LZ4_compressBound(vsize);
-        compressed = calloc(1, maxoutsize);
-        size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)compressed,
-                                      (int)vsize);
-        if (cmsize == 0) {
-            /* Free allocated data */
-            free(new_bucket->content_type);
-            free(new_bucket);
-            free(compressed);
-            return 1;
-        }
 
-        unsigned char *ret = realloc(compressed, cmsize);
-        if (ret == NULL) {
-            ol_log_msg(LOG_ERR, "Could not slim down memory for compressed data.");
+    /* Compute the new position of the data in the values file: */
+    const size_t new_offset = db->val_size;
+    unsigned char *new_data_ptr = NULL;
+
+    if (db->state != OL_S_STARTUP) {
+        if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+            /* Compress using LZ4 if enabled */
+            int maxoutsize = LZ4_compressBound(vsize);
+            _ol_ensure_values_file_size(db, maxoutsize);
+            new_data_ptr = db->values + db->val_size;
+            memset(new_data_ptr, '\0', maxoutsize);
+
+            /* All these fucking casts */
+            size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
+                                                 (int)vsize);
+            if (cmsize == 0) {
+                /* Free allocated data */
+                free(new_bucket->content_type);
+                free(new_bucket);
+                return 1;
+            }
+
+            new_bucket->data_size = cmsize;
+            new_bucket->data_offset = new_offset;
         } else {
-            compressed = ret;
+            new_bucket->data_size = vsize;
+            _ol_ensure_values_file_size(db, new_bucket->data_size);
+            new_data_ptr = db->values + db->val_size;
+            memset(new_data_ptr, '\0', new_bucket->data_size);
+
+            if (memcpy(new_data_ptr, value, vsize) != new_data_ptr) {
+                /* Free allocated memory since we're not going to use them */
+                free(new_bucket->content_type);
+                free(new_bucket);
+                return 3;
+            }
+            new_bucket->data_offset = new_offset;
         }
 
-        new_bucket->data_size = cmsize;
-        new_bucket->data_ptr = compressed;
-    } else {
-        new_bucket->data_size = vsize;
-        unsigned char *data = calloc(1, vsize);
-        if (memcpy(data, value, vsize) != data) {
-            /* Free allocated memory since we're not going to use them */
-            free(new_bucket->content_type);
-            free(new_bucket);
-            free(data);
-            return 3;
-        }
-        new_bucket->data_ptr = data;
+        /* Remember to increment the tracked data size of the DB. */
+        db->val_size += new_bucket->data_size;
     }
 
     ret = _ol_set_bucket(db, new_bucket);
@@ -592,6 +608,9 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             ols_delete(db->tree, to_free->node);
             to_free->node = NULL;
         }
+        unsigned char *data_ptr = db->values + to_free->data_offset;
+        const size_t data_size = to_free->data_size;
+        memset(data_ptr, '\0', data_size);
         _ol_free_bucket(&to_free);
         db->rcrd_cnt -= 1;
     }
@@ -649,6 +668,6 @@ int ol_uptime(ol_database *db) {
     time_t now;
     double diff;
     time(&now);
-    diff = difftime(now, db->created);
+    diff = difftime(now, db->meta->created);
     return diff;
 }

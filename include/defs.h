@@ -31,3 +31,12 @@
 */
 #define DEVILS_SEED 666
 
+/* xXx DEFINE=VALUES_FILENAME xXx
+* xXx DESCRIPTION=The file extension used for the values file on disk. xXx
+*/
+#define VALUES_FILENAME "val"
+
+/* xXx DEFINE=VALUES_DEFAULT_SIZE xXx
+* xXx DESCRIPTION=The default size of the values file on disk. 4 MB by default. xXx
+*/
+#define VALUES_DEFAULT_SIZE 4194304

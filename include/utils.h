@@ -1,4 +1,6 @@
 #pragma once
+#include <sys/stat.h>
+#include <sys/types.h>
 /* Utility functions that don't have a home. */
 
 /* Internal function used to get the last bucket on the
