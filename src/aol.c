@@ -196,13 +196,20 @@ int ol_aol_restore(ol_database *db) {
                 int processed = 0;
                 processed = LZ4_decompress_fast((const char*)data_ptr,
                                                 (char *)&tmp_data, original_size);
-                check(processed == current_size, "Could not decompress data.");
-                ol_jar_ct(db, key->data, key->dlen, tmp_data, original_size,
-                        ct->data, ct->dlen);
+                if (processed == current_size) {
+                    ol_jar_ct(db, key->data, key->dlen, tmp_data, original_size,
+                            ct->data, ct->dlen);
+                } else {
+                    ol_log_msg(LOG_WARN, "Could not decompress data. Data may have been previously deleted.");
+                }
             } else {
                 /* Data is uncompressed, no need for trickery. */
-                ol_jar_ct(db, key->data, key->dlen, data_ptr, current_size,
-                        ct->data, ct->dlen);
+                if (data_ptr[0] != '\0') {
+                    ol_jar_ct(db, key->data, key->dlen, data_ptr, current_size,
+                            ct->data, ct->dlen);
+                } else {
+                    ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Deleted?");
+                }
             }
             free(read_org_size->data);
             free(read_org_size);
