@@ -37,7 +37,7 @@ main.o: ./src/main.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 
 port_driver.o: ./src/port_driver.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(ERLINCLUDES) $(ERLLIBS) -L$(LIB_DIR) -c $< -fpic
+	$(CC) $(CFLAGS) $(INCLUDES) $(ERLINCLUDES) -c $< -fpic
 
 %.o: ./src/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -fPIC $<
