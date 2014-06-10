@@ -3,6 +3,7 @@
 %%% driver interface.
 -module(ol_database).
 -export([start/0,
+         stop/0,
          init/1,
          ol_init/1,
          ol_jar/1,
@@ -25,6 +26,12 @@ start() ->
     spawn(fun() -> ?MODULE:init(Me) end),
     receive
         spawned -> ok
+    end.
+
+stop() ->
+    case erl_ddll:unload_driver(?SHAREDLIB) of
+        ok -> ok;
+        {error, ErrorDesc} -> exit(erl_ddll:format_error(ErrorDesc))
     end.
 
 init(Papa) ->
