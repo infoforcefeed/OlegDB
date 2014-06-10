@@ -33,13 +33,15 @@ parse_url(Url) ->
 
 parse_http(Data) ->
     case parse_db_name_and_key(Data) of
+        % The only difference between these two is /<db_name>/<key> vs. /<key>
         {ReqType, {ok, DB_Name, Key}} ->
             {ok, ReqType, parse_header(Data,
                     #ol_record{database=DB_Name,key=Key}
                 )};
         {ReqType, {ok, Key}} ->
             {ok, ReqType, parse_header(Data, #ol_record{key=Key})};
-        X -> X
+        X -> io:format("[-] Could not parse http in a sane way: ~p~n", [X]),
+            throw(bad_parse)
     end.
 
 parse_header(Data, Record) ->
@@ -50,7 +52,12 @@ parse_header(Data, Record) ->
             LowercaseHeader = ol_util:bits_to_lower(Header),
             parse_header1(binary:split(LowercaseHeader, [<<"\r\n">>], [global]),
                           { Record#ol_record{value=PostedData}, []});
-        X -> X
+        [Header|_] ->
+            LowercaseHeader = ol_util:bits_to_lower(Header),
+            parse_header1(binary:split(LowercaseHeader, [<<"\r\n">>], [global]),
+                          { Record#ol_record{}, []});
+        X -> io:format("[-] Could not parse header in a sane way: ~p~n", [X]),
+            throw(bad_parse)
     end.
 
 %% Tail recursive function that maps over the lines in a header to fill out
