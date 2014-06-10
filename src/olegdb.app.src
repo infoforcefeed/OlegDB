@@ -1,6 +1,6 @@
 {application, OlegDB, [
     {description, "OlegDB, the Layman's Database"},
-    {vsn, "0.1.1"},
+    {vsn, "0.1.2"},
     {modules,
         [ ol_database
         , olegdb
