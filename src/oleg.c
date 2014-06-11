@@ -121,17 +121,19 @@ error:
     return NULL;
 }
 
-int _ol_close(ol_database *db){
+int ol_close(ol_database *db){
+    debug("Closing \"%s\" database.", db->name);
+
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
-    int i;
     int rcrd_cnt = db->rcrd_cnt;
     int freed = 0;
     debug("Freeing %d records.", rcrd_cnt);
     debug("Hash table iterations: %d.", iterations);
-    for (i = 0; i < iterations; i++) { /* 8=======D */
+
+    int i = 0;
+    for (; i < iterations; i++) { /* 8=======D */
         if (db->hashes[i] != NULL) {
-            ol_bucket *ptr;
-            ol_bucket *next;
+            ol_bucket *ptr, *next;
             for (ptr = db->hashes[i]; NULL != ptr; ptr = next) {
                 next = ptr->next;
                 _ol_free_bucket(&ptr);
@@ -163,19 +165,9 @@ int _ol_close(ol_database *db){
     free(db->meta);
     free(db->hashes);
     free(db);
-    if (freed != rcrd_cnt) {
-        ol_log_msg(LOG_INFO, "Error: Couldn't free all records.");
-        ol_log_msg(LOG_INFO, "Records freed: %i\n", freed);
-        return 1;
-    }
+
+    check(freed != rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
     ol_log_msg(LOG_INFO, "Database closed. Remember to drink your coffee.");
-    return 0;
-}
-
-int ol_close(ol_database *db) {
-    debug("Closing \"%s\" database.", db->name);
-    check(_ol_close(db) == 0, "Could not close DB.");
-
     return 0;
 
 error:
