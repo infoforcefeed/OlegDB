@@ -341,7 +341,6 @@ error:
         free(to_return);
     if (dest != NULL)
         free(dest);
-    free(matches);
 
     return -1;
 }
