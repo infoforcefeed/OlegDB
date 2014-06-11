@@ -403,9 +403,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
 
     /* Looks like we don't have an old hash */
-    ol_bucket *new_bucket = malloc(sizeof(ol_bucket));
-    new_bucket->data_size = 0;
-    new_bucket->data_offset = 0;
+    ol_bucket *new_bucket = calloc(1, sizeof(ol_bucket));
     if (new_bucket == NULL)
         return 1;
 
@@ -414,13 +412,9 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         return 2;
     }
     new_bucket->klen = _klen;
-    new_bucket->expiration = NULL;
-
-    new_bucket->next = NULL;
-
     new_bucket->hash = hash;
-
     new_bucket->ctype_size = ctsize;
+    
     char *ct_real = calloc(1, ctsize+1);
     if (strncpy(ct_real, ct, ctsize) != ct_real) {
         /* Free allocated memory since we're not going to use them */
