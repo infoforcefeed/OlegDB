@@ -1,5 +1,6 @@
 %%% Erlang record shared between many functions.
--record(ol_record, {database = <<"oleg">>,
+-define(DEFAULT_DBNAME, <<"oleg">>).
+-record(ol_record, {database = ?DEFAULT_DBNAME,
                     expiration_time=-1,
                     key, % Binary
                     content_type = <<"application/octet-stream">>,

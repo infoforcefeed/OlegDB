@@ -118,6 +118,9 @@ static ol_record *read_record(char *buf, int index) {
     return new_obj;
 }
 
+/* So this is where all the magic happens. If you want to know how we switch
+ * on different commands, go look at ol_database:encode/1.
+ */
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     oleg_data *d = (oleg_data*)data;
     int res = 0;
@@ -126,12 +129,14 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
     debug("Command from server: %i", fn);
     if (fn == 0) {
+        /* ol_init */
         int tmp_index = 1;
         int version = 0;
 
         if (ei_decode_version(cmd, &tmp_index, &version))
             ol_log_msg(LOG_WARN, "Could not decode version.\n");
 
+        /* Decode passed string into our persistent data structure: */
         if (ei_decode_string(cmd, &tmp_index, d->db_loc))
             ol_log_msg(LOG_WARN, "Could not get database location.\n");
 

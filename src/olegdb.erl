@@ -144,7 +144,7 @@ main([DbLocation|Args]) ->
             io:format("[-] Starting server.~n"),
             ol_database:start(),
             ol_database:ol_init(DbLocation),
-            io:format("Args: ~p~n", [Args]),
+            io:format("[-] Args: ~p~n", [Args]),
             case Args of
                 [] -> server_manager(self());
                 [Port] ->

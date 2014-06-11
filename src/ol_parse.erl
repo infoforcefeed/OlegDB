@@ -34,9 +34,9 @@ parse_http(Data) ->
     case parse_db_name_and_key(Data) of
         % The only difference between these two is /<db_name>/<key> vs. /<key>
         {ReqType, {ok, DB_Name, Key}} ->
-            {ok, ReqType, parse_header(Data,
-                    #ol_record{database=DB_Name,key=Key}
-                )};
+            {ok, ReqType, parse_header(Data, #ol_record{database=DB_Name, key=Key}
+                                      )};
+        % Default to whatever database name is specified in include/olegdb.hrl:
         {ReqType, {ok, Key}} ->
             {ok, ReqType, parse_header(Data, #ol_record{key=Key})};
         X -> io:format("[-] Could not parse http in a sane way: ~p~n", [X]),
