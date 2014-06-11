@@ -19,6 +19,8 @@ static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *nod
 
         if (right_child->left != NULL)
             right_child->left->parent = node;
+
+        right_child->left = node;
     }
 
     if (!node->parent)
@@ -28,7 +30,6 @@ static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *nod
     else
         node->parent->right = right_child;
 
-    right_child->left = node;
     node->parent = right_child;
 }
 
@@ -41,6 +42,8 @@ static inline void _ols_right_rotate(ol_splay_tree *tree, ol_splay_tree_node *no
 
         if (left_child->right != NULL)
             left_child->right->parent = node;
+
+        left_child->right = node;
     }
 
     if (!node->parent)
@@ -50,7 +53,6 @@ static inline void _ols_right_rotate(ol_splay_tree *tree, ol_splay_tree_node *no
     else
         node->parent->left = left_child;
 
-    left_child->right = node;
     node->parent = left_child;
 }
 
