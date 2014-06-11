@@ -279,11 +279,11 @@ error:
         free(ct->data);
         free(ct);
     }
-    if (read_org_size) {
+    if (read_org_size != NULL) {
         free(read_org_size->data);
         free(read_org_size);
     }
-    if (read_data_size) {
+    if (read_data_size != NULL) {
         free(read_data_size->data);
         free(read_data_size);
     }
