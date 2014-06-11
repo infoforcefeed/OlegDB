@@ -3,7 +3,6 @@
 %%% driver interface.
 -module(ol_database).
 -export([start/0,
-         stop/0,
          init/1,
          ol_init/1,
          ol_jar/1,
@@ -28,14 +27,8 @@ start() ->
         spawned -> ok
     end.
 
-stop() ->
-    case erl_ddll:unload_driver(?SHAREDLIB) of
-        ok -> ok;
-        {error, ErrorDesc} -> exit(erl_ddll:format_error(ErrorDesc))
-    end.
-
 init(Papa) ->
-    register(olegdb, self()),
+    register(olegdb_port_driver, self()),
     Port = open_port({spawn, ?SHAREDLIB}, [binary]),
     Papa ! spawned,
     loop(Port).
@@ -59,16 +52,18 @@ loop(Port) ->
             receive
                 %% Give the caller our result
                 {Port, {data, Data}} ->
-                    Caller ! {olegdb, binary_to_term(Data)};
+                    Caller ! {olegdb_port_driver, binary_to_term(Data)};
                 badarg ->
                     io:format("Badarg ~n"),
                         exit(port_terminated)
             end,
             loop(Port);
-        stop ->
+        {shutdown, From} ->
+            io:format("[-] Shutting down.~n"),
             Port ! {self(), close},
             receive
                 {Port, closed} ->
+                    From ! {ok, self()},
                     exit(normal)
             end;
         {'EXIT', Port, Reason} ->
@@ -77,9 +72,9 @@ loop(Port) ->
     end.
 
 call_port(Msg) ->
-    olegdb ! {call, self(), Msg},
+    olegdb_port_driver ! {call, self(), Msg},
     receive
-        {olegdb, Result} ->
+        {olegdb_port_driver, Result} ->
             Result
     end.
 

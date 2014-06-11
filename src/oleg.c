@@ -168,6 +168,7 @@ int _ol_close(ol_database *db){
         ol_log_msg(LOG_INFO, "Records freed: %i\n", freed);
         return 1;
     }
+    ol_log_msg(LOG_INFO, "Database closed. Remember to drink your coffee.");
     return 0;
 }
 

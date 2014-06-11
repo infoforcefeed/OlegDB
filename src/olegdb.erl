@@ -119,12 +119,21 @@ hundred_handler(Header, Socket) ->
     end.
 
 
-mama() ->
+supervise() ->
     %% Eventually this function will do something interesting.
     %% We just sit here and block so that the parent process doesn't die
     %% while it's children are off living fulfilling lives.
     receive
-        _ -> mama()
+        {shutdown, From} ->
+            olegdb_port_driver ! {shutdown, self()},
+            receive
+                {ok, _} ->
+                    From ! {ok, self()},
+                    io:format("[-] Night night.~n"),
+                    exit(ok)
+            end;
+        X -> io:format("[-] Receieved message: ~p~n", [X]),
+            supervise()
     end.
 
 main() -> main([]).
@@ -137,7 +146,7 @@ main([DbLocation|Args]) ->
             io:format("[-] Starting server.~n"),
             ol_database:start(),
             ol_database:ol_init(DbLocation),
-            io:format("Args: ~p", [Args]),
+            io:format("Args: ~p~n", [Args]),
             case Args of
                 [] -> server_manager(self());
                 [Port] ->
@@ -147,7 +156,9 @@ main([DbLocation|Args]) ->
                     {PortNum, _} = string:to_integer(Port),
                     server_manager(self(), Hostname, PortNum)
             end,
-            mama();
+            register(satan, self()),
+            io:format("[-] Death spiral. Running as ~p~n", [node()]),
+            supervise();
         _ ->
             io:format("[X] Specified database directory does not exist.~n"),
             exit(location_does_not_exst)
