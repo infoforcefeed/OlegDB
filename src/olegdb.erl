@@ -100,8 +100,6 @@ route(Bits, Socket) ->
             io:format("[-] Error ~p~n", [ErrMsg]),
             ol_http:error_response(ErrMsg);
         X ->
-            Trace = try throw(42) catch 42 -> erlang:get_stacktrace() end,
-            erlang:display(Trace),
             io:format("[-] Somebody requested something weird: ~p~n", [X]),
             ol_http:error_response(<<"Make a better request next time.">>)
     end.
