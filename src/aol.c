@@ -127,7 +127,7 @@ ol_string *_ol_read_data(FILE *fd) {
         l = (size_t)strtol(buf, NULL, 10);
         const size_t total_size = l+1;
         data->data = calloc(1, total_size);
-        check(fread(data->data, l, 1, fd) != 0, "Error reading");
+        check(fread(data->data, l, 1, fd) == 1, "Could not read from AOL file.");
         data->data[l] = '\0';
         data->dlen = total_size;
         return data;
