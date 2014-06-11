@@ -267,11 +267,16 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
     char _key[KEY_SIZE] = {'\0'};
     _ol_trunc(key, klen, _key);
     size_t _klen = strnlen(_key, KEY_SIZE);
+
+    if (_klen == 0)
+        return 1;
+
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
 
     if (bucket != NULL) {
         if (!_has_bucket_expired(bucket)) {
+            /* We don't need to fill out the data so just return 'we found the key'. */
             if (data == NULL)
                 return 0;
 
@@ -385,6 +390,10 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     char _key[KEY_SIZE] = {'\0'};
     _ol_trunc(key, klen, _key);
     size_t _klen = strnlen(_key, KEY_SIZE);
+
+    if (_klen == 0)
+        return 1;
+
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
 
@@ -510,6 +519,9 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
     _ol_trunc(key, klen, _key);
     size_t _klen = strnlen(_key, KEY_SIZE);
 
+    if (_klen == 0)
+        return 1;
+
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
 
@@ -547,6 +559,10 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
     char _key[KEY_SIZE] = {'\0'};
     _ol_trunc(key, klen, _key);
     size_t _klen = strnlen(_key, KEY_SIZE);
+
+    if (_klen == 0)
+        return 1;
+
 
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     int index = _ol_calc_idx(db->cur_ht_size, hash);
