@@ -313,9 +313,11 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
         ol_bucket *deref = (ol_bucket *)cur_node->ref_obj;
 
         unsigned char *data_ptr = db->values + deref->data_offset;
-        size_t data_len = deref->original_size;
+        size_t data_len = 0;
+        data_len = deref->original_size;
 
         dest = malloc(data_len);
+        check_mem(dest);
         if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
             int processed = 0;
             processed = LZ4_decompress_fast((char *)data_ptr, dest, data_len);
