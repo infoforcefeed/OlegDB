@@ -47,13 +47,12 @@ int _ol_open_values_with_fd(ol_database *db, const int fd, const size_t filesize
     check(db->values != NULL, "Could not mmap values file.");
 
     /* Make sure the file is at least as big as HASH_MALLOC */
-    if (filesize <= 0) {
-         check(ftruncate(fd, to_mmap) != -1, "Could not truncate file for values.");
-         int i;
-         const int max = to_mmap / sizeof(unsigned char *);
-         /* Null out the stragglers */
-         for (i = 0; i < max; i++)
-             ((unsigned char **)db->values)[i] = NULL;
+    check(ftruncate(fd, to_mmap) != -1, "Could not truncate file for values.");
+    int i;
+    const int max = to_mmap / sizeof(unsigned char *);
+    /* Null out the stragglers */
+    for (i = 0; i < max; i++) {
+        ((unsigned char **)db->values)[i] = NULL;
     }
 
     close(fd);

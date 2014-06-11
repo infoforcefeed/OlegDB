@@ -111,13 +111,13 @@ error:
 
 ol_string *_ol_read_data(FILE *fd) {
     int c;
-    char buf[20] = {0};
     ol_string *data = calloc(1, sizeof(ol_string));
 
     c = fgetc(fd);
     if (c == ':'){
         int i = 0;
         size_t l = 0;
+        char buf[20] = {0};
         while ((c = fgetc(fd)) != ':') {
             buf[i] = '\0';
             buf[i] = c;
