@@ -594,27 +594,6 @@ int test_aol() {
         return 4;
     }
 
-    unsigned char to_insert[] = "Well this is some petty garbage. I really wish"
-        "that the AOL wouldn't crash or a-anything like that. How awful would"
-        "that be? We'd have to cope with such nonsense.";
-    int i = 0;
-    for (i = 0; i < max_records; i++) {
-        char key3[] = "random_shit";
-        char prepend[64] = "";
-
-        sprintf(prepend, "%i", i);
-        strcat(prepend, key3);
-
-        size_t len = strlen((char *)to_insert);
-        int insert_result = ol_jar(db, prepend, strlen(prepend), to_insert, len);
-
-        if (insert_result > 0) {
-            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
-            _test_db_close(db);
-            return 2;
-        }
-    }
-
     /* We don't want to use test_db_close here because we want to retrieve
      * values again. */
     ol_close(db);

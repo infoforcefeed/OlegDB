@@ -64,7 +64,7 @@ loop(Port) ->
             receive
                 {Port, closed} ->
                     From ! {ok, self()},
-                    exit(normal)
+                    halt()
             end;
         {'EXIT', Port, Reason} ->
             io:format("~p ~n", [Reason]),

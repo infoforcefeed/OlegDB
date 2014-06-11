@@ -130,7 +130,7 @@ supervise() ->
                 {ok, _} ->
                     From ! {ok, self()},
                     io:format("[-] Night night.~n"),
-                    exit(ok)
+                    halt()
             end;
         X -> io:format("[-] Receieved message: ~p~n", [X]),
             supervise()

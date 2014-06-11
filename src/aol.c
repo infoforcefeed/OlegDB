@@ -183,9 +183,15 @@ int ol_aol_restore(ol_database *db) {
             value = _ol_read_data(fd);
             check(value, "Error reading");
 
-            size_t original_size = (size_t)atoi(read_org_size->data);
-            size_t current_size = (size_t)atoi(read_data_size->data);
-            size_t data_offset = (size_t)atoi(value->data);
+            size_t original_size = 0;
+            original_size = (size_t)strtol(read_org_size->data, NULL, 10);
+
+            size_t current_size = 0;
+            current_size = (size_t)strtol(read_data_size->data, NULL, 10);
+
+            size_t data_offset = 0;
+            data_offset = (size_t)strtol(value->data, NULL, 10);
+
             unsigned char *data_ptr = db->values + data_offset;
 
             if (original_size != current_size) {
