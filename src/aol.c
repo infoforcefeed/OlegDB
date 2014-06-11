@@ -283,6 +283,10 @@ error:
         free(read_org_size->data);
         free(read_org_size);
     }
+    if (read_data_size) {
+        free(read_data_size->data);
+        free(read_data_size);
+    }
     if (fd != NULL) {
         fclose(fd);
     }
