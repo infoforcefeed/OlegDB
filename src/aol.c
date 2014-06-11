@@ -36,7 +36,7 @@ static inline void _serialize_time(struct tm *time, char *buf) {
     strftime(buf, 21, "%FT%TZ", time);
 }
 
-static inline void _deserialize_time(struct tm *time, char *buf) {
+void _deserialize_time(struct tm *fillout, char *buf) {
     /* Example 8601 datestamp: 2014-03-08T11:17:39Z */
     char year[4]={0}, month[2]={0}, day[2]={0};
     char hour[2]={0}, min[2]={0}, sec[2]={0};
@@ -49,13 +49,14 @@ static inline void _deserialize_time(struct tm *time, char *buf) {
     memcpy(&min, &buf[14], 2);
     memcpy(&sec, &buf[17], 2);
 
-    time->tm_year = atoi(year) - 1900;
-    time->tm_mon = atoi(month) - 1;
-    time->tm_mday = atoi(day);
+    memset(fillout, '\0', sizeof(struct tm));
+    fillout->tm_year = strtol(year, NULL, 10) - 1900;
+    fillout->tm_mon = strtol(month, NULL, 10) - 1;
+    fillout->tm_mday = strtol(day, NULL, 10);
 
-    time->tm_hour = atoi(hour);
-    time->tm_min = atoi(min);
-    time->tm_sec = atoi(sec);
+    fillout->tm_hour = strtol(hour, NULL, 10);
+    fillout->tm_min = strtol(min, NULL, 10);
+    fillout->tm_sec = strtol(sec, NULL, 10);
 }
 
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
@@ -225,7 +226,7 @@ int ol_aol_restore(ol_database *db) {
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {
             ol_scoop(db, key->data, key->dlen);
         } else if (strncmp(command->data, "SPOIL", 5) == 0) {
-            ol_string *spoil;
+            ol_string *spoil = NULL;
             spoil = _ol_read_data(fd);
 
             struct tm time = {0};
