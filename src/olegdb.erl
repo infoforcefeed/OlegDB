@@ -123,6 +123,7 @@ supervise() ->
     %% while it's children are off living fulfilling lives.
     receive
         {shutdown, From} ->
+            io:format("[-] Telling port driver to shut down.~n"),
             olegdb_port_driver ! {shutdown, self()},
             receive
                 {ok, _} ->

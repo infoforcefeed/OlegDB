@@ -1,19 +1,26 @@
 #!/usr/bin/env bash
 
+ATTEMPT=0
 handle_close() {
-    echo "WTF"
-    HOSTNAME=$(hostname)
-    KILLSTRING='{satan, olegdb@'$HOSTNAME'} ! {shutdown, self()}, halt().'
-    erl +Bd -noinput -sname the_judge_$$ -eval "$KILLSTRING"
-    echo "Should be cleaned."
+    if [ $ATTEMPT -eq 0 ]; then
+        ATTEMPT=1
+        #echo "Shutting down oleg..."
+        KILLSTRING="{satan, olegdb@$(hostname)} ! {shutdown, self()}, receive _ -> halt() end."
+        #echo "Running $KILLSTRING"
+        erl +Bd -noinput -sname the_judge_$$ -eval "$KILLSTRING"
+        #echo "Shutdown."
+    else
+        echo "Already tried."
+        exit 0
+    fi
 }
-trap handle_close SIGINT
+trap handle_close SIGINT SIGTERM
 
 export ERL_MAX_PORTS=4096
 RUN_DIR=/run/olegdb
 PID_FILE=$RUN_DIR/pid
 #TODO: +Bc here might be the trick
-ERL_OPTS="+Bc -sname olegdb -noinput +K true -smp enable -run olegdb main ${1+"$@"}"
+ERL_OPTS="+Bi -sname olegdb -noinput +K true -smp enable -run olegdb main ${1+"$@"}"
 
 
 CMD_NAME=$(basename $0)
@@ -34,4 +41,7 @@ else
 fi
 
 # TODO: Have the trap up above intercept the ctrl+c before this does
-exec erl $ERL_OPTS
+#erl $ERL_OPTS
+erl $ERL_OPTS &
+ERL_PID=$!
+wait $ERL_PID
