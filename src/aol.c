@@ -226,6 +226,7 @@ int ol_aol_restore(ol_database *db) {
             free(value->data);
             free(value);
             read_org_size = NULL;
+            read_data_sizer = NULL;
             ct = NULL;
             value = NULL;
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {
