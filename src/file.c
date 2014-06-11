@@ -40,13 +40,14 @@ error:
 }
 
 int _ol_open_values_with_fd(ol_database *db, const int fd, const size_t filesize) {
-    const size_t to_mmap = filesize <= 0 ? VALUES_DEFAULT_SIZE : filesize;
+    const size_t to_mmap = filesize == 0 ? VALUES_DEFAULT_SIZE : filesize;
 
     /* TODO: Do we need madivse(MADV_HUGEPAGE); here? */
     db->values = _ol_mmap(to_mmap, fd);
     check(db->values != NULL, "Could not mmap values file.");
 
-    /* Make sure the file is at least as big as HASH_MALLOC */
+    /* Make sure the file is at least as big as VALUES_DEFAULT_SIZE. This
+     * should only happen on init. */
     if (filesize == 0) {
         check(ftruncate(fd, to_mmap) != -1, "Could not truncate file for values.");
         int i;
