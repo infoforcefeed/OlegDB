@@ -191,7 +191,7 @@ int ol_aol_restore(ol_database *db) {
             size_t data_offset = 0;
             data_offset = (size_t)strtol(value->data, NULL, 10);
 
-            unsigned char *data_ptr = (unsigned char *)db->values + data_offset;
+            unsigned char *data_ptr = db->values + data_offset;
 
             if (original_size != current_size) {
                 /* Data is compressed, gotta deal with that. */

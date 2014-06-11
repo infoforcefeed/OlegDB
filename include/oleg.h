@@ -124,7 +124,7 @@ typedef struct ol_database {
     int       rcrd_cnt;
     size_t    cur_ht_size;
     ol_bucket **hashes;
-    void      *values;
+    unsigned char *values;
     size_t    val_size;
     ol_splay_tree *tree;
     ol_meta   *meta;
