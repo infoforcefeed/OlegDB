@@ -2,7 +2,6 @@
 -module(ol_parse).
 -include("olegdb.hrl").
 -export([parse_http/1]).
--define(KEY_SIZE, 32). % Should match the one in include/oleg.h
 
 parse_db_name_and_key(Data) ->
     [FirstLine|_] = binary:split(Data, [<<"\r\n">>]),
