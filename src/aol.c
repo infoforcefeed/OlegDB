@@ -123,9 +123,11 @@ ol_string *_ol_read_data(FILE *fd) {
         }
         buf[i + 1] = '\0';
         l = (size_t)strtol(buf, NULL, 10);
-        data->data = calloc(1, l);
+        const size_t total_size = l+1;
+        data->data = calloc(1, total_size);
         check(fread(data->data, l, 1, fd) != 0, "Error reading");
-        data->dlen = l;
+        data->data[l] = '\0';
+        data->dlen = total_size;
         return data;
     } else if (c == EOF) {
         data->dlen = 0;
@@ -212,6 +214,7 @@ int ol_aol_restore(ol_database *db) {
             ol_scoop(db, key->data, key->dlen);
         } else if (strncmp(command->data, "SPOIL", 5) == 0) {
             ol_string *spoil = _ol_read_data(fd);
+            check(spoil != NULL, "Could not read the rest of SPOIL command for AOL.");
 
             struct tm time = {0};
             _deserialize_time(&time, spoil->data);
