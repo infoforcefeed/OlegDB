@@ -12,10 +12,11 @@ int _ol_get_stat(const char *filepath, struct stat *sb) {
     if (fd == -1)
         return 0;
 
+    int ret = 1;
     if (fstat(fd, sb) == -1)
-        return 0;
+        ret = 0;
     close(fd);
-    return 1;
+    return ret;
 }
 
 size_t _ol_get_file_size(const char *filepath) {

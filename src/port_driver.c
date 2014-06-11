@@ -123,7 +123,6 @@ static ol_record *read_record(char *buf, int index) {
  */
 static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     oleg_data *d = (oleg_data*)data;
-    int res = 0;
     int fn = cmd[0];
     ol_record *obj = NULL;
 
@@ -170,6 +169,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
     if (fn == 1) {
         /* ol_jar */
+        int res = 0;
         res = ol_jar_ct(d->db, obj->key, obj->klen, obj->data, obj->data_len,
                obj->content_type, obj->ct_len);
 
@@ -262,8 +262,8 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     if (obj) {
         if (obj->data) driver_free(obj->data);
         driver_free(obj);
+        driver_free(obj->key);
     }
-    driver_free(obj->key);
 }
 
 /* Various callbacks */

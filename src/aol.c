@@ -41,7 +41,7 @@ void _deserialize_time(struct tm *fillout, char *buf) {
     char year[4]={0}, month[2]={0}, day[2]={0};
     char hour[2]={0}, min[2]={0}, sec[2]={0};
 
-    memcpy(&year, &buf[0], 4);
+    memcpy(&year, &buf, 4);
     memcpy(&month, &buf[5], 2);
     memcpy(&day, &buf[8], 2);
 
@@ -111,14 +111,13 @@ error:
 
 ol_string *_ol_read_data(FILE *fd) {
     int c;
-    int i;
-    size_t l;
     char buf[20] = {0};
     ol_string *data = calloc(1, sizeof(ol_string));
 
     c = fgetc(fd);
     if (c == ':'){
-        i = 0;
+        int i = 0;
+        size_t l = 0;
         while ((c = fgetc(fd)) != ':') {
             buf[i] = '\0';
             buf[i] = c;
@@ -192,7 +191,7 @@ int ol_aol_restore(ol_database *db) {
             size_t data_offset = 0;
             data_offset = (size_t)strtol(value->data, NULL, 10);
 
-            unsigned char *data_ptr = db->values + data_offset;
+            unsigned char *data_ptr = (unsigned char *)db->values + data_offset;
 
             if (original_size != current_size) {
                 /* Data is compressed, gotta deal with that. */
