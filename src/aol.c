@@ -66,12 +66,12 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
         /* I'LL RIGOR YER MORTIS */
         debug("Writing: \"%.*s\"", (int)bct->klen, bct->key);
         char aol_str[] =
-            ":%zu:%s:"      /* cmd length, cmd */
-            "%zu:%.*s:"     /* klen size, key */
-            "%zu:%.*s:"     /* ctype size, content_type */
-            "%zu:%0*i:"     /* sizeof(original_size), original_size */
-            "%zu:%0*i:"     /* sizeof(size_t), data_size */
-            "%zu:%0*i";     /* sizeof(size_t), offset into file */
+            ":%zu:%s"       /* cmd length, cmd */
+            ":%zu:%.*s"     /* klen size, key */
+            ":%zu:%.*s"     /* ctype size, content_type */
+            ":%zu:%0*d"     /* sizeof(original_size), original_size */
+            ":%zu:%0*d"     /* sizeof(size_t), data_size */
+            ":%zu:%0*d";    /* sizeof(size_t), offset into file */
         ret = fprintf(db->aolfd, aol_str,
                 strlen(cmd), cmd,
                 bct->klen, (int)bct->klen, bct->key,
@@ -130,6 +130,7 @@ ol_string *_ol_read_data(FILE *fd) {
         data->dlen = total_size;
         return data;
     } else if (c == EOF) {
+        ol_log_msg(LOG_WARN, "_ol_read_data EOF");
         data->dlen = 0;
         data->data = NULL;
         return data; /* A NULL ol_string means EOF was reached */
@@ -181,27 +182,28 @@ int ol_aol_restore(ol_database *db) {
             check(value, "Error reading");
 
             size_t original_size = (size_t)strtol(read_org_size->data, NULL, 10);
-            size_t current_size = (size_t)strtol(read_data_size->data, NULL, 10);
+            size_t compressed_size = (size_t)strtol(read_data_size->data, NULL, 10);
             size_t data_offset = (size_t)strtol(value->data, NULL, 10);
 
             unsigned char *data_ptr = db->values + data_offset;
 
-            if (original_size != current_size) {
-                ol_log_msg(LOG_WARN, "DEBUG 'original_size != current_size'  %d != %d", original_size, current_size);
+            //Data is compressed
+            if (original_size != compressed_size) {
+                ol_log_msg(LOG_WARN, "DEBUG data is compressed @ %x", data_ptr);
 
                 /* Data is compressed, gotta deal with that. */
-                unsigned char tmp_data[original_size];
-                unsigned char *ret = memset(&tmp_data, 0, original_size);
-                check(ret == tmp_data, "Could not initialize tmp_data parameter.");
+                char *tmp_data = calloc(1, original_size);
+                check(tmp_data != NULL, "Could not initialize tmp_data parameter.");
 
-                int processed = LZ4_decompress_fast((const char*)data_ptr, (char *)&tmp_data, original_size);
-                check(processed == current_size, "Could not decompress data. Data may have been previously deleted. %d != %d", (int)processed, (int)current_size);
+                int processed = LZ4_decompress_fast((const char*)data_ptr, tmp_data, original_size);
+                check(processed == compressed_size, "Could not decompress data. Data may have been previously deleted. %d != %d", (int)processed, (int)compressed_size);
 
-                ol_jar_ct(db, key->data, key->dlen, tmp_data, original_size, ct->data, ct->dlen);
+                ol_jar_ct(db, key->data, key->dlen, (unsigned char*)tmp_data, original_size, ct->data, ct->dlen);
+                free(tmp_data);
             } else {
                 /* Data is uncompressed, no need for trickery. */
                 if (data_ptr[0] != '\0') {
-                    ol_jar_ct(db, key->data, key->dlen, data_ptr, current_size, ct->data, ct->dlen);
+                    ol_jar_ct(db, key->data, key->dlen, data_ptr, compressed_size, ct->data, ct->dlen);
                 } else {
                     ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Deleted?");
                 }

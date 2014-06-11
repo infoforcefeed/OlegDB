@@ -9,11 +9,13 @@
 #include "test.h"
 #include "tree.h"
 
+#define DB_FEATURES OL_F_SPLAYTREE | OL_F_LZ4
+
 /* Helper function to open databases, so we don't have to change API code
  * in a million places when we modify it.
  */
 ol_database *_test_db_open() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_F_SPLAYTREE | OL_F_LZ4);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, DB_FEATURES);
     if (db != NULL) {
         ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
     } else {
@@ -553,7 +555,10 @@ int test_feature_flags() {
 }
 
 int test_aol() {
+    ol_log_msg(LOG_INFO, "Writing database.");
     ol_database *db = _test_db_open();
+
+    //Anable AOL and INIT, no need to restore
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
 
@@ -598,18 +603,13 @@ int test_aol() {
      * values again. */
     ol_close(db);
 
-    db = ol_open(DB_PATH, DB_NAME, OL_F_APPENDONLY | OL_F_LZ4);
+    ol_log_msg(LOG_INFO, "Restoring database.");
+    db = ol_open(DB_PATH, DB_NAME, DB_FEATURES | OL_F_APPENDONLY);
 
     ret = 0;
     if (db->rcrd_cnt != max_records - 1) {
         ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
         ret = 6;
-    }
-
-    ol_log_msg(LOG_INFO, "Cleaning up files created...");
-    if (unlink(db->aol_file) != 0) {
-        ol_log_msg(LOG_ERR, "Could not remove file: %s", db->aol_file);
-        ret = 7;
     }
 
     _test_db_close(db);
@@ -802,21 +802,21 @@ void run_tests(int results[2]) {
     int tests_failed = 0;
 
     ol_test_start();
+    ol_run_test(test_lz4);
     ol_run_test(test_open_close);
     ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
+    ol_run_test(test_aol);
     ol_run_test(test_unjar);
     ol_run_test(test_scoop);
     ol_run_test(test_expiration);
     ol_run_test(test_update);
-    ol_run_test(test_aol);
     ol_run_test(test_lots_of_deletes);
     ol_run_test(test_unjar_ds);
     ol_run_test(test_ct);
     ol_run_test(test_feature_flags);
     ol_run_test(test_can_find_all_nodes);
     //ol_run_test(test_uptime);
-    ol_run_test(test_lz4);
     ol_run_test(test_can_get_next_in_tree);
     ol_run_test(test_can_match_prefixes);
 

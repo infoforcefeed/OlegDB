@@ -21,7 +21,6 @@
 #include "utils.h"
 #include "lz4.h"
 
-
 inline int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
 }
@@ -155,8 +154,6 @@ int ol_close(ol_database *db){
         fclose(db->aolfd);
         debug("Files flushed to disk");
     }
-
-    db->feature_set = 0;
 
     /* Sync and close values file. */
     if (db->val_size > 0) {
