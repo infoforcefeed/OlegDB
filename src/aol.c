@@ -236,6 +236,7 @@ int ol_aol_restore(ol_database *db) {
         } else if (strncmp(command->data, "SPOIL", 5) == 0) {
             ol_string *spoil = NULL;
             spoil = _ol_read_data(fd);
+            check(spoil != NULL, "Could not read the rest of SPOIL command for AOL.");
 
             struct tm time = {0};
             _deserialize_time(&time, spoil->data);
