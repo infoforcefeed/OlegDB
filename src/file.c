@@ -9,8 +9,10 @@
 int _ol_get_stat(const char *filepath, struct stat *sb) {
     int fd;
     fd = open(filepath, O_RDONLY);
-    if (fd == -1)
+    if (fd == -1) {
+        errno = 0;
         return 0;
+    }
 
     int ret = 1;
     if (fstat(fd, sb) == -1)

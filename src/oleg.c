@@ -159,14 +159,16 @@ int ol_close(ol_database *db){
     db->feature_set = 0;
 
     /* Sync and close values file. */
-    msync(db->values, db->val_size, MS_SYNC);
-    munmap(db->values, db->val_size);
+    if (db->val_size > 0) {
+        msync(db->values, db->val_size, MS_SYNC);
+        munmap(db->values, db->val_size);
+    }
     free(db->aol_file);
     free(db->meta);
     free(db->hashes);
     free(db);
 
-    check(freed != rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
+    check(freed == rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
     ol_log_msg(LOG_INFO, "Database closed. Remember to drink your coffee.");
     return 0;
 
