@@ -99,8 +99,7 @@ int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size) {
     return _ol_open_values_with_fd(db, values_fd, truncate_total);
 
 error:
-    if (values_fd > 0)
-        close(values_fd);
+    close(values_fd);
     return 0;
 }
 
@@ -120,8 +119,7 @@ int _ol_open_values(ol_database *db) {
 
     return _ol_open_values_with_fd(db, values_fd, filesize);
 error:
-    if (values_fd > 0)
-        close(values_fd);
+    close(values_fd);
 
     return 0;
 }
