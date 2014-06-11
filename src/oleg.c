@@ -325,7 +325,8 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 
     unsigned char *old_data_ptr = db->values + bucket->data_offset;
     /* Clear out the old data in the file. */
-    memset(old_data_ptr, '\0', bucket->data_size);
+    if (bucket->data_size > 0)
+        memset(old_data_ptr, '\0', bucket->data_size);
     /* Compute the new position of the data in the values file: */
     const size_t new_offset = db->val_size;
     unsigned char *new_data_ptr = NULL;
@@ -400,6 +401,8 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     /* Looks like we don't have an old hash */
     ol_bucket *new_bucket = malloc(sizeof(ol_bucket));
+    new_bucket->data_size = 0;
+    new_bucket->data_offset = 0;
     if (new_bucket == NULL)
         return 1;
 
@@ -602,7 +605,8 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
         }
         unsigned char *data_ptr = db->values + to_free->data_offset;
         const size_t data_size = to_free->data_size;
-        memset(data_ptr, '\0', data_size);
+        if (data_size != 0)
+            memset(data_ptr, '\0', data_size);
         _ol_free_bucket(&to_free);
         db->rcrd_cnt -= 1;
     }
