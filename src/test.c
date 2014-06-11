@@ -600,7 +600,7 @@ int test_aol() {
 
     db = ol_open(DB_PATH, DB_NAME, OL_F_APPENDONLY | OL_F_LZ4);
 
-    ret = 6;
+    ret = 0;
     if (db->rcrd_cnt != max_records - 1) {
         ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
         ret = 6;
