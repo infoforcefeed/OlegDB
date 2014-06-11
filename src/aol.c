@@ -139,8 +139,7 @@ ol_string *_ol_read_data(FILE *fd) {
     return NULL;
 
 error:
-    free(data->data);
-    free(data);
+    ol_string_free(&data);
     return NULL;
 }
 
@@ -217,18 +216,10 @@ int ol_aol_restore(ol_database *db) {
                     ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Deleted?");
                 }
             }
-            free(read_org_size->data);
-            free(read_org_size);
-            free(read_data_size->data);
-            free(read_data_size);
-            free(ct->data);
-            free(ct);
-            free(value->data);
-            free(value);
-            read_org_size = NULL;
-            read_data_size = NULL;
-            ct = NULL;
-            value = NULL;
+            ol_string_free(&read_org_size);
+            ol_string_free(&read_data_size);
+            ol_string_free(&ct);
+            ol_string_free(&value);
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {
             ol_scoop(db, key->data, key->dlen);
         } else if (strncmp(command->data, "SPOIL", 5) == 0) {
@@ -240,21 +231,15 @@ int ol_aol_restore(ol_database *db) {
 
             check(spoil, "Error reading");
             ol_spoil(db, key->data, key->dlen, &time);
-            free(spoil->data);
-            free(spoil);
-            spoil = NULL;
+            ol_string_free(&spoil);
         }
 
         /* Strip the newline char after each "record" */
         check(fread(c, 1, 1, fd) != 0, "Error reading");
         check(*c == '\n', "Could not strip newline");
 
-        free(command->data);
-        free(command);
-        command = NULL;
-        free(key->data);
-        free(key);
-        key = NULL;
+        ol_string_free(&command);
+        ol_string_free(&key);
     }
     fclose(fd);
     fd = NULL;
@@ -264,30 +249,12 @@ error:
     ol_log_msg(LOG_ERR, "Restore failed. Corrupt AOL?");
 
     /* Free all the stuff */
-    if (command != NULL) {
-        free(command->data);
-        free(command);
-    }
-    if (key != NULL) {
-        free(key->data);
-        free(key);
-    }
-    if (value != NULL) {
-        free(value->data);
-        free(value);
-    }
-    if (ct != NULL) {
-        free(ct->data);
-        free(ct);
-    }
-    if (read_org_size != NULL) {
-        free(read_org_size->data);
-        free(read_org_size);
-    }
-    if (read_data_size != NULL) {
-        free(read_data_size->data);
-        free(read_data_size);
-    }
+    ol_string_free(&command);
+    ol_string_free(&key);
+    ol_string_free(&value);
+    ol_string_free(&ct);
+    ol_string_free(&read_org_size);
+    ol_string_free(&read_data_size);
     if (fd != NULL) {
         fclose(fd);
     }
