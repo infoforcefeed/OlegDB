@@ -172,16 +172,6 @@ int _ol_close(ol_database *db){
     return 0;
 }
 
-int ol_close_save(ol_database *db) {
-    debug("Saving and closing \"%s\" database.", db->name);
-    check(_ol_close(db) == 0, "Could not close DB.");
-
-    return 0;
-
-error:
-    return 1;
-}
-
 int ol_close(ol_database *db) {
     debug("Closing \"%s\" database.", db->name);
     check(_ol_close(db) == 0, "Could not close DB.");

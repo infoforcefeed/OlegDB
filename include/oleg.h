@@ -146,13 +146,6 @@ ol_database *ol_open(char *path, char *name, int features);
  */
 int ol_close(ol_database *database);
 
-/* xXx FUNCTION=ol_close_save xXx
- * xXx DESCRIPTION=Dumps and closes a database cleanly, frees memory and makes sure everything is written. xXx
- * xXx RETURNS=0 on success, 1 if not everything could be freed. xXx
- * xXx *database=The database to close. xXx
- */
-int ol_close_save(ol_database *database);
-
 /* xXx FUNCTION=ol_unjar xXx
  * xXx DESCRIPTION=This is OlegDB's canonical 'get' function. Unjar a value from the mayo (database). <strong>data must be freed after calling this function!</strong> Calls <a href="#ol_unjar_ds">ol_unjar_ds</a> with a dsize of NULL. xXx
  * xXx RETURNS=0 on success, 1 on failure or if the key was not found.
