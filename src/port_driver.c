@@ -7,6 +7,7 @@
 
 #include "aol.h"
 #include "errhandle.h"
+#include "cursor.h"
 #include "oleg.h"
 #include "logging.h"
 
@@ -225,6 +226,11 @@ static void port_driver_bucket_meta(oleg_data *d, ol_record *obj) {
 }
 
 static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
+    ol_cursor cursor;
+    check(olc_init(db, &cursor), "Could not init cursor.");
+
+error:
+    port_driver_error(d, obj);
 }
 
 static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {

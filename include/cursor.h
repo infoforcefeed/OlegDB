@@ -18,6 +18,9 @@ int olc_init(ol_database *db, ol_cursor *cursor_ref);
 /* Steps a cursor forward in the tree. */
 int olc_step(ol_cursor *cursor);
 
+/* Gets the in-order successor of a node. */
+int _olc_next(ol_splay_tree_node **node, ol_splay_tree_node *maximum);
+
 /* Returns a bucket object from a cursor. */
 ol_bucket *_olc_get_bucket(ol_cursor *cursor);
 /* Returns a splay tree node from a cursor. */

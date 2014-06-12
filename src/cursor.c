@@ -26,24 +26,29 @@ ol_bucket *olc_get(ol_cursor *cursor) {
 
 /* TODO: Make this go backwards or forwards */
 int olc_step(ol_cursor *cursor) {
-    ol_splay_tree_node *node = cursor->current_node;
+    ol_splay_tree_node *max = cursor->maximum;
+
+    return _olc_next(&(cursor->current_node), max);
+}
+
+int _olc_next(ol_splay_tree_node **node, ol_splay_tree_node *maximum) {
     check(node != NULL, "No nodes in tree.");
 
-    if (node == cursor->maximum)
+    if ((*node) == maximum)
         return 0;
 
-    if (node->right != NULL) {
-        cursor->current_node = ols_subtree_minimum(node->right);
+    if ((*node)->right != NULL) {
+        *node = ols_subtree_minimum((*node)->right);
         return 1;
     }
 
-    ol_splay_tree_node *parent = node->parent;
-    while(parent != NULL && node == parent->right) {
-        node = parent;
+    ol_splay_tree_node *parent = (*node)->parent;
+    while(parent != NULL && *node == parent->right) {
+        *node = parent;
         parent = parent->parent;
     }
 
-    cursor->current_node = parent;
+    *node = parent;
     return 1;
 
 error:
