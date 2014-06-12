@@ -350,9 +350,10 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     /* bucket->klen = _klen; */
     bucket->ctype_size = ctsize;
     bucket->content_type = ct_real;
-    if (bucket->expiration != NULL)
+    if (bucket->expiration != NULL) {
         free(bucket->expiration);
-    bucket->expiration = NULL;
+        bucket->expiration = NULL;
+    }
 
     /* Set original_size regardless of lz4 compression. This ensures we always
      * have something to write to the AOL. */
@@ -367,8 +368,7 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     /* Remember to increment the tracked data size of the DB. */
     db->val_size += bucket->data_size;
 
-    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
-            db->state != OL_S_STARTUP) {
+    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) && db->state != OL_S_STARTUP) {
         ol_aol_write_cmd(db, "JAR", bucket);
     }
 
@@ -401,10 +401,12 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     if (new_bucket == NULL)
         return 1;
 
-    if (strncpy(new_bucket->key, _key, KEY_SIZE) != new_bucket->key) {
+    /* copy _key into new bucket */
+    if (strncpy(new_bucket->key, _key, _klen) != new_bucket->key) {
         free(new_bucket);
         return 2;
     }
+
     new_bucket->klen = _klen;
     new_bucket->hash = hash;
     new_bucket->ctype_size = ctsize;

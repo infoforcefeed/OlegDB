@@ -313,8 +313,8 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
     to_return = malloc(total_size);
     check_mem(to_return);
 
-    int i;
-    for (i = 0;i < imatches; i++) {
+    int i =0;
+    for (; i < imatches; i++) {
         ol_splay_tree_node *cur_node = (ol_splay_tree_node *)spop(&matches);
         ol_bucket *deref = (ol_bucket *)cur_node->ref_obj;
 
@@ -329,7 +329,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
             processed = LZ4_decompress_fast((char *)data_ptr, dest, data_len);
             check(processed == deref->data_size, "Could not decompress data.");
         } else {
-            unsigned char *to_check = memcpy(data_ptr, dest, data_len);
+            unsigned char *to_check = memcpy(dest, data_ptr, data_len);
             check(to_check == data_ptr, "Could not copy data to buffer.");
         }
 
