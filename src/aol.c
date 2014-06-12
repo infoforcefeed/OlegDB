@@ -42,13 +42,14 @@ void _deserialize_time(struct tm *fillout, char *buf) {
     char year[4]={0}, month[2]={0}, day[2]={0};
     char hour[2]={0}, min[2]={0}, sec[2]={0};
 
-    memcpy(&year, &buf, 4);
-    memcpy(&month, &buf[5], 2);
-    memcpy(&day, &buf[8], 2);
+    /* The offsets aren't that scary, it'll be fiiiine */
+    memcpy(year, buf, 4);
+    memcpy(month, buf + 5, 2);
+    memcpy(day, buf + 8, 2);
 
-    memcpy(&hour, &buf[11], 2);
-    memcpy(&min, &buf[14], 2);
-    memcpy(&sec, &buf[17], 2);
+    memcpy(hour, buf + 11, 2);
+    memcpy(min, buf + 14, 2);
+    memcpy(sec, buf + 17, 2);
 
     memset(fillout, '\0', sizeof(struct tm));
     fillout->tm_year = strtol(year, NULL, 10) - 1900;
