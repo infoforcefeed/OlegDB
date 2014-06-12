@@ -224,6 +224,21 @@ static void port_driver_bucket_meta(oleg_data *d, ol_record *obj) {
     ei_x_free(&to_send);
 }
 
+static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
+}
+
+static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
+}
+
+
+static void port_driver_error(oleg_data *d, ol_record *obj) {
+    /* Send something back so we're not blocking. */
+    ei_x_buff to_send;
+    _gen_atom(&to_send, "not_found");
+    driver_output(d->port, to_send.buff, to_send.index);
+    ei_x_free(&to_send);
+}
+
 /* So this is where all the magic happens. If you want to know how we switch
  * on different commands, go look at ol_database:encode/1.
  */
@@ -258,20 +273,28 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         d->db = db;
     }
 
-    if (fn == 1) {
-        port_driver_jar(d, obj);
-    } else if (fn == 2) {
-        port_driver_unjar(d, obj);
-    } else if (fn == 3) {
-        port_driver_scoop(d, obj);
-    } else if (fn == 4) {
-        port_driver_bucket_meta(d, obj);
-    } else {
-        /* Send something back so we're not blocking. */
-        ei_x_buff to_send;
-        _gen_atom(&to_send, "not_found");
-        driver_output(d->port, to_send.buff, to_send.index);
-        ei_x_free(&to_send);
+    /* Figure out what the frontend wants us to do */
+    switch (fn) {
+        case 1:
+            port_driver_jar(d, obj);
+            break;
+        case 2:
+            port_driver_unjar(d, obj);
+            break;
+        case 3:
+            port_driver_scoop(d, obj);
+            break;
+        case 4:
+            port_driver_bucket_meta(d, obj);
+            break;
+        case 5:
+            port_driver_cursor_next(d, obj);
+            break;
+        case 6:
+            port_driver_cursor_prev(d, obj);
+            break;
+        default:
+            port_driver_error(d, obj);
     }
 
     if (obj) {
