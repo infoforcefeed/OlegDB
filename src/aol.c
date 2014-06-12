@@ -197,6 +197,8 @@ int ol_aol_restore(ol_database *db) {
                 if (original_size != compressed_size) {
                     /* Data is compressed, gotta deal with that. */
                     char tmp_data[original_size];
+                    char *ret = memset(&tmp_data, 0, original_size);
+                    check(ret == tmp_data, "Could not initialize tmp_data parameter.");
 
                     int processed = LZ4_decompress_fast((const char*)data_ptr, tmp_data, original_size);
                     check(processed == compressed_size, "Could not decompress data. Data may have been previously deleted. %d != %d", (int)processed, (int)compressed_size);
