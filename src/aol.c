@@ -190,14 +190,14 @@ int ol_aol_restore(ol_database *db) {
                 /*  Data is compressed */
                 if (original_size != compressed_size) {
                     /* Data is compressed, gotta deal with that. */
-                    char *tmp_data = calloc(1, original_size);
-                    check(tmp_data != NULL, "Could not initialize tmp_data parameter.");
+                    char tmp_data[original_size];
+                    char *ret = memset(&tmp_data, 0, original_size);
+                    check(ret == tmp_data, "Could not initialize tmp_data parameter.");
 
                     int processed = LZ4_decompress_fast((const char*)data_ptr, tmp_data, original_size);
                     check(processed == compressed_size, "Could not decompress data. Data may have been previously deleted. %d != %d", (int)processed, (int)compressed_size);
 
                     ol_jar_ct(db, key->data, key->dlen, (unsigned char*)tmp_data, original_size, ct->data, ct->dlen);
-                    free(tmp_data);
                 } else {
                     /* Data is uncompressed, no need for trickery. */
                     ol_jar_ct(db, key->data, key->dlen, data_ptr, compressed_size, ct->data, ct->dlen);
