@@ -51,8 +51,11 @@ ol_database *ol_open(char *path, char *name, int features){
 
     /* Make sure that the directory the database is in exists */
     struct stat st = {0};
-    if (!_ol_get_stat(path, &st) || !S_ISDIR(st.st_mode)) /* Check to see if the DB exists */
-        mkdir(path, 0755);
+    /* Check to see if the DB exists */
+    if (!_ol_get_stat(path, &st) || !S_ISDIR(st.st_mode)) {
+        int ret = mkdir(path, 0755);
+        check(ret == 0, "Can't mkdir for database");
+    }
 
     time_t created;
     time(&created);
@@ -408,7 +411,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     new_bucket->klen = _klen;
     new_bucket->hash = hash;
     new_bucket->ctype_size = ctsize;
-    
+
     char *ct_real = calloc(1, ctsize+1);
     if (strncpy(ct_real, ct, ctsize) != ct_real) {
         /* Free allocated memory since we're not going to use them */
