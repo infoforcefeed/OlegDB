@@ -10,6 +10,7 @@
 
 #define ol_test_start() int test_return_val = 0;
 #define ol_run_test(test) ol_log_msg(LOG_INFO, "----- %s -----\n", #test);\
+    ol_log_msg(LOG_INFO, "Testing with: %d", feature_set);\
     test_return_val = test(feature_set);\
     if (test_return_val != 0 || errno != 0) {\
         tests_failed++;\

@@ -31,10 +31,19 @@ static int _test_db_close(ol_database *db) {
     char values_filename[DB_NAME_SIZE] = { 0 };
     db->get_db_file_name(db, VALUES_FILENAME, values_filename);
 
+    char aol_filename[DB_NAME_SIZE] = { 0 };
+    strncpy(aol_filename, db->aol_file, DB_NAME_SIZE);
+    int should_delete_aol = db->is_enabled(OL_F_APPENDONLY, &db->feature_set);
+
     int ret = ol_close(db);
 
     ol_log_msg(LOG_INFO, "Unlinking %s", values_filename);
     unlink(values_filename);
+
+    if (should_delete_aol) {
+        ol_log_msg(LOG_INFO, "Unlinking %s", aol_filename);
+        unlink(aol_filename);
+    }
 
     return ret;
 }
@@ -794,7 +803,7 @@ void run_tests(int results[2]) {
 
     /* These tests are special and depend on certain features being enabled
      * or disabled. */
-    const int feature_set = DB_DEFAULT_FEATURES;
+    const ol_feature_flags feature_set = DB_DEFAULT_FEATURES;
     ol_run_test(test_aol);
     ol_run_test(test_lz4);
     ol_run_test(test_can_find_all_nodes);
@@ -804,9 +813,12 @@ void run_tests(int results[2]) {
     /* Permute all features enabled for these tests, so that we get all of our
      * code paths tested. */
     int i = 0;
-    const int ALL_FEATURES_ENABLED = OL_F_APPENDONLY | OL_F_SPLAYTREE | OL_F_LZ4;
-    for(; i < ALL_FEATURES_ENABLED; i++) {
-        const int feature_set = ALL_FEATURES_ENABLED;
+    const int FEATURE_NUM = 4;
+    for(; i <= FEATURE_NUM; i++) {
+        const ol_feature_flags feature_set = i;
+        if ( feature_set & 1) {
+            ol_log_msg(LOG_INFO, "Break here!");
+        }
         /* Fucking macros man */
         ol_run_test(test_open_close);
         ol_run_test(test_bucket_max);
