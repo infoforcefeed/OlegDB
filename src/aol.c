@@ -134,7 +134,6 @@ ol_string *_ol_read_data(FILE *fd) {
         data->dlen = total_size;
         return data;
     } else if (c == EOF) {
-        ol_log_msg(LOG_WARN, "_ol_read_data EOF");
         data->dlen = 0;
         data->data = NULL;
         return data; /* A NULL ol_string means EOF was reached */
@@ -191,12 +190,10 @@ int ol_aol_restore(ol_database *db) {
 
             unsigned char *data_ptr = db->values + data_offset;
 
-            //If key is not deleted
+            /* If key is not deleted */
             if (data_ptr[0] != '\0') {
-                //Data is compressed
+                /*  Data is compressed */
                 if (original_size != compressed_size) {
-                    ol_log_msg(LOG_WARN, "DEBUG data is compressed @ %x", data_ptr);
-
                     /* Data is compressed, gotta deal with that. */
                     char *tmp_data = calloc(1, original_size);
                     check(tmp_data != NULL, "Could not initialize tmp_data parameter.");

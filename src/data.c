@@ -1,13 +1,13 @@
 #include "data.h"
 
 void inline ol_string_free(ol_string** strp) {
-	ol_string* str = *strp;
+    ol_string* str = *strp;
 
-	if (str == NULL) {
-		return;
-	}
+    if (str == NULL) {
+        return;
+    }
 
-	free(str->data);
-	free(str);
-	*strp = NULL;
+    free(str->data);
+    free(str);
+    *strp = NULL;
 }

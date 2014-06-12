@@ -536,21 +536,22 @@ int test_feature_flags() {
     ol_database *db = _test_db_open();
 
     db->enable(OL_F_APPENDONLY, &db->feature_set);
-
     if (!db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         ol_log_msg(LOG_ERR, "Feature did not enable correctly.");
+        _test_db_close(db);
         return 1;
     }
     ol_log_msg(LOG_INFO, "Feature was enabled.");
 
     db->disable(OL_F_APPENDONLY, &db->feature_set);
-
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         ol_log_msg(LOG_ERR, "Feature did not disable correctly.");
+        _test_db_close(db);
         return 2;
     }
     ol_log_msg(LOG_INFO, "Feature was disabled.");
 
+    _test_db_close(db);
     return 0;
 }
 
@@ -825,7 +826,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_can_get_next_in_tree);
     ol_run_test(test_can_match_prefixes);
 
-//Skip all tests when one fails
+/* Skip all tests when one fails */
 error:
     results[0] = tests_run;
     results[1] = tests_failed;
