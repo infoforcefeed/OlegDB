@@ -13,9 +13,6 @@ parse_db_name_and_key(Data) ->
         <<"POST">>   -> {post, ParsedUrl};
         <<"HEAD">>   -> {head, ParsedUrl};
         <<"DELETE">> -> {delete, ParsedUrl};
-        % Used for cursor iteration:
-        <<"NEXT">>   -> {next, ParsedUrl};
-        <<"PREV">>   -> {prev, ParsedUrl};
         Chunk ->
             {error, <<"Didn't understand your verb.">>, Chunk}
     end.
@@ -27,6 +24,9 @@ parse_url(Url) ->
         [<<>>, <<>>] -> {error, <<"No database or key specified.">>};
         % Url was like //key. Bad!
         [_, <<>>, <<_/binary>>|_] -> {error, <<"No database specified.">>};
+        % These handle cursor iteration:
+        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_next">>|_] -> {ok, DB_Name, Key, next};
+        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_prev">>|_] -> {ok, DB_Name, Key, prev};
         % Url was like /users/1 or /pictures/thing
         [_, <<DB_Name/binary>>, <<Key/binary>> |_] -> {ok, DB_Name, Key};
         % The url was like /test or /what, so just assume the default DB.
@@ -42,9 +42,12 @@ parse_http(Data) ->
         % Default to whatever database name is specified in include/olegdb.hrl:
         {ReqType, {ok, Key}} ->
             {ok, ReqType, parse_header(Data, #ol_record{key=Key})};
+        {ReqType, {ok, DB_Name, Key, Operand}} ->
+            Parsed = parse_header(Data, #ol_record{database=DB_Name, key=Key}),
+            {ok, ReqType, Parsed, Operand};
         {ReqType, {error, ErrorDesc}} -> {ReqType, {error, ErrorDesc}};
         X -> io:format("[-] Could not parse http in a sane way: ~p~n", [X]),
-            throw(bad_parse)
+            throw(oleg_bad_parse)
     end.
 
 parse_header(Data, Record) ->

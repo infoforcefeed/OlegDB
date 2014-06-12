@@ -57,10 +57,16 @@ send_handler(Data, Accepted) ->
     end,
     ok = gen_tcp:close(Accepted).
 
+%cursor_operand({ReqType, Header, Operand}) ->
+cursor_operand({_, _, _}) ->
+    ol_http:error_response(<<"Requested cursor operation is not implemented.">>).
+
 route(Bits, Socket) ->
     case ol_parse:parse_http(Bits) of
         {ok, _, {Header, [send_100|_]}} ->
             hundred_handler(Header, Socket);
+        {ok, ReqType, {Header, _}, Operand} ->
+            cursor_operand({ReqType, Header, Operand});
         {ok, ReqType, {Header, _}} ->
             case ReqType of
                 get ->
@@ -93,10 +99,6 @@ route(Bits, Socket) ->
                         ok -> ol_http:deleted_response();
                         _ -> ol_http:not_found_response()
                     end;
-                next ->
-                    ol_http:error_response(<<"Not implemented.">>);
-                prev ->
-                    ol_http:error_response(<<"Not implemented.">>);
                 {error, ErrMsg} ->
                     ol_http:error_response(ErrMsg)
             end;
