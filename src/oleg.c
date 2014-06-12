@@ -115,7 +115,8 @@ ol_database *ol_open(char *path, char *name, int features){
 
 error:
     /* Make sure we free the database first */
-    free(new_db->aol_file);
+    if (new_db->aol_file != NULL)
+        free(new_db->aol_file);
     free(new_db);
     return NULL;
 }
