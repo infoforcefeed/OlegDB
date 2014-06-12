@@ -32,7 +32,7 @@ static int _test_db_close(ol_database *db) {
     db->get_db_file_name(db, VALUES_FILENAME, values_filename);
 
     char aol_filename[DB_NAME_SIZE] = { 0 };
-    strncpy(aol_filename, db->aol_file, DB_NAME_SIZE);
+    strncpy(aol_filename, db->aol_file, strlen(db->aol_file));
     int should_delete_aol = db->is_enabled(OL_F_APPENDONLY, &db->feature_set);
 
     int ret = ol_close(db);
