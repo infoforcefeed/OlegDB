@@ -72,7 +72,7 @@ int test_jar() {
     int i;
     int max_records = RECORD_COUNT;
     unsigned char to_insert[] = "123456789";
-    for (i = 0; i < max_records; i++) { /* 8======D */
+    for (i = 0; i < max_records; i++) {
         char key[64] = "crazy hash";
         char append[10] = "";
 
@@ -110,7 +110,7 @@ int test_can_find_all_nodes() {
     int i;
     int max_records = RECORD_COUNT;
     unsigned char to_insert[] = "123456789";
-    for (i = 0; i < max_records; i++) { /* 8======D */
+    for (i = 0; i < max_records; i++) {
         char key[64] = "crazy hash";
         char append[10] = "";
 
@@ -191,7 +191,7 @@ int test_lots_of_deletes() {
     int i;
     int max_records = RECORD_COUNT;
     unsigned char to_insert[] = "123456789AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-    for (i = 0; i < max_records; i++) { /* 8======D */
+    for (i = 0; i < max_records; i++) {
         char key[KEY_SIZE] = "A";
         char append[32] = "";
 
@@ -216,7 +216,7 @@ int test_lots_of_deletes() {
     ol_log_msg(LOG_INFO, "Records inserted: %i.", db->rcrd_cnt);
     ol_log_msg(LOG_INFO, "Saw %d collisions.", db->meta->key_collisions);
 
-    for (i = 0; i < max_records; i++) { /* 8======D */
+    for (i = 0; i < max_records; i++) {
         char key[KEY_SIZE] = "A";
         char append[32] = "";
 
@@ -293,8 +293,8 @@ int test_unjar() {
     ol_database *db = _test_db_open();
 
     char key[64] = "muh_hash_tho";
-    unsigned char val[] = "Hello I am some data for you and I am rather"
-        "a lot of data aren't I? Bigger data is better, as the NoSQL world is"
+    unsigned char val[] = "Hello I am some data for you and I am rather "
+        "a lot of data aren't I? Bigger data is better, as the NoSQL world is "
         "fond of saying. Geez, I hope senpai notices me today! That would be "
         "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!"
         "{json: \"ain't real\"}";
@@ -431,7 +431,7 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
         "a lot of data aren't I? Bigger data is better, as the NoSQL world is "
         "fond of saying. Geez, I hope senpai notices me today! That would be "
         "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!";
-    for (i = 0; i < NUM_KEYS; i++) { // 8======D
+    for (i = 0; i < NUM_KEYS; i++) {
         /* DONT NEED YOUR SHIT, GCC */
         char key[64] = "crazy hash";
         char append[10] = "";
@@ -542,7 +542,7 @@ int test_aol() {
     ol_log_msg(LOG_INFO, "Writing database.");
     ol_database *db = _test_db_open();
 
-    //Anable AOL and INIT, no need to restore
+    /* Anable AOL and INIT, no need to restore */
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
 
