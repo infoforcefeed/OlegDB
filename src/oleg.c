@@ -43,7 +43,7 @@ bool _ol_is_enabled(int feature, int *feature_set) {
 
 ol_database *ol_open(char *path, char *name, int features){
     debug("Opening \"%s\" database", name);
-    ol_database *new_db = malloc(sizeof(ol_database));
+    ol_database *new_db = calloc(1, sizeof(ol_database));
 
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = calloc(1, to_alloc);
