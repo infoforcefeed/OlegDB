@@ -118,6 +118,112 @@ static ol_record *read_record(char *buf, int index) {
     return new_obj;
 }
 
+static void port_driver_init(oleg_data *d, char *cmd) {
+    /* ol_init */
+    int tmp_index = 1;
+    int version = 0;
+
+    if (ei_decode_version(cmd, &tmp_index, &version))
+        ol_log_msg(LOG_WARN, "Could not decode version.\n");
+
+    /* Decode passed string into our persistent data structure: */
+    if (ei_decode_string(cmd, &tmp_index, d->db_loc))
+        ol_log_msg(LOG_WARN, "Could not get database location.\n");
+
+    /* Send back 'ok' */
+    ei_x_buff to_send;
+    _gen_atom(&to_send, "ok");
+    driver_output(d->port, to_send.buff, to_send.index);
+    ei_x_free(&to_send);
+}
+
+static void port_driver_jar(oleg_data *d, ol_record *obj) {
+    int res = 0;
+    res = ol_jar_ct(d->db, obj->key, obj->klen, obj->data, obj->data_len,
+           obj->content_type, obj->ct_len);
+
+    debug("Expiration: %li", obj->expiration);
+    if (obj->expiration != -1) {
+        struct tm new_expire;
+        time_t passed_time = (time_t)obj->expiration;
+        localtime_r(&passed_time, &new_expire);
+        ol_spoil(d->db, obj->key, obj->klen, &new_expire);
+    }
+    ei_x_buff to_send;
+    ei_x_new_with_version(&to_send);
+
+    if (res != 0)
+        _gen_atom(&to_send, "error");
+    else
+        _gen_atom(&to_send, "ok");
+
+    driver_output(d->port, to_send.buff, to_send.index);
+    ei_x_free(&to_send);
+}
+
+static void port_driver_unjar(oleg_data *d, ol_record *obj) {
+    size_t val_size;
+    /* TODO: Fix this when we have one clean function to retrieve content type
+     * and data at the same time.
+     */
+    unsigned char *data = NULL;
+    int ret = ol_unjar_ds(d->db, obj->key, obj->klen, &data, &val_size);
+    ei_x_buff to_send;
+    ei_x_new_with_version(&to_send);
+    if (ret == 0) {
+        char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
+        ei_x_encode_tuple_header(&to_send, 3);
+        ei_x_encode_atom(&to_send, "ok");
+        ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
+        ei_x_encode_binary(&to_send, data, val_size);
+    } else {
+        ei_x_encode_atom(&to_send, "not_found");
+    }
+    driver_output(d->port, to_send.buff, to_send.index);
+    ei_x_free(&to_send);
+    free(data);
+}
+
+static void port_driver_scoop(oleg_data *d, ol_record *obj) {
+    int ret = ol_scoop(d->db, obj->key, obj->klen);
+    ei_x_buff to_send;
+    ei_x_new_with_version(&to_send);
+    if (ret == 0)
+        ei_x_encode_atom(&to_send, "ok");
+    else
+        ei_x_encode_atom(&to_send, "not_found");
+    driver_output(d->port, to_send.buff, to_send.index);
+    ei_x_free(&to_send);
+}
+
+static void port_driver_bucket_meta(oleg_data *d, ol_record *obj) {
+    char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
+    ei_x_buff to_send;
+    ei_x_new_with_version(&to_send);
+    if (content_type_retrieved != NULL) {
+        struct tm *time_retrieved = NULL;
+        time_retrieved = ol_expiration_time(d->db, obj->key, obj->klen);
+
+        /* If we have an expiration time, send it back with the content type. */
+        if (time_retrieved != NULL) {
+            ei_x_encode_tuple_header(&to_send, 4);
+            ei_x_encode_atom(&to_send, "ok");
+            ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
+            ei_x_encode_long(&to_send, (long)d->db->rcrd_cnt);
+            ei_x_encode_long(&to_send, (long)timelocal(time_retrieved));
+        } else {
+            ei_x_encode_tuple_header(&to_send, 3);
+            ei_x_encode_atom(&to_send, "ok");
+            ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
+            ei_x_encode_long(&to_send, (long)d->db->rcrd_cnt);
+        }
+    } else {
+        ei_x_encode_atom(&to_send, "not_found");
+    }
+    driver_output(d->port, to_send.buff, to_send.index);
+    ei_x_free(&to_send);
+}
+
 /* So this is where all the magic happens. If you want to know how we switch
  * on different commands, go look at ol_database:encode/1.
  */
@@ -128,22 +234,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
     debug("Command from server: %i", fn);
     if (fn == 0) {
-        /* ol_init */
-        int tmp_index = 1;
-        int version = 0;
-
-        if (ei_decode_version(cmd, &tmp_index, &version))
-            ol_log_msg(LOG_WARN, "Could not decode version.\n");
-
-        /* Decode passed string into our persistent data structure: */
-        if (ei_decode_string(cmd, &tmp_index, d->db_loc))
-            ol_log_msg(LOG_WARN, "Could not get database location.\n");
-
-        /* Send back 'ok' */
-        ei_x_buff to_send;
-        _gen_atom(&to_send, "ok");
-        driver_output(d->port, to_send.buff, to_send.index);
-        ei_x_free(&to_send);
+        port_driver_init(d, cmd);
 
         return;
     }
@@ -168,89 +259,13 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     }
 
     if (fn == 1) {
-        /* ol_jar */
-        int res = 0;
-        res = ol_jar_ct(d->db, obj->key, obj->klen, obj->data, obj->data_len,
-               obj->content_type, obj->ct_len);
-
-        debug("Expiration: %li", obj->expiration);
-        if (obj->expiration != -1) {
-            struct tm new_expire;
-            time_t passed_time = (time_t)obj->expiration;
-            localtime_r(&passed_time, &new_expire);
-            ol_spoil(d->db, obj->key, obj->klen, &new_expire);
-        }
-        /* TODO: Actually return useful info here. */
-        ei_x_buff to_send;
-        ei_x_new_with_version(&to_send);
-
-        if (res != 0)
-            _gen_atom(&to_send, "error");
-        else
-            _gen_atom(&to_send, "ok");
-
-        driver_output(d->port, to_send.buff, to_send.index);
-        ei_x_free(&to_send);
+        port_driver_jar(d, obj);
     } else if (fn == 2) {
-        /* ol_unjar */
-        size_t val_size;
-        /* TODO: Fix this when we have one clean function to retrieve content type
-         * and data at the same time.
-         */
-        unsigned char *data = NULL;
-        int ret = ol_unjar_ds(d->db, obj->key, obj->klen, &data, &val_size);
-        ei_x_buff to_send;
-        ei_x_new_with_version(&to_send);
-        if (ret == 0) {
-            char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
-            ei_x_encode_tuple_header(&to_send, 3);
-            ei_x_encode_atom(&to_send, "ok");
-            ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
-            ei_x_encode_binary(&to_send, data, val_size);
-        } else {
-            ei_x_encode_atom(&to_send, "not_found");
-        }
-        driver_output(d->port, to_send.buff, to_send.index);
-        ei_x_free(&to_send);
-        free(data);
+        port_driver_unjar(d, obj);
     } else if (fn == 3) {
-        /* ol_scoop */
-        int ret = ol_scoop(d->db, obj->key, obj->klen);
-        ei_x_buff to_send;
-        ei_x_new_with_version(&to_send);
-        if (ret == 0)
-            ei_x_encode_atom(&to_send, "ok");
-        else
-            ei_x_encode_atom(&to_send, "not_found");
-        driver_output(d->port, to_send.buff, to_send.index);
-        ei_x_free(&to_send);
+        port_driver_scoop(d, obj);
     } else if (fn == 4) {
-        /* ol_bucket_meta */
-        char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
-        ei_x_buff to_send;
-        ei_x_new_with_version(&to_send);
-        if (content_type_retrieved != NULL) {
-            struct tm *time_retrieved = NULL;
-            time_retrieved = ol_expiration_time(d->db, obj->key, obj->klen);
-
-            /* If we have an expiration time, send it back with the content type. */
-            if (time_retrieved != NULL) {
-                ei_x_encode_tuple_header(&to_send, 4);
-                ei_x_encode_atom(&to_send, "ok");
-                ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
-                ei_x_encode_long(&to_send, (long)d->db->rcrd_cnt);
-                ei_x_encode_long(&to_send, (long)timelocal(time_retrieved));
-            } else {
-                ei_x_encode_tuple_header(&to_send, 3);
-                ei_x_encode_atom(&to_send, "ok");
-                ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
-                ei_x_encode_long(&to_send, (long)d->db->rcrd_cnt);
-            }
-        } else {
-            ei_x_encode_atom(&to_send, "not_found");
-        }
-        driver_output(d->port, to_send.buff, to_send.index);
-        ei_x_free(&to_send);
+        port_driver_bucket_meta(d, obj);
     } else {
         /* Send something back so we're not blocking. */
         ei_x_buff to_send;
