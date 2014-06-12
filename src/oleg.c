@@ -401,10 +401,12 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     if (new_bucket == NULL)
         return 1;
 
-    if (strncpy(new_bucket->key, _key, KEY_SIZE) != new_bucket->key) {
+    /* copy _key into new bucket */
+    if (strncpy(new_bucket->key, _key, _klen) != new_bucket->key) {
         free(new_bucket);
         return 2;
     }
+
     new_bucket->klen = _klen;
     new_bucket->hash = hash;
     new_bucket->ctype_size = ctsize;
