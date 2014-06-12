@@ -191,26 +191,27 @@ int ol_aol_restore(ol_database *db) {
 
             unsigned char *data_ptr = db->values + data_offset;
 
-            //Data is compressed
-            if (original_size != compressed_size) {
-                ol_log_msg(LOG_WARN, "DEBUG data is compressed @ %x", data_ptr);
+            //If key is not deleted
+            if (data_ptr[0] != '\0') {
+                //Data is compressed
+                if (original_size != compressed_size) {
+                    ol_log_msg(LOG_WARN, "DEBUG data is compressed @ %x", data_ptr);
 
-                /* Data is compressed, gotta deal with that. */
-                char *tmp_data = calloc(1, original_size);
-                check(tmp_data != NULL, "Could not initialize tmp_data parameter.");
+                    /* Data is compressed, gotta deal with that. */
+                    char *tmp_data = calloc(1, original_size);
+                    check(tmp_data != NULL, "Could not initialize tmp_data parameter.");
 
-                int processed = LZ4_decompress_fast((const char*)data_ptr, tmp_data, original_size);
-                check(processed == compressed_size, "Could not decompress data. Data may have been previously deleted. %d != %d", (int)processed, (int)compressed_size);
+                    int processed = LZ4_decompress_fast((const char*)data_ptr, tmp_data, original_size);
+                    check(processed == compressed_size, "Could not decompress data. Data may have been previously deleted. %d != %d", (int)processed, (int)compressed_size);
 
-                ol_jar_ct(db, key->data, key->dlen, (unsigned char*)tmp_data, original_size, ct->data, ct->dlen);
-                free(tmp_data);
-            } else {
-                /* Data is uncompressed, no need for trickery. */
-                if (data_ptr[0] != '\0') {
-                    ol_jar_ct(db, key->data, key->dlen, data_ptr, compressed_size, ct->data, ct->dlen);
+                    ol_jar_ct(db, key->data, key->dlen, (unsigned char*)tmp_data, original_size, ct->data, ct->dlen);
+                    free(tmp_data);
                 } else {
-                    ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Deleted?");
+                    /* Data is uncompressed, no need for trickery. */
+                    ol_jar_ct(db, key->data, key->dlen, data_ptr, compressed_size, ct->data, ct->dlen);
                 }
+            } else {
+                ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Deleted?");
             }
             ol_string_free(&read_org_size);
             ol_string_free(&read_data_size);

@@ -825,6 +825,8 @@ void run_tests(int results[2]) {
     ol_run_test(test_can_get_next_in_tree);
     ol_run_test(test_can_match_prefixes);
 
+//Skip all tests when one fails
+error:
     results[0] = tests_run;
     results[1] = tests_failed;
 }
