@@ -9,11 +9,13 @@
 #include "test.h"
 #include "tree.h"
 
+#define DB_FEATURES OL_F_SPLAYTREE | OL_F_LZ4
+
 /* Helper function to open databases, so we don't have to change API code
  * in a million places when we modify it.
  */
 ol_database *_test_db_open() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, OL_F_SPLAYTREE | OL_F_LZ4);
+    ol_database *db = ol_open(DB_PATH, DB_NAME, DB_FEATURES);
     if (db != NULL) {
         ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
     } else {
@@ -70,7 +72,7 @@ int test_jar() {
     int i;
     int max_records = RECORD_COUNT;
     unsigned char to_insert[] = "123456789";
-    for (i = 0; i < max_records; i++) { /* 8======D */
+    for (i = 0; i < max_records; i++) {
         char key[64] = "crazy hash";
         char append[10] = "";
 
@@ -108,7 +110,7 @@ int test_can_find_all_nodes() {
     int i;
     int max_records = RECORD_COUNT;
     unsigned char to_insert[] = "123456789";
-    for (i = 0; i < max_records; i++) { /* 8======D */
+    for (i = 0; i < max_records; i++) {
         char key[64] = "crazy hash";
         char append[10] = "";
 
@@ -189,7 +191,7 @@ int test_lots_of_deletes() {
     int i;
     int max_records = RECORD_COUNT;
     unsigned char to_insert[] = "123456789AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-    for (i = 0; i < max_records; i++) { /* 8======D */
+    for (i = 0; i < max_records; i++) {
         char key[KEY_SIZE] = "A";
         char append[32] = "";
 
@@ -214,7 +216,7 @@ int test_lots_of_deletes() {
     ol_log_msg(LOG_INFO, "Records inserted: %i.", db->rcrd_cnt);
     ol_log_msg(LOG_INFO, "Saw %d collisions.", db->meta->key_collisions);
 
-    for (i = 0; i < max_records; i++) { /* 8======D */
+    for (i = 0; i < max_records; i++) {
         char key[KEY_SIZE] = "A";
         char append[32] = "";
 
@@ -291,8 +293,8 @@ int test_unjar() {
     ol_database *db = _test_db_open();
 
     char key[64] = "muh_hash_tho";
-    unsigned char val[] = "Hello I am some data for you and I am rather"
-        "a lot of data aren't I? Bigger data is better, as the NoSQL world is"
+    unsigned char val[] = "Hello I am some data for you and I am rather "
+        "a lot of data aren't I? Bigger data is better, as the NoSQL world is "
         "fond of saying. Geez, I hope senpai notices me today! That would be "
         "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!"
         "{json: \"ain't real\"}";
@@ -425,11 +427,11 @@ int test_update() {
 
 static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
     int i;
-    unsigned char to_insert[] = "Hello I am some data for you and I am rather"
-        "a lot of data aren't I? Bigger data is better, as the NoSQL world is"
+    unsigned char to_insert[] = "Hello I am some data for you and I am rather "
+        "a lot of data aren't I? Bigger data is better, as the NoSQL world is "
         "fond of saying. Geez, I hope senpai notices me today! That would be "
         "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!";
-    for (i = 0; i < NUM_KEYS; i++) { // 8======D
+    for (i = 0; i < NUM_KEYS; i++) {
         /* DONT NEED YOUR SHIT, GCC */
         char key[64] = "crazy hash";
         char append[10] = "";
@@ -517,26 +519,30 @@ int test_feature_flags() {
     ol_database *db = _test_db_open();
 
     db->enable(OL_F_APPENDONLY, &db->feature_set);
-
     if (!db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         ol_log_msg(LOG_ERR, "Feature did not enable correctly.");
+        _test_db_close(db);
         return 1;
     }
     ol_log_msg(LOG_INFO, "Feature was enabled.");
 
     db->disable(OL_F_APPENDONLY, &db->feature_set);
-
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         ol_log_msg(LOG_ERR, "Feature did not disable correctly.");
+        _test_db_close(db);
         return 2;
     }
     ol_log_msg(LOG_INFO, "Feature was disabled.");
 
+    _test_db_close(db);
     return 0;
 }
 
 int test_aol() {
+    ol_log_msg(LOG_INFO, "Writing database.");
     ol_database *db = _test_db_open();
+
+    /* Anable AOL and INIT, no need to restore */
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
 
@@ -581,22 +587,22 @@ int test_aol() {
      * values again. */
     ol_close(db);
 
-    db = ol_open(DB_PATH, DB_NAME, OL_F_APPENDONLY | OL_F_LZ4);
-
-    ret = 0;
-    if (db->rcrd_cnt != max_records - 1) {
-        ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
-        ret = 6;
+    ol_log_msg(LOG_INFO, "Restoring database.");
+    db = ol_open(DB_PATH, DB_NAME, DB_FEATURES | OL_F_APPENDONLY);
+    if (db == NULL) {
+        ol_log_msg(LOG_ERR, "Could not open database");
+        return 6;
     }
 
-    ol_log_msg(LOG_INFO, "Cleaning up files created...");
-    if (unlink(db->aol_file) != 0) {
-        ol_log_msg(LOG_ERR, "Could not remove file: %s", db->aol_file);
-        ret = 7;
+    if (db->rcrd_cnt != max_records - 1) {
+        ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
+        _test_db_close(db);
+        return 6;
     }
 
     _test_db_close(db);
-    return ret;
+    return 0;
+
 }
 
 int test_expiration() {
@@ -785,6 +791,8 @@ void run_tests(int results[2]) {
     int tests_failed = 0;
 
     ol_test_start();
+    ol_run_test(test_aol);
+    ol_run_test(test_lz4);
     ol_run_test(test_open_close);
     ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
@@ -792,7 +800,6 @@ void run_tests(int results[2]) {
     ol_run_test(test_scoop);
     ol_run_test(test_expiration);
     ol_run_test(test_update);
-    ol_run_test(test_aol);
     ol_run_test(test_lots_of_deletes);
     ol_run_test(test_unjar_ds);
     ol_run_test(test_ct);
@@ -802,6 +809,8 @@ void run_tests(int results[2]) {
     ol_run_test(test_can_get_next_in_tree);
     ol_run_test(test_can_match_prefixes);
 
+/* Skip all tests when one fails */
+error:
     results[0] = tests_run;
     results[1] = tests_failed;
 }

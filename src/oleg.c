@@ -21,7 +21,6 @@
 #include "utils.h"
 #include "lz4.h"
 
-
 inline int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
 }
@@ -113,25 +112,24 @@ ol_database *ol_open(char *path, char *name, int features){
 
 error:
     /* Make sure we free the database first */
-    if (new_db != NULL) {
-        if (new_db->aol_file != NULL)
-            free(new_db->aol_file);
-        free(new_db);
-    }
+    free(new_db->aol_file);
+    free(new_db);
     return NULL;
 }
 
-int _ol_close(ol_database *db){
+int ol_close(ol_database *db){
+    debug("Closing \"%s\" database.", db->name);
+
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
-    int i;
     int rcrd_cnt = db->rcrd_cnt;
     int freed = 0;
     debug("Freeing %d records.", rcrd_cnt);
     debug("Hash table iterations: %d.", iterations);
-    for (i = 0; i < iterations; i++) { /* 8=======D */
+
+    int i = 0;
+    for (; i < iterations; i++) { /* 8=======D */
         if (db->hashes[i] != NULL) {
-            ol_bucket *ptr;
-            ol_bucket *next;
+            ol_bucket *ptr, *next;
             for (ptr = db->hashes[i]; NULL != ptr; ptr = next) {
                 next = ptr->next;
                 _ol_free_bucket(&ptr);
@@ -154,28 +152,18 @@ int _ol_close(ol_database *db){
         debug("Files flushed to disk");
     }
 
-    db->feature_set = 0;
-
     /* Sync and close values file. */
-    msync(db->values, db->val_size, MS_SYNC);
-    munmap(db->values, db->val_size);
+    if (db->val_size > 0) {
+        msync(db->values, db->val_size, MS_SYNC);
+        munmap(db->values, db->val_size);
+    }
     free(db->aol_file);
     free(db->meta);
     free(db->hashes);
     free(db);
-    if (freed != rcrd_cnt) {
-        ol_log_msg(LOG_INFO, "Error: Couldn't free all records.");
-        ol_log_msg(LOG_INFO, "Records freed: %i\n", freed);
-        return 1;
-    }
+
+    check(freed == rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
     ol_log_msg(LOG_INFO, "Database closed. Remember to drink your coffee.");
-    return 0;
-}
-
-int ol_close(ol_database *db) {
-    debug("Closing \"%s\" database.", db->name);
-    check(_ol_close(db) == 0, "Could not close DB.");
-
     return 0;
 
 error:
@@ -409,9 +397,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
 
     /* Looks like we don't have an old hash */
-    ol_bucket *new_bucket = malloc(sizeof(ol_bucket));
-    new_bucket->data_size = 0;
-    new_bucket->data_offset = 0;
+    ol_bucket *new_bucket = calloc(1, sizeof(ol_bucket));
     if (new_bucket == NULL)
         return 1;
 
@@ -420,13 +406,9 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         return 2;
     }
     new_bucket->klen = _klen;
-    new_bucket->expiration = NULL;
-
-    new_bucket->next = NULL;
-
     new_bucket->hash = hash;
-
     new_bucket->ctype_size = ctsize;
+    
     char *ct_real = calloc(1, ctsize+1);
     if (strncpy(ct_real, ct, ctsize) != ct_real) {
         /* Free allocated memory since we're not going to use them */
