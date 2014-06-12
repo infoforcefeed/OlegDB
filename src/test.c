@@ -357,23 +357,6 @@ int test_scoop() {
     return 0;
 }
 
-int test_uptime() {
-    ol_database *db = _test_db_open();
-
-    sleep(3);
-    int uptime = ol_uptime(db);
-    ol_log_msg(LOG_INFO, "Uptime: %.i seconds", uptime);
-
-    if (uptime < 3) {
-        ol_log_msg(LOG_ERR, "Uptime incorrect.\n");
-        _test_db_close(db);
-        return 1;
-    }
-
-    _test_db_close(db);
-    return 0;
-}
-
 int test_update() {
     ol_database *db = _test_db_open();
 
@@ -815,7 +798,6 @@ void run_tests(int results[2]) {
     ol_run_test(test_ct);
     ol_run_test(test_feature_flags);
     ol_run_test(test_can_find_all_nodes);
-    //ol_run_test(test_uptime);
     ol_run_test(test_lz4);
     ol_run_test(test_can_get_next_in_tree);
     ol_run_test(test_can_match_prefixes);
