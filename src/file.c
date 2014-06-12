@@ -11,7 +11,8 @@ int _ol_get_stat(const char *filepath, struct stat *sb) {
     fd = open(filepath, O_RDONLY);
     /* Check if path exists */
     if (fd < 0) {
-        /* this shouldnt have the error linger. It was an intented error to check */
+        /* File does not exist. */
+        /* Error should not linger. This was intended, clear it out. */
         errno = 0;
         return 0;
     }
