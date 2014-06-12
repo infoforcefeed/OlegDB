@@ -26,14 +26,6 @@ error:
     return -1;
 }
 
-int ol_aol_fsync(FILE *fd) {
-    check(fflush(fd) == 0, "Could not fflush.");
-    check(fsync(fileno(fd)) == 0, "Could not fsync");
-    return 0;
-error:
-    return -1;
-}
-
 static inline void _serialize_time(struct tm *time, char *buf) {
     strftime(buf, 21, "%FT%TZ", time);
 }
@@ -101,7 +93,10 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     check(ret > -1, "Error writing to file.");
 
     /* Force the OS to flush write to hardware */
-    check(ol_aol_fsync(db->aolfd) == 0, "Could not fsync. Panic!");
+    if (db->is_enabled(OL_F_AOL_FFLUSH, &db->feature_set))
+        check(fflush(db->aolfd) == 0, "Could not fflush.");
+    /* AOL should always fsync at least. */
+    check(fsync(fileno(db->aolfd)) == 0, "Could not fsync");
     return 0;
 error:
     return -1;
@@ -116,7 +111,7 @@ ol_string *_ol_read_data(FILE *fd) {
         size_t l = 0;
         char buf[20] = {0};
         while ((c = fgetc(fd)) != ':') {
-            check(isdigit(c) != 0, "Wrong data read, should be a didget.");
+            check(isdigit(c) != 0, "Wrong data read, should be a digit.");
             buf[i] = c;
             ++i;
         }
