@@ -330,7 +330,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
             check(processed == deref->data_size, "Could not decompress data.");
         } else {
             unsigned char *to_check = memcpy(data_ptr, dest, data_len);
-            check(to_check == data_ptr, "Could not copy data to msgpuck buffer.");
+            check(to_check == data_ptr, "Could not copy data to buffer.");
         }
 
         to_return[i] = dest;
