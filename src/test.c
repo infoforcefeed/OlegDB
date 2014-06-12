@@ -406,13 +406,6 @@ int test_update(const ol_feature_flags features) {
         return 1;
     }
 
-    if (inserted > 0) {
-        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        _test_db_close(db);
-        return 1;
-    }
-
-
     ol_unjar(db, key, strlen(key), &item);
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
@@ -718,7 +711,7 @@ int test_can_get_next_in_tree(const ol_feature_flags features) {
     return 0;
 
 error:
-    if (db)
+    if (db != NULL)
         _test_db_close(db);
     return 1;
 }
