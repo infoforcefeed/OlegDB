@@ -70,7 +70,7 @@ error:
 }
 
 int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size) {
-    int values_fd = { 0 };
+    int values_fd = 0;
     char values_filename[DB_NAME_SIZE] = { 0 };
 
     /* Figure out the filename */
@@ -103,7 +103,10 @@ int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size) {
     return _ol_open_values_with_fd(db, values_fd, truncate_total);
 
 error:
-    close(values_fd);
+    /* Close file if opened */
+    if (values_fd > 0) {
+        close(values_fd);
+    }
     return 0;
 }
 
