@@ -9,13 +9,13 @@
 #include "test.h"
 #include "tree.h"
 
-#define DB_FEATURES OL_F_SPLAYTREE | OL_F_LZ4
+#define DB_DEFAULT_FEATURES OL_F_SPLAYTREE | OL_F_LZ4
 
 /* Helper function to open databases, so we don't have to change API code
  * in a million places when we modify it.
  */
-ol_database *_test_db_open() {
-    ol_database *db = ol_open(DB_PATH, DB_NAME, DB_FEATURES);
+ol_database *_test_db_open(const ol_feature_flags features) {
+    ol_database *db = ol_open(DB_PATH, DB_NAME, features);
     if (db != NULL) {
         ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
     } else {
@@ -39,8 +39,8 @@ static int _test_db_close(ol_database *db) {
     return ret;
 }
 
-int test_open_close() {
-    ol_database *db = _test_db_open();
+int test_open_close(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
     int ret = _test_db_close(db);
     if (ret > 0){
         ol_log_msg(LOG_INFO, "Couldn't free all memory.");
@@ -50,8 +50,8 @@ int test_open_close() {
     return 0;
 }
 
-int test_bucket_max() {
-    ol_database *db = _test_db_open();
+int test_bucket_max(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
     int expected_bucket_max = HASH_MALLOC / 8;
 
     ol_log_msg(LOG_INFO, "Expected max is: %i", expected_bucket_max);
@@ -66,8 +66,8 @@ int test_bucket_max() {
     return 0;
 }
 
-int test_jar() {
-    ol_database *db = _test_db_open();
+int test_jar(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
 
     int i;
     int max_records = RECORD_COUNT;
@@ -104,8 +104,8 @@ int test_jar() {
     return 0;
 }
 
-int test_can_find_all_nodes() {
-    ol_database *db = _test_db_open();
+int test_can_find_all_nodes(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
 
     int i;
     int max_records = RECORD_COUNT;
@@ -185,8 +185,8 @@ int test_can_find_all_nodes() {
     }
     return 0;
 }
-int test_lots_of_deletes() {
-    ol_database *db = _test_db_open();
+int test_lots_of_deletes(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
 
     int i;
     int max_records = RECORD_COUNT;
@@ -246,8 +246,8 @@ int test_lots_of_deletes() {
     return 0;
 }
 
-int test_unjar_ds() {
-    ol_database *db = _test_db_open();
+int test_unjar_ds(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
 
     char key[64] = "FANCY KEY IS YO MAMA";
     unsigned char val[] = "invariable variables invariably trip up programmers";
@@ -289,8 +289,8 @@ int test_unjar_ds() {
     free(item);
     return 0;
 }
-int test_unjar() {
-    ol_database *db = _test_db_open();
+int test_unjar(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
 
     char key[64] = "muh_hash_tho";
     unsigned char val[] = "Hello I am some data for you and I am rather "
@@ -328,8 +328,8 @@ int test_unjar() {
     return 0;
 }
 
-int test_scoop() {
-    ol_database *db = _test_db_open();
+int test_scoop(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
 
     char key[64] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
@@ -359,8 +359,8 @@ int test_scoop() {
     return 0;
 }
 
-int test_update() {
-    ol_database *db = _test_db_open();
+int test_update(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
 
     char key[64] = "muh_hash_thoalk";
     unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
@@ -457,8 +457,8 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
     return 0;
 }
 
-int test_ct() {
-    ol_database *db = _test_db_open();
+int test_ct(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
 
     char key1[] = "test_key", key2[] = "test_key2";
     char ct1[] = "application/json", ct2[] = "image/png";
@@ -515,8 +515,8 @@ int test_ct() {
     return 0;
 }
 
-int test_feature_flags() {
-    ol_database *db = _test_db_open();
+int test_feature_flags(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
 
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     if (!db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
@@ -538,9 +538,9 @@ int test_feature_flags() {
     return 0;
 }
 
-int test_aol() {
+int test_aol(const ol_feature_flags features) {
     ol_log_msg(LOG_INFO, "Writing database.");
-    ol_database *db = _test_db_open();
+    ol_database *db = _test_db_open(features);
 
     /* Anable AOL and INIT, no need to restore */
     db->enable(OL_F_APPENDONLY, &db->feature_set);
@@ -588,7 +588,7 @@ int test_aol() {
     ol_close(db);
 
     ol_log_msg(LOG_INFO, "Restoring database.");
-    db = ol_open(DB_PATH, DB_NAME, DB_FEATURES | OL_F_APPENDONLY);
+    db = ol_open(DB_PATH, DB_NAME, DB_DEFAULT_FEATURES | OL_F_APPENDONLY);
     if (db == NULL) {
         ol_log_msg(LOG_ERR, "Could not open database");
         return 6;
@@ -605,8 +605,8 @@ int test_aol() {
 
 }
 
-int test_expiration() {
-    ol_database *db = _test_db_open();
+int test_expiration(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
 
     /* Get the current time */
     struct tm now;
@@ -631,8 +631,8 @@ error:
     return 1;
 }
 
-int test_lz4() {
-    ol_database *db = _test_db_open();
+int test_lz4(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
     db->enable(OL_F_LZ4, &db->feature_set);
 
     /* This is basically the Unjar_ds test, since keys, AOL, expiration and
@@ -680,8 +680,8 @@ int test_lz4() {
     return 0;
 }
 
-int test_can_get_next_in_tree() {
-    ol_database *db = _test_db_open();
+int test_can_get_next_in_tree(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
     int next_records = 10;
     ol_log_msg(LOG_INFO, "Inserting %i records.", next_records);
     int ret = _insert_keys(db, next_records);
@@ -714,8 +714,8 @@ error:
     return 1;
 }
 
-int test_can_match_prefixes() {
-    ol_database *db = _test_db_open();
+int test_can_match_prefixes(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
     int next_records = 10;
     ol_log_msg(LOG_INFO, "Inserting %i records.", next_records);
     int ret = _insert_keys(db, next_records);
@@ -791,23 +791,35 @@ void run_tests(int results[2]) {
     int tests_failed = 0;
 
     ol_test_start();
+
+    /* These tests are special and depend on certain features being enabled
+     * or disabled. */
+    const int feature_set = DB_DEFAULT_FEATURES;
     ol_run_test(test_aol);
     ol_run_test(test_lz4);
-    ol_run_test(test_open_close);
-    ol_run_test(test_bucket_max);
-    ol_run_test(test_jar);
-    ol_run_test(test_unjar);
-    ol_run_test(test_scoop);
-    ol_run_test(test_expiration);
-    ol_run_test(test_update);
-    ol_run_test(test_lots_of_deletes);
-    ol_run_test(test_unjar_ds);
-    ol_run_test(test_ct);
-    ol_run_test(test_feature_flags);
     ol_run_test(test_can_find_all_nodes);
-    ol_run_test(test_lz4);
     ol_run_test(test_can_get_next_in_tree);
     ol_run_test(test_can_match_prefixes);
+
+    /* Permute all features enabled for these tests, so that we get all of our
+     * code paths tested. */
+    int i = 0;
+    const int ALL_FEATURES_ENABLED = OL_F_APPENDONLY | OL_F_SPLAYTREE | OL_F_LZ4;
+    for(; i < ALL_FEATURES_ENABLED; i++) {
+        const int feature_set = ALL_FEATURES_ENABLED;
+        /* Fucking macros man */
+        ol_run_test(test_open_close);
+        ol_run_test(test_bucket_max);
+        ol_run_test(test_jar);
+        ol_run_test(test_unjar);
+        ol_run_test(test_scoop);
+        ol_run_test(test_expiration);
+        ol_run_test(test_update);
+        ol_run_test(test_lots_of_deletes);
+        ol_run_test(test_unjar_ds);
+        ol_run_test(test_ct);
+        ol_run_test(test_feature_flags);
+    }
 
 /* Skip all tests when one fails */
 error:
