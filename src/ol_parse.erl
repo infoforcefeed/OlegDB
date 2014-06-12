@@ -22,10 +22,10 @@ parse_url(Url) ->
     %io:format("S: ~p~n", [Split]),
     case Split of
         [<<>>, <<>>] -> {error, <<"No database or key specified.">>};
+        % Url was like //key. Bad!
+        [_, <<>>, <<_/binary>>|_] -> {error, <<"No database specified.">>};
         % Url was like /users/1 or /pictures/thing
         [_, <<DB_Name/binary>>, <<Key/binary>> |_] -> {ok, DB_Name, Key};
-        % Url was like //key. Bad!
-        [_, <<>>, <<Key/binary>> |_] -> {ok, Key};
         % The url was like /test or /what, so just assume the default DB.
         [_, <<Key/binary>> |_] -> {ok, Key}
     end.
@@ -39,6 +39,7 @@ parse_http(Data) ->
         % Default to whatever database name is specified in include/olegdb.hrl:
         {ReqType, {ok, Key}} ->
             {ok, ReqType, parse_header(Data, #ol_record{key=Key})};
+        {ReqType, {error, ErrorDesc}} -> {ReqType, {error, ErrorDesc}};
         X -> io:format("[-] Could not parse http in a sane way: ~p~n", [X]),
             throw(bad_parse)
     end.
