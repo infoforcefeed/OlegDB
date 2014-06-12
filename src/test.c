@@ -444,8 +444,8 @@ int test_update() {
 
 static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
     int i;
-    unsigned char to_insert[] = "Hello I am some data for you and I am rather"
-        "a lot of data aren't I? Bigger data is better, as the NoSQL world is"
+    unsigned char to_insert[] = "Hello I am some data for you and I am rather "
+        "a lot of data aren't I? Bigger data is better, as the NoSQL world is "
         "fond of saying. Geez, I hope senpai notices me today! That would be "
         "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!";
     for (i = 0; i < NUM_KEYS; i++) { // 8======D
@@ -605,15 +605,20 @@ int test_aol() {
 
     ol_log_msg(LOG_INFO, "Restoring database.");
     db = ol_open(DB_PATH, DB_NAME, DB_FEATURES | OL_F_APPENDONLY);
+    if (db == NULL) {
+        ol_log_msg(LOG_ERR, "Could not open database");
+        return 6;
+    }
 
-    ret = 0;
     if (db->rcrd_cnt != max_records - 1) {
         ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
-        ret = 6;
+        _test_db_close(db);
+        return 6;
     }
 
     _test_db_close(db);
-    return ret;
+    return 0;
+
 }
 
 int test_expiration() {
@@ -802,11 +807,11 @@ void run_tests(int results[2]) {
     int tests_failed = 0;
 
     ol_test_start();
+    ol_run_test(test_aol);
     ol_run_test(test_lz4);
     ol_run_test(test_open_close);
     ol_run_test(test_bucket_max);
     ol_run_test(test_jar);
-    ol_run_test(test_aol);
     ol_run_test(test_unjar);
     ol_run_test(test_scoop);
     ol_run_test(test_expiration);

@@ -95,6 +95,7 @@ libinstall: liboleg
 	install ./include/*.h $(INSTALL_INCLUDE)
 
 test: all
+	rm -rf /tmp/oleg_is_king
 	./run_tests.sh
 
 clean:
