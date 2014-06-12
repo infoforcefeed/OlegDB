@@ -112,7 +112,7 @@ error:
 
 
 int _ol_open_values(ol_database *db) {
-    int values_fd = { 0 };
+    int values_fd = 0;
     char values_filename[DB_NAME_SIZE] = { 0 };
     check(db != NULL, "DB is NULL.");
 
@@ -126,7 +126,5 @@ int _ol_open_values(ol_database *db) {
 
     return _ol_open_values_with_fd(db, values_fd, filesize);
 error:
-    close(values_fd);
-
     return 0;
 }
