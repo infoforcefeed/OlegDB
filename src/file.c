@@ -9,7 +9,9 @@
 int _ol_get_stat(const char *filepath, struct stat *sb) {
     int fd;
     fd = open(filepath, O_RDONLY);
-    if (fd == -1) {
+    /* Check if path exists */
+    if (fd < 0) {
+        /* this shouldnt have the error linger. It was an intented error to check */
         errno = 0;
         return 0;
     }
@@ -52,10 +54,10 @@ int _ol_open_values_with_fd(ol_database *db, const int fd, const size_t filesize
      * should only happen on init. */
     if (filesize == 0) {
         check(ftruncate(fd, to_mmap) != -1, "Could not truncate file for values.");
-        int i;
         const int max = to_mmap / sizeof(unsigned char *);
         /* Null out the stragglers */
-        for (i = 0; i < max; i++) {
+        int i = 0;
+        for (; i < max; i++) {
             ((unsigned char **)db->values)[i] = NULL;
         }
     }
@@ -64,8 +66,9 @@ int _ol_open_values_with_fd(ol_database *db, const int fd, const size_t filesize
     return 1;
 
 error:
-    if (fd)
+    if (fd >=0) {
         close(fd);
+    }
     return 0;
 }
 
@@ -93,7 +96,7 @@ int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size) {
     const size_t truncate_total = filesize + to_add;
 
     values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
-    check(values_fd > 0, "Could not open values file.");
+    check(values_fd >= 0, "Could not open values file.");
 
     /* Set new size */
     check(ftruncate(values_fd, truncate_total) != -1, "Could not truncate file to new size for values.");
@@ -104,7 +107,7 @@ int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size) {
 
 error:
     /* Close file if opened */
-    if (values_fd > 0) {
+    if (values_fd >= 0) {
         close(values_fd);
     }
     return 0;
@@ -122,7 +125,7 @@ int _ol_open_values(ol_database *db) {
 
     debug("Opening %s for values", values_filename);
     values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
-    check(values_fd > 0, "Could not open file.");
+    check(values_fd >= 0, "Could not open file.");
 
     return _ol_open_values_with_fd(db, values_fd, filesize);
 error:
