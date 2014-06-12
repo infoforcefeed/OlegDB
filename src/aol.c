@@ -6,6 +6,7 @@
 #include "lz4.h"
 
 #include <stdio.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -115,6 +116,7 @@ ol_string *_ol_read_data(FILE *fd) {
         size_t l = 0;
         char buf[20] = {0};
         while ((c = fgetc(fd)) != ':') {
+            check(isdigit(c) != 0, "Wrong data read, should be a didget.");
             buf[i] = c;
             ++i;
         }
