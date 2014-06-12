@@ -57,9 +57,27 @@ send_handler(Data, Accepted) ->
     end,
     ok = gen_tcp:close(Accepted).
 
-%cursor_operand({ReqType, Header, Operand}) ->
-cursor_operand({_, _, _}) ->
-    ol_http:error_response(<<"Requested cursor operation is not implemented.">>).
+cursor_operand({ReqType, Header, Operand}) ->
+    if
+        ReqType == get ->
+            %io:format("[-] Requesting cursor ~p~n", [Header#ol_record.key]),
+            case Operand of
+                next ->
+                    case ol_database:ol_next_key(Header) of
+                        %{ok, ContentType, Data, NextKey} ->
+                        %    ol_http:get_response(ContentType, Data);
+                        _ -> ol_http:error_response(<<"Next not implemented.">>)
+                    end;
+                prev ->
+                    case ol_database:ol_prev_key(Header) of
+                        %{ok, ContentType, Data, Prev} ->
+                        %    ol_http:get_response(ContentType, Data);
+                        _ -> ol_http:error_response(<<"Prev not implemented.">>)
+                    end
+            end;
+        true ->
+            ol_http:error_response(<<"Cursors do not support the requested verb.">>)
+    end.
 
 route(Bits, Socket) ->
     case ol_parse:parse_http(Bits) of

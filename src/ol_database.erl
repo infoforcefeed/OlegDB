@@ -8,6 +8,8 @@
          ol_jar/1,
          ol_unjar/1,
          ol_bucket_meta/1,
+         ol_next_key/1,
+         ol_prev_key/1,
          ol_scoop/1]).
 
 -include("olegdb.hrl").
@@ -33,11 +35,13 @@ init(Papa) ->
     Papa ! spawned,
     loop(Port).
 
-encode({ol_init, X})  -> [0, term_to_binary(X)];
-encode({ol_jar, X})   -> [1, term_to_binary(X)];
-encode({ol_unjar, X}) -> [2, term_to_binary(X)];
-encode({ol_scoop, X}) -> [3, term_to_binary(X)];
-encode({ol_bucket_meta, X}) -> [4, term_to_binary(X)];
+encode({ol_init, X})  ->        [0, term_to_binary(X)];
+encode({ol_jar, X})   ->        [1, term_to_binary(X)];
+encode({ol_unjar, X}) ->        [2, term_to_binary(X)];
+encode({ol_scoop, X}) ->        [3, term_to_binary(X)];
+encode({ol_bucket_meta, X}) ->  [4, term_to_binary(X)];
+encode({ol_next_key, X}) ->     [5, term_to_binary(X)];
+encode({ol_prev_key, X}) ->     [6, term_to_binary(X)];
 encode(_) ->
     io:format("Don't know how to decode that.~n"),
     exit(unknown_call).
@@ -97,3 +101,9 @@ ol_scoop(OlRecord) ->
 
 ol_bucket_meta(OlRecord) ->
     call_port({ol_bucket_meta, OlRecord}).
+
+ol_next_key(OlRecord) ->
+    call_port({ol_next_key, OlRecord}).
+
+ol_prev_key(OlRecord) ->
+    call_port({ol_prev_key, OlRecord}).
