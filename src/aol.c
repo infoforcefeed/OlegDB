@@ -39,26 +39,18 @@ static inline void _serialize_time(struct tm *time, char *buf) {
 
 void _deserialize_time(struct tm *fillout, char *buf) {
     /* Example 8601 datestamp: 2014-03-08T11:17:39Z */
-    char year[4]={0}, month[2]={0}, day[2]={0};
-    char hour[2]={0}, min[2]={0}, sec[2]={0};
 
-    /* The offsets aren't that scary, it'll be fiiiine */
-    memcpy(year, buf, 4);
-    memcpy(month, buf + 5, 2);
-    memcpy(day, buf + 8, 2);
+    sscanf(buf, "%4d-%2d-%2dT%2d:%2d:%2dZ",
+        &fillout->tm_year,
+        &fillout->tm_mon,
+        &fillout->tm_mday,
+        &fillout->tm_hour,
+        &fillout->tm_min,
+        &fillout->tm_sec
+    );
 
-    memcpy(hour, buf + 11, 2);
-    memcpy(min, buf + 14, 2);
-    memcpy(sec, buf + 17, 2);
-
-    memset(fillout, '\0', sizeof(struct tm));
-    fillout->tm_year = strtol(year, NULL, 10) - 1900;
-    fillout->tm_mon = strtol(month, NULL, 10) - 1;
-    fillout->tm_mday = strtol(day, NULL, 10);
-
-    fillout->tm_hour = strtol(hour, NULL, 10);
-    fillout->tm_min = strtol(min, NULL, 10);
-    fillout->tm_sec = strtol(sec, NULL, 10);
+    fillout->tm_year -= 1900;
+    fillout->tm_mon -= 1;
 }
 
 #define intlen(value) (value == 0 ? 1 : (int)floor(log10(value)+1))
