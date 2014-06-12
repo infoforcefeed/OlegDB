@@ -93,14 +93,18 @@ route(Bits, Socket) ->
                         ok -> ol_http:deleted_response();
                         _ -> ol_http:not_found_response()
                     end;
+                next ->
+                    ol_http:error_response(<<"Not implemented.">>);
+                prev ->
+                    ol_http:error_response(<<"Not implemented.">>);
                 {error, ErrMsg} ->
                     ol_http:error_response(ErrMsg)
             end;
         {_, {error, ErrMsg}} ->
-            io:format("[-] Error ~p~n", [ErrMsg]),
+            io:format("[X] Error ~p~n", [ErrMsg]),
             ol_http:error_response(ErrMsg);
         X ->
-            io:format("[-] Somebody requested something weird: ~p~n", [X]),
+            io:format("[X] Somebody requested something weird: ~p~n", [X]),
             ol_http:error_response(<<"Make a better request next time.">>)
     end.
 

@@ -13,6 +13,9 @@ parse_db_name_and_key(Data) ->
         <<"POST">>   -> {post, ParsedUrl};
         <<"HEAD">>   -> {head, ParsedUrl};
         <<"DELETE">> -> {delete, ParsedUrl};
+        % Used for cursor iteration:
+        <<"NEXT">>   -> {next, ParsedUrl};
+        <<"PREV">>   -> {prev, ParsedUrl};
         Chunk ->
             {error, <<"Didn't understand your verb.">>, Chunk}
     end.
