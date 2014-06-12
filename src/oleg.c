@@ -43,7 +43,7 @@ bool _ol_is_enabled(int feature, int *feature_set) {
 
 ol_database *ol_open(char *path, char *name, int features){
     debug("Opening \"%s\" database", name);
-    ol_database *new_db = malloc(sizeof(ol_database));
+    ol_database *new_db = calloc(1, sizeof(ol_database));
 
     size_t to_alloc = HASH_MALLOC;
     new_db->hashes = calloc(1, to_alloc);
@@ -305,7 +305,7 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
             return 0;
         } else {
             /* It's dead, get rid of it. */
-            ol_scoop(db, key, klen);
+            check(ol_scoop(db, key, klen) == 0, "Scoop failed");
         }
     }
 
@@ -630,12 +630,11 @@ char *ol_content_type(ol_database *db, const char *key, size_t klen) {
             return bucket->content_type;
         } else {
             /* It's dead, get rid of it. */
-            int res = ol_scoop(db, key, klen);
-            if (res > 0)
-                debug("Could not delete a bucket!");
+            check(ol_scoop(db, key, klen) == 0, "Could not delete a bucket!")
         }
     }
-
+    
+error:
     return NULL;
 }
 
@@ -653,12 +652,11 @@ struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
             return bucket->expiration;
         } else {
             /* It's dead, get rid of it. */
-            int res = ol_scoop(db, key, klen);
-            if (res > 0)
-                debug("Could not delete a bucket!");
+            check(ol_scoop(db, key, klen) == 0, "Could not delete a bucket!")
         }
     }
 
+error:
     return NULL;
 }
 
