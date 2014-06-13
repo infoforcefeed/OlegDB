@@ -256,28 +256,30 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     ei_x_buff to_send;
     unsigned char *data = NULL;
     size_t val_size;
-    int ret = ol_unjar_ds(d->db, bucket->key, bucket->klen, &data, &val_size);
+
+    ol_bucket *next_bucket = (ol_bucket *)node->ref_obj;
+
+    int ret = ol_unjar_ds(d->db, next_bucket->key, next_bucket->klen, &data, &val_size);
     if (ret == 0) {
         ei_x_new_with_version(&to_send);
-
-        char *content_type_retrieved = ol_content_type(d->db, bucket->key, bucket->klen);
         ei_x_encode_tuple_header(&to_send, 4);
+
         /* Send back ok, content type, key for next bucket, and value for next bucket */
         ei_x_encode_atom(&to_send, "ok");
-        ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
-        ei_x_encode_binary(&to_send, bucket->key, bucket->klen);
+        ei_x_encode_binary(&to_send, next_bucket->content_type, next_bucket->ctype_size);
+        ei_x_encode_binary(&to_send, next_bucket->key, next_bucket->klen);
         ei_x_encode_binary(&to_send, data, val_size);
 
         driver_output(d->port, to_send.buff, to_send.index);
 
         ei_x_free(&to_send);
         free(data);
-    } else {
-        ol_log_msg(LOG_ERR, "Something went horribly wrong and we couldn't retrieve a key we just found in the tree.");
-        port_driver_error(d, obj);
         return;
     }
 
+    ol_log_msg(LOG_ERR, "Something went horribly wrong. We couldn't get the data of a bucket we just found in the tree.");
+    port_driver_error(d, obj);
+    return;
 }
 
 static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
@@ -313,7 +315,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     /* Open up a db if we don't have on already */
     if (d->db == NULL) {
         ol_database *db;
-        db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY | OL_F_LZ4 | OL_F_SPLAYTREE);
+        db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY | OL_F_AOL_FFLUSH | OL_F_LZ4 | OL_F_SPLAYTREE);
         d->db = db;
     }
 

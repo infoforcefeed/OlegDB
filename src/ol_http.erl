@@ -27,7 +27,7 @@ next_bucket_response(NextContentType, NextKey, NextData) ->
         "Content-Type: ~s\r\n"
         "Content-Length: ~p\r\n"
         "Connection: close\r\n"
-        "X-OlegDB-Key: ~p\r\n"
+        "X-OlegDB-Key: ~s\r\n"
         "\r\n~s">>, [NextContentType, byte_size(NextData), NextKey, NextData]).
 
 not_found_response() ->
