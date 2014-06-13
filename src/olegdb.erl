@@ -64,9 +64,9 @@ cursor_operand({ReqType, Header, Operand}) ->
             case Operand of
                 next ->
                     case ol_database:ol_next_key(Header) of
-                        %{ok, ContentType, Data, NextKey} ->
-                        %    ol_http:get_response(ContentType, Data);
-                        _ -> ol_http:error_response(<<"Next not implemented.">>)
+                        {ok, NextContentType, NextKey, NextData} ->
+                            ol_http:next_bucket_response(NextContentType, NextKey, NextData);
+                        ErrMsg -> ol_http:error_response(ErrMsg)
                     end;
                 prev ->
                     case ol_database:ol_prev_key(Header) of

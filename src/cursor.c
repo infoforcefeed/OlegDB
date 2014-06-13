@@ -32,7 +32,7 @@ int olc_step(ol_cursor *cursor) {
 }
 
 int _olc_next(ol_splay_tree_node **node, ol_splay_tree_node *maximum) {
-    check(node != NULL, "No nodes in tree.");
+    check((*node) != NULL, "No nodes in tree.");
 
     if ((*node) == maximum)
         return 0;

@@ -238,10 +238,46 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     size_t _klen = 0;
 
     ol_bucket *bucket = ol_get_bucket(d->db, obj->key, obj->klen, &_key, &_klen);
-    check(bucket != NULL, "No bucket found for that key.");
 
-error:
-    port_driver_error(d, obj);
+    if (bucket == NULL)
+        port_driver_error(d, obj);
+
+    ol_splay_tree_node *node = NULL;
+    ol_splay_tree_node *maximum = ols_subtree_maximum(d->db->tree->root);
+
+    /* Get the next successor to this node. */
+    if (!_olc_next(&node, maximum) && node == NULL) {
+        /* Could not find next node. */
+        port_driver_error(d, obj);
+        return;
+    }
+
+    /* Found next node. */
+    ei_x_buff to_send;
+    unsigned char *data = NULL;
+    size_t val_size;
+    int ret = ol_unjar_ds(d->db, bucket->key, bucket->klen, &data, &val_size);
+    if (ret == 0) {
+        ei_x_new_with_version(&to_send);
+
+        char *content_type_retrieved = ol_content_type(d->db, bucket->key, bucket->klen);
+        ei_x_encode_tuple_header(&to_send, 3);
+        /* Send back ok, content type, key for next bucket, and value for next bucket */
+        ei_x_encode_atom(&to_send, "ok");
+        ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
+        ei_x_encode_binary(&to_send, bucket->key, bucket->klen);
+        ei_x_encode_binary(&to_send, data, val_size);
+
+        driver_output(d->port, to_send.buff, to_send.index);
+
+        ei_x_free(&to_send);
+        free(data);
+    } else {
+        ol_log_msg(LOG_ERR, "Something went horribly wrong and we couldn't retrieve a key we just found in the tree.");
+        port_driver_error(d, obj);
+        return;
+    }
+
 }
 
 static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
