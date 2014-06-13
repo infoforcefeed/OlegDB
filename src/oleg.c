@@ -180,33 +180,9 @@ static inline void _ol_trunc(const char *key, size_t klen, char *out) {
     out[real_key_len] = '\0';
 }
 
-ol_bucket *_ol_get_bucket(const ol_database *db, const uint32_t hash, const char *key, size_t klen) {
-    /* Note: Keys should already be safely truncated at this point. */
-    int index = _ol_calc_idx(db->cur_ht_size, hash);
-    if (db->hashes[index] != NULL) {
-        size_t larger_key = 0;
-        ol_bucket *tmp_bucket;
-        tmp_bucket = db->hashes[index];
-        larger_key = tmp_bucket->klen > klen ? tmp_bucket->klen : klen;
-        if (strncmp(tmp_bucket->key, key, larger_key) == 0) {
-            return tmp_bucket;
-        } else if (tmp_bucket->next != NULL) {
-            /* Keys were not the same, traverse the linked list to see if it's
-             * farther down. */
-            do {
-                tmp_bucket = tmp_bucket->next;
-                larger_key = tmp_bucket->klen > klen ? tmp_bucket->klen : klen;
-                if (strncmp(tmp_bucket->key, key, larger_key) == 0)
-                    return tmp_bucket;
-            } while (tmp_bucket->next != NULL);
-        }
-    }
-    return NULL;
-}
-
-int _ol_set_bucket(ol_database *db, ol_bucket *bucket) {
+int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash) {
     /* TODO: error codes? */
-    int index = _ol_calc_idx(db->cur_ht_size, bucket->hash);
+    int index = _ol_calc_idx(db->cur_ht_size, hash);
     if (db->hashes[index] != NULL) {
         db->meta->key_collisions++;
         ol_bucket *tmp_bucket = db->hashes[index];
@@ -258,18 +234,43 @@ static inline int _has_bucket_expired(const ol_bucket *bucket) {
     }
     return 1;
 }
-int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
-    uint32_t hash;
 
-    char _key[KEY_SIZE] = {'\0'};
-    _ol_trunc(key, klen, _key);
-    size_t _klen = strnlen(_key, KEY_SIZE);
+ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t klen, char (*_key)[KEY_SIZE], size_t *_klen) {
+    uint32_t hash;
+    _ol_trunc(key, klen, *_key);
+    *_klen = strnlen(*_key, KEY_SIZE);
 
     if (_klen == 0)
-        return 1;
+        return NULL;
 
-    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
-    ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
+    MurmurHash3_x86_32(*_key, *_klen, DEVILS_SEED, &hash);
+
+    int index = _ol_calc_idx(db->cur_ht_size, hash);
+    if (db->hashes[index] != NULL) {
+        size_t larger_key = 0;
+        ol_bucket *tmp_bucket;
+        tmp_bucket = db->hashes[index];
+        larger_key = tmp_bucket->klen > klen ? tmp_bucket->klen : klen;
+        if (strncmp(tmp_bucket->key, key, larger_key) == 0) {
+            return tmp_bucket;
+        } else if (tmp_bucket->next != NULL) {
+            /* Keys were not the same, traverse the linked list to see if it's
+             * farther down. */
+            do {
+                tmp_bucket = tmp_bucket->next;
+                larger_key = tmp_bucket->klen > klen ? tmp_bucket->klen : klen;
+                if (strncmp(tmp_bucket->key, key, larger_key) == 0)
+                    return tmp_bucket;
+            } while (tmp_bucket->next != NULL);
+        }
+    }
+    return NULL;
+}
+
+int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
+    char _key[KEY_SIZE] = {'\0'};
+    size_t _klen = 0;
+    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
 
     if (bucket != NULL) {
         if (!_has_bucket_expired(bucket)) {
@@ -381,21 +382,12 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         size_t vsize, const char *ct, const size_t ctsize) {
     int ret;
-    uint32_t hash;
-
-    /* Free the _key as soon as possible */
     char _key[KEY_SIZE] = {'\0'};
-    _ol_trunc(key, klen, _key);
-    size_t _klen = strnlen(_key, KEY_SIZE);
-
-    if (_klen == 0)
-        return 1;
-
-    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
-    ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
+    size_t _klen = 0;
+    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
 
     /* Check to see if we have an existing entry with that key */
-    if (bucket) {
+    if (bucket != NULL) {
         return _ol_reallocate_bucket(db, bucket, value, vsize, ct, ctsize);
     }
 
@@ -411,7 +403,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
 
     new_bucket->klen = _klen;
-    new_bucket->hash = hash;
     new_bucket->ctype_size = ctsize;
 
     char *ct_real = calloc(1, ctsize+1);
@@ -483,7 +474,9 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         db->val_size += new_bucket->data_size;
     }
 
-    ret = _ol_set_bucket(db, new_bucket);
+    uint32_t hash;
+    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
+    ret = _ol_set_bucket(db, new_bucket, hash);
 
     if(ret > 0)
         ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);
@@ -507,16 +500,9 @@ int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *valu
 }
 
 int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiration_date) {
-    uint32_t hash;
     char _key[KEY_SIZE] = {'\0'};
-    _ol_trunc(key, klen, _key);
-    size_t _klen = strnlen(_key, KEY_SIZE);
-
-    if (_klen == 0)
-        return 1;
-
-    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
-    ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
+    size_t _klen = 0;
+    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
 
     if (bucket != NULL) {
         if (bucket->expiration == NULL)
@@ -617,13 +603,9 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
 }
 
 char *ol_content_type(ol_database *db, const char *key, size_t klen) {
-    uint32_t hash;
     char _key[KEY_SIZE] = {'\0'};
-    _ol_trunc(key, klen, _key);
-    size_t _klen = strnlen(_key, KEY_SIZE);
-
-    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
-    ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
+    size_t _klen = 0;
+    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
 
     if (bucket != NULL) {
         if (!_has_bucket_expired(bucket)) {
@@ -633,19 +615,15 @@ char *ol_content_type(ol_database *db, const char *key, size_t klen) {
             check(ol_scoop(db, key, klen) == 0, "Could not delete a bucket!")
         }
     }
-    
+
 error:
     return NULL;
 }
 
 struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
-    uint32_t hash;
     char _key[KEY_SIZE] = {'\0'};
-    _ol_trunc(key, klen, _key);
-    size_t _klen = strnlen(_key, KEY_SIZE);
-
-    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
-    ol_bucket *bucket = _ol_get_bucket(db, hash, _key, _klen);
+    size_t _klen = 0;
+    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
 
     if (bucket != NULL && bucket->expiration != NULL) {
         if (!_has_bucket_expired(bucket)) {

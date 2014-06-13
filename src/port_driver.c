@@ -225,24 +225,26 @@ static void port_driver_bucket_meta(oleg_data *d, ol_record *obj) {
     ei_x_free(&to_send);
 }
 
-static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
-    ol_cursor cursor;
-    check(olc_init(db, &cursor), "Could not init cursor.");
-
-error:
-    port_driver_error(d, obj);
-}
-
-static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
-}
-
-
 static void port_driver_error(oleg_data *d, ol_record *obj) {
     /* Send something back so we're not blocking. */
     ei_x_buff to_send;
     _gen_atom(&to_send, "not_found");
     driver_output(d->port, to_send.buff, to_send.index);
     ei_x_free(&to_send);
+}
+
+static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
+    char _key[KEY_SIZE] = {'\0'};
+    size_t _klen = 0;
+
+    ol_bucket *bucket = ol_get_bucket(d->db, obj->key, obj->klen, &_key, &_klen);
+    check(bucket != NULL, "No bucket found for that key.");
+
+error:
+    port_driver_error(d, obj);
+}
+
+static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
 }
 
 /* So this is where all the magic happens. If you want to know how we switch

@@ -57,7 +57,6 @@ typedef char ** ol_val_array;
 * xXx data_offset=Location of this key's value (data) in the values file on disk. xXx
 * xXx data_size=Length of the value (data) in bytes. This is the size of the data stored in memory. xXx
 * xXx original_size=Length of the value (data) in bytes. This is the original length of the data we receieved, non-compressed. xXx
-* xXx hash=Hashed value of this key. xXx
 * xXx next=Collisions are resolved via linked list. This contains the pointer to the next object in the chain, or NULL. xXx
 * xXx expiration=The POSIX timestamp when this key will expire. xXx
 * xXx *node=A pointer to this objects node in the splay tree. xXx
@@ -70,7 +69,6 @@ typedef struct ol_bucket {
     size_t              data_offset;
     size_t              data_size;
     size_t              original_size;
-    uint32_t            hash;
     struct ol_bucket    *next; /* The next ol_bucket in this chain, if any */
     struct tm           *expiration;
     ol_splay_tree_node  *node;
@@ -259,6 +257,18 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
  * xXx klen=The length of the key. xXx
  */
 int ol_exists(ol_database *db, const char *key, size_t klen);
+
+/* xXx FUNCTION=ol_get_bucket xXx
+ * xXx DESCRIPTION=Utility function to retrieve an <a href="#ol_bucket">ol_bucket</a> object from the database for a given key. xXx
+ * xXx RETURNS=The bucket if it exists, otherwise NULL. xXx
+ * xXx *db=Database the bucket should be in. xXx
+ * xXx *key=The key to check. xXx
+ * xXx klen=The length of the key. xXx
+ * xXx **_key=The truncated key will be filled in at this address. xXx
+ * xXx *_klen=The length of the truncated key. xXx
+ */
+ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t klen,
+                         char (*_key)[KEY_SIZE], size_t *_klen);
 
 #ifdef __cplusplus
 }
