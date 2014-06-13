@@ -6,11 +6,16 @@
 #include "errhandle.h"
 #include "logging.h"
 #include "stack.h"
+#include "murmur3.h"
 
 static inline void _ol_rehash_insert_bucket(
         ol_bucket **tmp_hashes, const size_t to_alloc, ol_bucket *bucket) {
     int new_index;
-    new_index = _ol_calc_idx(to_alloc, bucket->hash);
+
+    uint32_t hash;
+    MurmurHash3_x86_32(bucket->key, bucket->klen, DEVILS_SEED, &hash);
+
+    new_index = _ol_calc_idx(to_alloc, hash);
     if (tmp_hashes[new_index] != NULL) {
         /* Enforce that this is the last bucket, KILL THE ORPHANS */
         ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(
