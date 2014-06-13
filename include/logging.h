@@ -1,8 +1,10 @@
 #pragma once
 /* Logging. */
 
-#define LOG_INFO 0
-#define LOG_WARN 3
-#define LOG_ERR  6
+typedef enum {
+    LOG_INFO,
+    LOG_WARN,
+    LOG_ERR
+} log_level;
 
-void ol_log_msg(int level, const char *msg, ...);
+void ol_log_msg(log_level level, const char *msg, ...);

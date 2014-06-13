@@ -271,7 +271,7 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check(_klen != 0, "Key length of zero not allowed.");
+    check_warn(_klen > 0, "Key length of zero not allowed.");
 
     if (bucket != NULL) {
         if (!_has_bucket_expired(bucket)) {
@@ -386,7 +386,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check(_klen != 0, "Key length of zero not allowed.");
+    check_warn(_klen > 0, "Key length of zero not allowed.");
 
     /* Check to see if we have an existing entry with that key */
     if (bucket != NULL) {
@@ -508,7 +508,7 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check(_klen != 0, "Key length of zero not allowed.");
+    check_warn(_klen > 0, "Key length of zero not allowed.");
 
     if (bucket != NULL) {
         if (bucket->expiration == NULL)
@@ -547,9 +547,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
     char _key[KEY_SIZE] = {'\0'};
     _ol_trunc(key, klen, _key);
     size_t _klen = strnlen(_key, KEY_SIZE);
-
-    if (_klen == 0)
-        return 1;
+    check_warn(_klen > 0, "Key length cannot be zero.");
 
 
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
@@ -609,13 +607,15 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
         db->rcrd_cnt -= 1;
     }
     return return_level;
+error:
+    return 1;
 }
 
 char *ol_content_type(ol_database *db, const char *key, size_t klen) {
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check(_klen != 0, "Key length of zero not allowed.");
+    check_warn(_klen > 0, "Key length of zero not allowed.");
 
     if (bucket != NULL) {
         if (!_has_bucket_expired(bucket)) {
@@ -634,7 +634,7 @@ struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check(_klen != 0, "Key length of zero not allowed.");
+    check_warn(_klen > 0, "Key length of zero not allowed.");
 
     if (bucket != NULL && bucket->expiration != NULL) {
         if (!_has_bucket_expired(bucket)) {
