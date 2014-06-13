@@ -242,7 +242,7 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     if (bucket == NULL)
         port_driver_error(d, obj);
 
-    ol_splay_tree_node *node = NULL;
+    ol_splay_tree_node *node = bucket->node;
     ol_splay_tree_node *maximum = ols_subtree_maximum(d->db->tree->root);
 
     /* Get the next successor to this node. */
@@ -261,7 +261,7 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
         ei_x_new_with_version(&to_send);
 
         char *content_type_retrieved = ol_content_type(d->db, bucket->key, bucket->klen);
-        ei_x_encode_tuple_header(&to_send, 3);
+        ei_x_encode_tuple_header(&to_send, 4);
         /* Send back ok, content type, key for next bucket, and value for next bucket */
         ei_x_encode_atom(&to_send, "ok");
         ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
