@@ -75,6 +75,29 @@ int test_bucket_max(const ol_feature_flags features) {
     return 0;
 }
 
+int test_zero_length_keys(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+    char *key1 = NULL;
+    char key2[] = "";
+    unsigned char value[] = "lkjasldkjflakjsdf";
+
+    check(ol_jar(db, key1, 0, value, strlen((char *)value)) != 0, "jar'd key when we shouldn't have.");
+    check(ol_jar(db, key2, 0, value, strlen((char *)value)) != 0, "jar'd key when we shouldn't have.");
+    check(ol_unjar(db, key1, 0, NULL) != 0, "jar'd key when we shouldn't have.");
+    check(ol_unjar(db, key2, 0, NULL) != 0, "jar'd key when we shouldn't have.");
+    check(ol_spoil(db, key1, 0, NULL) != 0, "spoil'd key when we shouldn't have.");
+    check(ol_spoil(db, key2, 0, NULL) != 0, "spoil'd key when we shouldn't have.");
+    check(ol_scoop(db, key1, 0) != 0, "scoop'd key when we shouldn't have.");
+    check(ol_scoop(db, key2, 0) != 0, "scoop'd key when we shouldn't have.");
+
+    _test_db_close(db);
+    return 0;
+
+error:
+    _test_db_close(db);
+    return 1;
+}
+
 int test_jar(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
 
@@ -815,6 +838,7 @@ void run_tests(int results[2]) {
         /* Fucking macros man */
         ol_run_test(test_open_close);
         ol_run_test(test_bucket_max);
+        ol_run_test(test_zero_length_keys);
         ol_run_test(test_jar);
         ol_run_test(test_unjar);
         ol_run_test(test_scoop);
