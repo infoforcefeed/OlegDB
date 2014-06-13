@@ -66,8 +66,7 @@ curl2sudo® install script coming soon.
 Documentation
 =============
 
-Documentation exists primarily on the [the website](https://olegdb.org/documentation.html),
-but also in the [./docs](./docs/) directory.
+Documentation exists primarily on the [the website](https://olegdb.org/documentation.html).
 
 Roadmap
 =======
