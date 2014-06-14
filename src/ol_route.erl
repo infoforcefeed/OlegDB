@@ -11,6 +11,8 @@ cursor_operand({ReqType, Header, Operand}) ->
                     case ol_database:ol_next_key(Header) of
                         {ok, NextContentType, NextKey, NextData} ->
                             ol_http:next_bucket_response(NextContentType, NextKey, NextData);
+                        not_found ->
+                            ol_http:not_found_response();
                         ErrMsg -> ol_http:error_response(ErrMsg)
                     end;
                 prev ->
