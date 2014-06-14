@@ -479,6 +479,8 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
              * the AOL file, remember?) we have to compress it again and grab
              * the amount of bytes processed.
              * TODO: This is dumb. Make a function that just sets the bucket size.
+             * This new mythical function should also handle setting the data_offset
+             * of the bucket.
              */
             int maxoutsize = LZ4_compressBound(vsize);
             char tmp_data[maxoutsize];
@@ -490,6 +492,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         } else {
             new_bucket->data_size = vsize;
         }
+        new_bucket->data_offset = db->val_size;
     }
 
     /* Remember to increment the tracked data size of the DB. */
