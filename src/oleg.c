@@ -474,6 +474,25 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
         /* Remember to increment the tracked data size of the DB. */
         db->val_size += new_bucket->data_size;
+    } else {
+        /* We still need to set the data size, but not the actual data. */
+        if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+            /* Since LZ4_compressBound only provides the worst case scenario
+             * and not what the data actually compressed to (we're replaying
+             * the AOL file, remember?) we have to compress it again and grab
+             * the amount of bytes processed.
+             * TODO: This is dumb. Make a function that just sets the bucket size.
+             */
+            int maxoutsize = LZ4_compressBound(vsize);
+            char tmp_data[maxoutsize];
+            /* Don't need to memset tmp_data because I don't care about it. */
+
+            size_t cmsize = (size_t)LZ4_compress((char *)value, (char *)tmp_data,
+                                                 (int)vsize);
+            new_bucket->data_size = cmsize;
+        } else {
+            new_bucket->data_size = vsize;
+        }
     }
 
     uint32_t hash;
