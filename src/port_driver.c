@@ -246,7 +246,7 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     ol_splay_tree_node *maximum = ols_subtree_maximum(d->db->tree->root);
 
     /* Get the next successor to this node. */
-    if (!_olc_next(&node, maximum) && node == NULL) {
+    if (!_olc_next(&node, maximum) || node == bucket->node) {
         /* Could not find next node. */
         port_driver_error(d, obj);
         return;

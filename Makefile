@@ -59,7 +59,8 @@ $(LIB_DIR)liboleg.so: murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o t
 	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so $^ -fpic -shared $(MATH_LINKER)
 
 server: $(BIN_DIR)ol_database.beam $(BIN_DIR)ol_http.beam \
-	$(BIN_DIR)ol_parse.beam $(BIN_DIR)ol_util.beam $(BIN_DIR)olegdb.beam $(LIB_DIR)liboleg.so port_driver.o
+	$(BIN_DIR)ol_parse.beam $(BIN_DIR)ol_util.beam $(BIN_DIR)olegdb.beam \
+	$(BIN_DIR)ol_route.beam $(LIB_DIR)liboleg.so port_driver.o
 	$(CC) $(CFLAGS) $(INCLUDES) $(ERLINCLUDES) $(ERLLIBS) -L$(LIB_DIR) -o $(LIB_DIR)libolegserver.so port_driver.o -fpic -shared $(MATH_LINKER) -loleg -lei
 
 uninstall:
