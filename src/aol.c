@@ -180,11 +180,17 @@ int ol_aol_restore(ol_database *db) {
 
             unsigned char *data_ptr = db->values + data_offset;
 
-            char zero_data[compressed_size];
-            memset(zero_data, '\0', compressed_size);
+            int memory_is_all_null = 0;
+            int i = 0;
+            for(;i < compressed_size; i++) {
+                if (data_ptr[i] != '\0') {
+                    memory_is_all_null = 1;
+                    break;
+                }
+            }
 
             /* Check to see if the key is deleted: */
-            if (memcmp((char *)data_ptr, zero_data, compressed_size) != 0) {
+            if (memory_is_all_null) {
                 if (original_size != compressed_size) {
                     /* Data is compressed, gotta deal with that. */
                     char tmp_data[original_size];
