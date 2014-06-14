@@ -240,7 +240,7 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     ol_bucket *bucket = ol_get_bucket(d->db, obj->key, obj->klen, &_key, &_klen);
 
     if (bucket == NULL)
-        port_driver_error(d, obj);
+        return port_driver_error(d, obj);
 
     ol_splay_tree_node *node = bucket->node;
     ol_splay_tree_node *maximum = ols_subtree_maximum(d->db->tree->root);
