@@ -471,9 +471,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
             }
             new_bucket->data_offset = new_offset;
         }
-
-        /* Remember to increment the tracked data size of the DB. */
-        db->val_size += new_bucket->data_size;
     } else {
         /* We still need to set the data size, but not the actual data. */
         if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
@@ -494,6 +491,9 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
             new_bucket->data_size = vsize;
         }
     }
+
+    /* Remember to increment the tracked data size of the DB. */
+    db->val_size += new_bucket->data_size;
 
     uint32_t hash;
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
