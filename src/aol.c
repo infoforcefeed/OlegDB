@@ -178,8 +178,12 @@ int ol_aol_restore(ol_database *db) {
             size_t compressed_size = (size_t)strtol(read_data_size->data, NULL, 10);
             size_t data_offset = (size_t)strtol(value->data, NULL, 10);
 
+            /* Pointer in the values file to where the data for this command 
+             * should be. */
             unsigned char *data_ptr = db->values + data_offset;
 
+            /* Short circuit check to see if the memory in the location is all
+             * null. */
             int memory_is_all_null = 0;
             int i = 0;
             for(;i < compressed_size; i++) {
