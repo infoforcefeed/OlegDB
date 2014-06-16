@@ -755,6 +755,9 @@ int test_can_get_prev_in_tree(const ol_feature_flags features) {
     check(olc_init(db, &cursor), "Could not init cursor.");
     if (cursor.current_node != NULL)
         found++;
+    /* Move the node to the end of the tree */
+    while(olc_step(&cursor)) { }
+    /* Now we start stepping backwards */
     while(olc_step_back(&cursor)) {
         ol_splay_tree_node *node = _olc_get_node(&cursor);
         check(node != NULL, "Could not retrieve a node.");
