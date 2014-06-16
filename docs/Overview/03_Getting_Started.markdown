@@ -24,7 +24,7 @@ $ curl -X DELETE http://localhost:8080/turtles/red
 You can also tell Oleg what the `Content-Type` of that key's value is:
 
 ````
-$ curl -X POST -H "Content-Type: text/html" -d '<p>Raphael</p>' http://localhost:8080/turtles/red
+$ curl -X POST -H "Content-Type: text/html" -d '&lt;p&gt;Raphael&lt;/p&gt;' http://localhost:8080/turtles/red
 ````
 
 OlegDB supports lazy key expiration. You can specify an expiration date by setting the
@@ -35,21 +35,21 @@ $ curl -X POST \
 -H "X-OlegDB-use-by: $(date +%s)" \
 -H "Content-Type: application/json" \
 -d '{turtle: "Johnny", age: 34}' http://localhost:8080/turtles/Johnny
-> POST /turtles/Johnny HTTP/1.1
-> User-Agent: curl/7.22.0 (x86_64-pc-linux-gnu) libcurl/7.22.0
-> Host: localhost:8080
-> Accept: */*
-> X-OlegDB-use-by: 1394323192
-> Content-Type: application/json
-> Content-Length: 27
-> 
-* upload completely sent off: 27out of 27 bytes
-< HTTP/1.1 200 OK
-< Server: OlegDB/fresh_cuts_n_jams
-< Content-Type: text/plain
-< Connection: close
-< Content-Length: 7
-<
+&gt; POST /turtles/Johnny HTTP/1.1
+&gt; User-Agent: curl/7.22.0 (x86_64-pc-linux-gnu) libcurl/7.22.0
+&gt; Host: localhost:8080
+&gt; Accept: */*
+&gt; X-OlegDB-use-by: 1394323192
+&gt; Content-Type: application/json
+&gt; Content-Length: 27
+&gt;
+\* upload completely sent off: 27out of 27 bytes
+&lt; HTTP/1.1 200 OK
+&lt; Server: OlegDB/fresh_cuts_n_jams
+&lt; Content-Type: text/plain
+&lt; Connection: close
+&lt; Content-Length: 7
+&lt;
 無駄
 ````
 
@@ -57,18 +57,18 @@ And then when we try to get it back out again:
 
 ````
 $ curl -v http://localhost:8080/turtles/Johnny
-> GET /turtles/Johnny HTTP/1.1
-> User-Agent: curl/7.22.0 (x86_64-pc-linux-gnu) libcurl/7.22.0
-> Host: localhost:8080
-> Accept: */*
->
-< HTTP/1.1 404 Not Found
-< Status: 404 Not Found
-< Server: OlegDB/fresh_cuts_n_jams
-< Content-Length: 26
-< Connection: close
-< Content-Type: text/plain
-<
+&gt; GET /turtles/Johnny HTTP/1.1
+&gt; User-Agent: curl/7.22.0 (x86_64-pc-linux-gnu) libcurl/7.22.0
+&gt; Host: localhost:8080
+&gt; Accept: */*
+&gt;
+&lt; HTTP/1.1 404 Not Found
+&lt; Status: 404 Not Found
+&lt; Server: OlegDB/fresh_cuts_n_jams
+&lt; Content-Length: 26
+&lt; Connection: close
+&lt; Content-Type: text/plain
+&lt;
 These aren't your ghosts.
 ````
 
@@ -80,17 +80,17 @@ If you want to retrieve the expiration date of a key, you can do so by sending H
 
 ````
 $ curl -v -X HEAD http://localhost:8080/turtles/Johnny
-> HEAD /turtles/Johnny HTTP/1.1
-> User-Agent: curl/7.35.0
-> Host: localhost:8080
-> Accept: */*
->
-< HTTP/1.1 200 OK
-* Server OlegDB/fresh_cuts_n_jams is not blacklisted
-< Server: OlegDB/fresh_cuts_n_jams
-< Content-Length: 0
-< Content-Type: application/json
-< Expires: 1395368972
-<
+&gt; HEAD /turtles/Johnny HTTP/1.1
+&gt; User-Agent: curl/7.35.0
+&gt; Host: localhost:8080
+&gt; Accept: */*
+&gt;
+&lt; HTTP/1.1 200 OK
+\* Server OlegDB/fresh_cuts_n_jams is not blacklisted
+&lt; Server: OlegDB/fresh_cuts_n_jams
+&lt; Content-Length: 0
+&lt; Content-Type: application/json
+&lt; Expires: 1395368972
+&lt;
 ````
 
