@@ -3,11 +3,11 @@ database via the frontend. It's a pretty simple interface and follows the rest
 of the current idioms.
 
 Each cursor operand is of the form `/database/key/operand`. In some
-operands (\_last and \_first) the `<key>` option is ignored. Using them is
+operands (`_last` and `_first`) the `key` option is ignored. Using them is
 trivial.
 
 Using any of the operands will return both the value of the key you requested
-(\_next will return the next value, \_prev will return the previous value, etc.)
+(`_next` will return the next value, `_prev` will return the previous value, etc.)
 and the HTTP header `X-OlegDB-Key` followed by the key paired to the value you
 just retrieved. For example, say we have two keys in the database, `aaa` and
 `bbb`. To begin with, I can request the first key in the database:
