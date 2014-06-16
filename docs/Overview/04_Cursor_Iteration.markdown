@@ -2,7 +2,7 @@ In `0.1.2`, we added the ability to iterate through keys inserted into the
 database via the frontend. It's a pretty simple interface and follows the rest
 of the current idioms.
 
-Each cursor operand is of the form `/<database>/<key>/<operand>`. In some
+Each cursor operand is of the form `/database/key/operand`. In some
 operands (\_last and \_first) the `<key>` option is ignored. Using them is
 trivial.
 
