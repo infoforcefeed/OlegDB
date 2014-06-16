@@ -115,7 +115,7 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
         size_t larger_key = 0;
         previous_node = current_node;
         larger_key = klen > current_node->klen ? klen : current_node->klen;
-        if (strncmp(current_node->key, key, larger_key) >= 0)
+        if (strncmp(key, current_node->key, larger_key) >= 0)
             current_node = current_node->right;
         else
             current_node = current_node->left;
@@ -143,7 +143,7 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
         size_t larger_key = 0;
         larger_key = current_node->klen > previous_node->klen ?
             current_node->klen : previous_node->klen;
-        if (strncmp(previous_node->key, current_node->key, larger_key) >= 0)
+        if (strncmp(current_node->key, previous_node->key, larger_key) >= 0)
             previous_node->right = current_node;
         else
             previous_node->left = current_node;
@@ -203,7 +203,7 @@ ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen) 
         size_t larger_key = 0;
         larger_key = current_node->klen > klen ?
             current_node->klen : klen;
-        const int result = strncmp(current_node->key, key, larger_key);
+        const int result = strncmp(key, current_node->key, larger_key);
         if (result > 0)
             current_node = current_node->right;
         else if (result < 0)
