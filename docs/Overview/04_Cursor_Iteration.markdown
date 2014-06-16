@@ -1,6 +1,6 @@
 In `0.1.2`, we added the ability to iterate through keys inserted into the
 database via the frontend. It's a pretty simple interface and follows the rest
-of the current idioms.
+of the current URL idioms.
 
 Each cursor operand is of the form `/database/key/operand`. In some
 operands (`_last` and `_first`) the `key` option is ignored. Using them is
@@ -19,14 +19,14 @@ $ curl -v localhost:8080/oleg//_first
 &gt; zlib/1.2.3.4 libidn/1.23 librtmp/2.3
 &gt; Host: localhost:8080
 &gt; Accept: */*
-&gt; 
+&gt;
 &lt; HTTP/1.1 200 OK
 &lt; Server: OlegDB/fresh_cuts_n_jams
 &lt; Content-Type: application/x-www-form-urlencoded
 &lt; Content-Length: 22
 &lt; Connection: close
 &lt; X-OlegDB-Key: aaa
-&lt; 
+&lt;
 I am the value of aaa.
 ````
 
@@ -43,14 +43,14 @@ $ curl -v localhost:8080/oleg/aaa/_next
 &gt; zlib/1.2.3.4 libidn/1.23 librtmp/2.3
 &gt; Host: localhost:8080
 &gt; Accept: */*
-&gt; 
+&gt;
 &lt; HTTP/1.1 200 OK
 &lt; Server: OlegDB/fresh_cuts_n_jams
 &lt; Content-Type: application/x-www-form-urlencoded
 &lt; Content-Length: 22
 &lt; Connection: close
 &lt; X-OlegDB-Key: bbb
-&lt; 
+&lt;
 I am the value of bbb.
 ````
 
@@ -67,14 +67,14 @@ $ curl -v localhost:8080/oleg/bbb/_next
 &gt; zlib/1.2.3.4 libidn/1.23 librtmp/2.3
 &gt; Host: localhost:8080
 &gt; Accept: */*
-&gt; 
+&gt;
 &lt; HTTP/1.1 404 Not Found
 &lt; Status: 404 Not Found
 &lt; Server: OlegDB/fresh_cuts_n_jams
 &lt; Content-Length: 26
 &lt; Connection: close
 &lt; Content-Type: text/plain
-&lt; 
+&lt;
 These aren't your ghosts.
 ````
 
@@ -92,14 +92,14 @@ $ curl -v localhost:8080/oleg//_last
 &gt; zlib/1.2.3.4 libidn/1.23 librtmp/2.3
 &gt; Host: localhost:8080
 &gt; Accept: */*
-&gt; 
+&gt;
 &lt; HTTP/1.1 200 OK
 &lt; Server: OlegDB/fresh_cuts_n_jams
 &lt; Content-Type: application/x-www-form-urlencoded
 &lt; Content-Length: 22
 &lt; Connection: close
 &lt; X-OlegDB-Key: bbb
-&lt; 
+&lt;
 I am the value of bbb.
 $ curl -v localhost:8080/oleg/bbb/_prev
 &gt; GET /oleg/bbb/_prev HTTP/1.1
@@ -107,30 +107,28 @@ $ curl -v localhost:8080/oleg/bbb/_prev
 &gt; zlib/1.2.3.4 libidn/1.23 librtmp/2.3
 &gt; Host: localhost:8080
 &gt; Accept: */*
-&gt; 
+&gt;
 &lt; HTTP/1.1 200 OK
 &lt; Server: OlegDB/fresh_cuts_n_jams
 &lt; Content-Type: application/x-www-form-urlencoded
 &lt; Content-Length: 22
 &lt; Connection: close
 &lt; X-OlegDB-Key: aaa
-&lt; 
+&lt;
 I am the value of aaa.
 $ curl -v localhost:8080/oleg/aaa/_prev
-* About to connect() to localhost port 8080 (#0)
-*   Trying 127.0.0.1... connected
 &gt; GET /oleg/aaa/_prev HTTP/1.1
 &gt; User-Agent: curl/7.22.0 (x86_64-pc-linux-gnu) libcurl/7.22.0 OpenSSL/1.0.1
 &gt; zlib/1.2.3.4 libidn/1.23 librtmp/2.3
 &gt; Host: localhost:8080
 &gt; Accept: */*
-&gt; 
+&gt;
 &lt; HTTP/1.1 404 Not Found
 &lt; Status: 404 Not Found
 &lt; Server: OlegDB/fresh_cuts_n_jams
 &lt; Content-Length: 26
 &lt; Connection: close
 &lt; Content-Type: text/plain
-&lt; 
+&lt;
 These aren't your ghosts.
 ````
