@@ -2,33 +2,25 @@
 -module(ol_route).
 -include("olegdb.hrl").
 -export([cursor_operand/1, route/2]).
+
+cursor_response(Response) ->
+    case Response of
+        {ok, ContentType, Key, Data} ->
+            ol_http:cursor_bucket_response(ContentType, Key, Data);
+        not_found ->
+            ol_http:not_found_response();
+        ErrMsg -> ol_http:error_response(ErrMsg)
+    end.
+
 cursor_operand({ReqType, Header, Operand}) ->
     if
         ReqType == get ->
             %io:format("[-] Requesting cursor ~p~n", [Header#ol_record.key]),
             case Operand of
-                first ->
-                    case ol_database:ol_first_key(Header) of
-                        {ok, NextContentType, NextKey, NextData} ->
-                            ol_http:next_bucket_response(NextContentType, NextKey, NextData);
-                        not_found ->
-                            ol_http:not_found_response();
-                        ErrMsg -> ol_http:error_response(ErrMsg)
-                    end;
-                next ->
-                    case ol_database:ol_next_key(Header) of
-                        {ok, NextContentType, NextKey, NextData} ->
-                            ol_http:next_bucket_response(NextContentType, NextKey, NextData);
-                        not_found ->
-                            ol_http:not_found_response();
-                        ErrMsg -> ol_http:error_response(ErrMsg)
-                    end;
-                prev ->
-                    case ol_database:ol_prev_key(Header) of
-                        %{ok, ContentType, Data, Prev} ->
-                        %    ol_http:get_response(ContentType, Data);
-                        _ -> ol_http:error_response(<<"Prev not implemented.">>)
-                    end
+                first   -> cursor_response(ol_database:ol_first_key(Header));
+                next    -> cursor_response(ol_database:ol_next_key(Header));
+                prev    -> cursor_response(ol_database:ol_prev_key(Header));
+                last    -> cursor_response(ol_database:ol_last_key(Header))
             end;
         true ->
             ol_http:error_response(<<"Cursors do not support the requested verb.">>)

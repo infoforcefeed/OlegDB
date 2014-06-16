@@ -292,6 +292,40 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
 }
 
 static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
+    char _key[KEY_SIZE] = {'\0'};
+    size_t _klen = 0;
+
+    ol_bucket *bucket = ol_get_bucket(d->db, obj->key, obj->klen, &_key, &_klen);
+
+    if (bucket == NULL)
+        return port_driver_error(d, obj);
+
+    ol_splay_tree_node *node = bucket->node;
+    ol_splay_tree_node *minimum = ols_subtree_minimum(d->db->tree->root);
+
+    /* Get the next successor to this node. */
+    if (!_olc_prev(&node, minimum) || node == bucket->node) {
+        /* Could not find next node. */
+        port_driver_error(d, obj);
+        return;
+    }
+
+    /* Found next node. */
+    unsigned char *data = NULL;
+    size_t val_size;
+
+    ol_bucket *prev_bucket = (ol_bucket *)node->ref_obj;
+
+    /* Let ol_unjar_ds handle decompression and whatever else for us: */
+    int ret = ol_unjar_ds(d->db, prev_bucket->key, prev_bucket->klen, &data, &val_size);
+    if (ret == 0) {
+        port_driver_cursor_response(d, prev_bucket, data, val_size);
+        return;
+    }
+
+    ol_log_msg(LOG_ERR, "Something went horribly wrong. We couldn't get the data of a bucket we just found in the tree.");
+    port_driver_error(d, obj);
+    return;
 }
 
 static void port_driver_cursor_first(oleg_data *d, ol_record *obj) {

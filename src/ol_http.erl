@@ -7,7 +7,7 @@
          continue_you_shit_response/0,
          bucket_meta_response/2,
          bucket_meta_response/3,
-         next_bucket_response/3,
+         cursor_bucket_response/3,
          error_response/1
         ]).
 
@@ -20,7 +20,7 @@ get_response(ContentType, Data) ->
         "Connection: close\r\n"
         "\r\n~s">>, [ContentType, byte_size(Data), Data]).
 
-next_bucket_response(NextContentType, NextKey, NextData) ->
+cursor_bucket_response(CursorContentType, CursorKey, CursorData) ->
     io_lib:format(
         <<"HTTP/1.1 200 OK\r\n"
         "Server: OlegDB/fresh_cuts_n_jams\r\n"
@@ -28,7 +28,7 @@ next_bucket_response(NextContentType, NextKey, NextData) ->
         "Content-Length: ~p\r\n"
         "Connection: close\r\n"
         "X-OlegDB-Key: ~s\r\n"
-        "\r\n~s">>, [NextContentType, byte_size(NextData), NextKey, NextData]).
+        "\r\n~s">>, [CursorContentType, byte_size(CursorData), CursorKey, CursorData]).
 
 not_found_response() ->
     <<"HTTP/1.1 404 Not Found\r\n"
