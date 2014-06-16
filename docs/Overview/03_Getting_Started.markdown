@@ -51,7 +51,11 @@ $ curl -X POST \
 < Content-Length: 7
 <
 無駄
+````
 
+And then when we try to get it back out again:
+
+````
 $ curl -v http://localhost:8080/turtles/Johnny
 > GET /turtles/Johnny HTTP/1.1
 > User-Agent: curl/7.22.0 (x86_64-pc-linux-gnu) libcurl/7.22.0
