@@ -233,7 +233,7 @@ static void port_driver_error(oleg_data *d, ol_record *obj) {
     ei_x_free(&to_send);
 }
 
-/* Common successful return methods used by _first, _next and _prev. */
+/* Common successful return methods used by _first, _last, _next and _prev. */
 static inline void port_driver_cursor_response(oleg_data *d, const ol_bucket *bucket,
                     unsigned char *data, const size_t val_size) {
 
@@ -329,7 +329,32 @@ static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
 }
 
 static void port_driver_cursor_first(oleg_data *d, ol_record *obj) {
-    ol_splay_tree_node *maximum = ols_subtree_minimum(d->db->tree->root);
+    ol_splay_tree_node *minimum = ols_subtree_minimum(d->db->tree->root);
+
+    if (minimum == NULL) {
+        return port_driver_error(d, obj);
+    }
+
+    /* Found next node. */
+    unsigned char *data = NULL;
+    size_t val_size;
+
+    ol_bucket *bucket = (ol_bucket *)minimum->ref_obj;
+
+    /* Let ol_unjar_ds handle decompression and whatever else for us: */
+    int ret = ol_unjar_ds(d->db, bucket->key, bucket->klen, &data, &val_size);
+    if (ret == 0) {
+        port_driver_cursor_response(d, bucket, data, val_size);
+        return;
+    }
+
+    ol_log_msg(LOG_ERR, "Something went horribly wrong. We couldn't get the data of a bucket we just found in the tree.");
+    port_driver_error(d, obj);
+    return;
+}
+
+static void port_driver_cursor_last(oleg_data *d, ol_record *obj) {
+    ol_splay_tree_node *maximum = ols_subtree_maximum(d->db->tree->root);
 
     if (maximum == NULL) {
         return port_driver_error(d, obj);
@@ -409,6 +434,9 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
             break;
         case 7:
             port_driver_cursor_first(d, obj);
+            break;
+        case 8:
+            port_driver_cursor_last(d, obj);
             break;
         default:
             port_driver_error(d, obj);
