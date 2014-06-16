@@ -31,7 +31,7 @@ I am the value of aaa.
 ````
 
 As you can see, the key `aaa` is the first one in the tree of ordered keys. If
-you're paying attention, you've also noticed that I've ommitted the parameter
+you're paying attention, you've also noticed that I've omitted the parameter
 between the `<database>` specifier and the cursor operand `_first`. This is
 because the `<key>` is not used in this command. It will, however, be used in
 the next:
