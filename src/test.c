@@ -739,6 +739,40 @@ error:
     return 1;
 }
 
+int test_can_get_prev_in_tree(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+    int next_records = 10;
+    ol_log_msg(LOG_INFO, "Inserting %i records.", next_records);
+    int ret = _insert_keys(db, next_records);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
+    int found = 0;
+
+    ol_cursor cursor;
+    check(olc_init(db, &cursor), "Could not init cursor.");
+    if (cursor.current_node != NULL)
+        found++;
+    while(olc_step_back(&cursor)) {
+        ol_splay_tree_node *node = _olc_get_node(&cursor);
+        check(node != NULL, "Could not retrieve a node.");
+        ol_log_msg(LOG_INFO, "Node found: %s", node->key);
+        found++;
+    }
+
+    check(found == next_records, "Did not find enough records. Only found %i.", found);
+
+    _test_db_close(db);
+    return 0;
+
+error:
+    if (db != NULL)
+        _test_db_close(db);
+    return 1;
+}
+
 int test_can_match_prefixes(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     int next_records = 10;
@@ -824,6 +858,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_lz4);
     ol_run_test(test_can_find_all_nodes);
     ol_run_test(test_can_get_next_in_tree);
+    ol_run_test(test_can_get_prev_in_tree);
     ol_run_test(test_can_match_prefixes);
 
     /* Permute all features enabled for these tests, so that we get all of our
