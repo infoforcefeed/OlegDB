@@ -8,7 +8,7 @@ foreboding? Have no fear, people have been doing this for at least a quarter of
 a century.
 
 I'm going to assume you've extracted the source tarball into a folder called
-`~/src/olegdb` and that you haven't `cd 'd into it yet. Lets smash some electrons
+`~/src/olegdb` and that you haven't cd'd into it yet. Lets smash some electrons
 together:
 
 ````
