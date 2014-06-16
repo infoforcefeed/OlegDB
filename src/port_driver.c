@@ -259,6 +259,7 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
 
     ol_bucket *next_bucket = (ol_bucket *)node->ref_obj;
 
+    /* Let ol_unjar_ds handle decompression and whatever else for us: */
     int ret = ol_unjar_ds(d->db, next_bucket->key, next_bucket->klen, &data, &val_size);
     if (ret == 0) {
         ei_x_new_with_version(&to_send);
@@ -283,6 +284,44 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
 }
 
 static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
+}
+
+static void port_driver_cursor_first(oleg_data *d, ol_record *obj) {
+    ol_splay_tree_node *maximum = ols_subtree_minimum(d->db->tree->root);
+
+    if (maximum == NULL) {
+        return port_driver_error(d, obj);
+    }
+
+    /* Found next node. */
+    ei_x_buff to_send;
+    unsigned char *data = NULL;
+    size_t val_size;
+
+    ol_bucket *bucket = (ol_bucket *)maximum->ref_obj;
+
+    /* Let ol_unjar_ds handle decompression and whatever else for us: */
+    int ret = ol_unjar_ds(d->db, bucket->key, bucket->klen, &data, &val_size);
+    if (ret == 0) {
+        ei_x_new_with_version(&to_send);
+        ei_x_encode_tuple_header(&to_send, 4);
+
+        /* Send back ok, content type, key for next bucket, and value for next bucket */
+        ei_x_encode_atom(&to_send, "ok");
+        ei_x_encode_binary(&to_send, bucket->content_type, bucket->ctype_size);
+        ei_x_encode_binary(&to_send, bucket->key, bucket->klen);
+        ei_x_encode_binary(&to_send, data, val_size);
+
+        driver_output(d->port, to_send.buff, to_send.index);
+
+        ei_x_free(&to_send);
+        free(data);
+        return;
+    }
+
+    ol_log_msg(LOG_ERR, "Something went horribly wrong. We couldn't get the data of a bucket we just found in the tree.");
+    port_driver_error(d, obj);
+    return;
 }
 
 /* So this is where all the magic happens. If you want to know how we switch
@@ -338,6 +377,9 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
             break;
         case 6:
             port_driver_cursor_prev(d, obj);
+            break;
+        case 7:
+            port_driver_cursor_first(d, obj);
             break;
         default:
             port_driver_error(d, obj);

@@ -27,6 +27,7 @@ parse_url(Url) ->
         % These handle cursor iteration:
         [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_next">>|_] -> {ok, DB_Name, Key, next};
         [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_prev">>|_] -> {ok, DB_Name, Key, prev};
+        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_first">>|_] -> {ok, DB_Name, Key, first};
         % Url was like /users/1 or /pictures/thing
         [_, <<DB_Name/binary>>, <<Key/binary>> |_] -> {ok, DB_Name, Key};
         % The url was like /test or /what, so just assume the default DB.

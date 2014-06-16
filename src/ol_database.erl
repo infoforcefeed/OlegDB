@@ -10,6 +10,7 @@
          ol_bucket_meta/1,
          ol_next_key/1,
          ol_prev_key/1,
+         ol_first_key/1,
          ol_scoop/1]).
 
 -include("olegdb.hrl").
@@ -42,6 +43,7 @@ encode({ol_scoop, X}) ->        [3, term_to_binary(X)];
 encode({ol_bucket_meta, X}) ->  [4, term_to_binary(X)];
 encode({ol_next_key, X}) ->     [5, term_to_binary(X)];
 encode({ol_prev_key, X}) ->     [6, term_to_binary(X)];
+encode({ol_first_key, X}) ->    [7, term_to_binary(X)];
 encode(_) ->
     io:format("Don't know how to decode that.~n"),
     exit(unknown_call).
@@ -107,3 +109,6 @@ ol_next_key(OlRecord) ->
 
 ol_prev_key(OlRecord) ->
     call_port({ol_prev_key, OlRecord}).
+
+ol_first_key(OlRecord) ->
+    call_port({ol_first_key, OlRecord}).
