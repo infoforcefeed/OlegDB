@@ -27,7 +27,6 @@ $ curl -v localhost:8080/oleg//_first
 &lt; Connection: close
 &lt; X-OlegDB-Key: aaa
 &lt; 
-* Closing connection #0
 I am the value of aaa.
 ````
 
@@ -52,7 +51,6 @@ $ curl -v localhost:8080/oleg/aaa/_next
 &lt; Connection: close
 &lt; X-OlegDB-Key: bbb
 &lt; 
-* Closing connection #0
 I am the value of bbb.
 ````
 
