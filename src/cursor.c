@@ -10,6 +10,7 @@ int olc_init(ol_database *db, ol_cursor *cursor) {
     /* Init the cursor */
     cursor->current_node = NULL;
     cursor->maximum = ols_subtree_maximum(db->tree->root);
+    cursor->minimum = ols_subtree_minimum(db->tree->root);
     cursor->current_node = ols_subtree_minimum(db->tree->root);
 
     return 1;
@@ -24,11 +25,16 @@ ol_bucket *olc_get(ol_cursor *cursor) {
     return bucket;
 }
 
-/* TODO: Make this go backwards or forwards */
 int olc_step(ol_cursor *cursor) {
     ol_splay_tree_node *max = cursor->maximum;
 
     return _olc_next(&(cursor->current_node), max);
+}
+
+int olc_step_back(ol_cursor *cursor) {
+    ol_splay_tree_node *min = cursor->minimum;
+
+    return _olc_prev(&(cursor->current_node), min);
 }
 
 int _olc_next(ol_splay_tree_node **node, ol_splay_tree_node *maximum) {
@@ -44,6 +50,30 @@ int _olc_next(ol_splay_tree_node **node, ol_splay_tree_node *maximum) {
 
     ol_splay_tree_node *parent = (*node)->parent;
     while(parent != NULL && *node == parent->right) {
+        *node = parent;
+        parent = parent->parent;
+    }
+
+    *node = parent;
+    return 1;
+
+error:
+    return 0;
+}
+
+int _olc_prev(ol_splay_tree_node **node, ol_splay_tree_node *minimum) {
+    check((*node) != NULL, "No nodes in tree.");
+
+    if ((*node) == minimum)
+        return 0;
+
+    if ((*node)->left != NULL) {
+        *node = ols_subtree_maximum((*node)->left);
+        return 1;
+    }
+
+    ol_splay_tree_node *parent = (*node)->parent;
+    while(parent != NULL && *node == parent->left) {
         *node = parent;
         parent = parent->parent;
     }

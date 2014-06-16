@@ -233,6 +233,27 @@ static void port_driver_error(oleg_data *d, ol_record *obj) {
     ei_x_free(&to_send);
 }
 
+/* Common successful return methods used by _first, _next and _prev. */
+static inline void port_driver_cursor_response(oleg_data *d, const ol_bucket *bucket,
+                    unsigned char *data, const size_t val_size) {
+
+    ei_x_buff to_send;
+    ei_x_new_with_version(&to_send);
+    ei_x_encode_tuple_header(&to_send, 4);
+
+    /* Send back ok, content type, key for bucket, and value for bucket */
+    ei_x_encode_atom(&to_send, "ok");
+    ei_x_encode_binary(&to_send, bucket->content_type, bucket->ctype_size);
+    ei_x_encode_binary(&to_send, bucket->key, bucket->klen);
+    ei_x_encode_binary(&to_send, data, val_size);
+
+    driver_output(d->port, to_send.buff, to_send.index);
+
+    ei_x_free(&to_send);
+    free(data);
+    return;
+}
+
 static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
@@ -253,7 +274,6 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     }
 
     /* Found next node. */
-    ei_x_buff to_send;
     unsigned char *data = NULL;
     size_t val_size;
 
@@ -262,19 +282,7 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     /* Let ol_unjar_ds handle decompression and whatever else for us: */
     int ret = ol_unjar_ds(d->db, next_bucket->key, next_bucket->klen, &data, &val_size);
     if (ret == 0) {
-        ei_x_new_with_version(&to_send);
-        ei_x_encode_tuple_header(&to_send, 4);
-
-        /* Send back ok, content type, key for next bucket, and value for next bucket */
-        ei_x_encode_atom(&to_send, "ok");
-        ei_x_encode_binary(&to_send, next_bucket->content_type, next_bucket->ctype_size);
-        ei_x_encode_binary(&to_send, next_bucket->key, next_bucket->klen);
-        ei_x_encode_binary(&to_send, data, val_size);
-
-        driver_output(d->port, to_send.buff, to_send.index);
-
-        ei_x_free(&to_send);
-        free(data);
+        port_driver_cursor_response(d, next_bucket, data, val_size);
         return;
     }
 
@@ -294,7 +302,6 @@ static void port_driver_cursor_first(oleg_data *d, ol_record *obj) {
     }
 
     /* Found next node. */
-    ei_x_buff to_send;
     unsigned char *data = NULL;
     size_t val_size;
 
@@ -303,19 +310,7 @@ static void port_driver_cursor_first(oleg_data *d, ol_record *obj) {
     /* Let ol_unjar_ds handle decompression and whatever else for us: */
     int ret = ol_unjar_ds(d->db, bucket->key, bucket->klen, &data, &val_size);
     if (ret == 0) {
-        ei_x_new_with_version(&to_send);
-        ei_x_encode_tuple_header(&to_send, 4);
-
-        /* Send back ok, content type, key for next bucket, and value for next bucket */
-        ei_x_encode_atom(&to_send, "ok");
-        ei_x_encode_binary(&to_send, bucket->content_type, bucket->ctype_size);
-        ei_x_encode_binary(&to_send, bucket->key, bucket->klen);
-        ei_x_encode_binary(&to_send, data, val_size);
-
-        driver_output(d->port, to_send.buff, to_send.index);
-
-        ei_x_free(&to_send);
-        free(data);
+        port_driver_cursor_response(d, bucket, data, val_size);
         return;
     }
 
