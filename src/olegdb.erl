@@ -74,9 +74,9 @@ supervise() ->
                     halt()
             end;
         {compact} -> % We don't really care who the message is from.
-            io:format("[-] Compacting...~n"),
+            %io:format("[-] Compacting...~n"),
             ol_database:ol_smoosh(),
-            io:format("[-] Done compacting.~n"),
+            %io:format("[-] Done compacting.~n"),
             erlang:send_after(?COMPACTION_INTERVAL, satan, {compact});
         X -> io:format("[-] Receieved message: ~p~n", [X])
     end,

@@ -634,7 +634,14 @@ error:
 }
 
 int ol_smoosh(ol_database *db) {
+    int fflush_turned_off = 0;
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+        /* Turn off fflush for the time being. We'll do it once at the end. */
+        if (db->is_enabled(OL_F_AOL_FFLUSH, &db->feature_set)) {
+            db->disable(OL_F_AOL_FFLUSH, &db->feature_set);
+            fflush_turned_off = 1;
+        }
+
         /* AOL is enabled. Create a new aol file that we'll be using. */
         fflush(db->aolfd);
         fclose(db->aolfd);
@@ -677,6 +684,10 @@ int ol_smoosh(ol_database *db) {
     }
 
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+        /* Turn off fflush for the time being. We'll do it once at the end. */
+        if (fflush_turned_off) {
+            db->enable(OL_F_AOL_FFLUSH, &db->feature_set);
+        }
         /* Make sure all of the new stuff is written */
         fflush(db->aolfd);
         fclose(db->aolfd);
