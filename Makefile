@@ -31,15 +31,15 @@ endif
 
 all: liboleg oleg_test server
 
-test.o: ./src/test.c
+test.o: ./c_src/test.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
-main.o: ./src/main.c
+main.o: ./c_src/main.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 
-port_driver.o: ./src/port_driver.c
+port_driver.o: ./c_src/port_driver.c
 	$(CC) $(CFLAGS) $(INCLUDES) $(ERLINCLUDES) -c $< -fpic
 
-%.o: ./src/%.c
+%.o: ./c_src/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -fPIC $<
 
 FORCE:
