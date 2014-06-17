@@ -270,6 +270,13 @@ int ol_exists(ol_database *db, const char *key, size_t klen);
 ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t klen,
                          char (*_key)[KEY_SIZE], size_t *_klen);
 
+/* xXx FUNCTION=ol_smoosh xXx
+ * xXx DESCRIPTION=Compacts both the aol file (if enabled) and the values file. This is a blocking operation. xXx
+ * xXx RETURNS=1 if successful, 0 if otherwise. xXx
+ * xXx *db=The database to compact. xXx
+ */
+int ol_smoosh(ol_database *db);
+
 #ifdef __cplusplus
 }
 #endif

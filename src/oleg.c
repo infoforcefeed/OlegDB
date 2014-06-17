@@ -633,6 +633,10 @@ error:
     return 1;
 }
 
+int ol_smoosh(ol_database *db) {
+    return 0;
+}
+
 char *ol_content_type(ol_database *db, const char *key, size_t klen) {
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
