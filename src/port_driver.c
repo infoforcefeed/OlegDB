@@ -225,10 +225,18 @@ static void port_driver_bucket_meta(oleg_data *d, ol_record *obj) {
     ei_x_free(&to_send);
 }
 
-static void port_driver_error(oleg_data *d, ol_record *obj) {
+static void port_driver_not_found(oleg_data *d) {
     /* Send something back so we're not blocking. */
     ei_x_buff to_send;
     _gen_atom(&to_send, "not_found");
+    driver_output(d->port, to_send.buff, to_send.index);
+    ei_x_free(&to_send);
+}
+
+static void port_driver_error(oleg_data *d) {
+    /* Send something back so we're not blocking. */
+    ei_x_buff to_send;
+    _gen_atom(&to_send, "error");
     driver_output(d->port, to_send.buff, to_send.index);
     ei_x_free(&to_send);
 }
@@ -261,7 +269,7 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     ol_bucket *bucket = ol_get_bucket(d->db, obj->key, obj->klen, &_key, &_klen);
 
     if (bucket == NULL)
-        return port_driver_error(d, obj);
+        return port_driver_not_found(d);
 
     ol_splay_tree_node *node = bucket->node;
     ol_splay_tree_node *maximum = ols_subtree_maximum(d->db->tree->root);
@@ -269,7 +277,7 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     /* Get the next successor to this node. */
     if (!_olc_next(&node, maximum) || node == bucket->node) {
         /* Could not find next node. */
-        port_driver_error(d, obj);
+        port_driver_not_found(d);
         return;
     }
 
@@ -287,7 +295,7 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     }
 
     ol_log_msg(LOG_ERR, "Something went horribly wrong. We couldn't get the data of a bucket we just found in the tree.");
-    port_driver_error(d, obj);
+    port_driver_not_found(d);
     return;
 }
 
@@ -298,7 +306,7 @@ static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
     ol_bucket *bucket = ol_get_bucket(d->db, obj->key, obj->klen, &_key, &_klen);
 
     if (bucket == NULL)
-        return port_driver_error(d, obj);
+        return port_driver_not_found(d);
 
     ol_splay_tree_node *node = bucket->node;
     ol_splay_tree_node *minimum = ols_subtree_minimum(d->db->tree->root);
@@ -306,7 +314,7 @@ static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
     /* Get the next successor to this node. */
     if (!_olc_prev(&node, minimum) || node == bucket->node) {
         /* Could not find next node. */
-        port_driver_error(d, obj);
+        port_driver_not_found(d);
         return;
     }
 
@@ -324,7 +332,7 @@ static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
     }
 
     ol_log_msg(LOG_ERR, "Something went horribly wrong. We couldn't get the data of a bucket we just found in the tree.");
-    port_driver_error(d, obj);
+    port_driver_not_found(d);
     return;
 }
 
@@ -332,7 +340,7 @@ static void port_driver_cursor_first(oleg_data *d, ol_record *obj) {
     ol_splay_tree_node *minimum = ols_subtree_minimum(d->db->tree->root);
 
     if (minimum == NULL) {
-        return port_driver_error(d, obj);
+        return port_driver_not_found(d);
     }
 
     /* Found next node. */
@@ -349,7 +357,7 @@ static void port_driver_cursor_first(oleg_data *d, ol_record *obj) {
     }
 
     ol_log_msg(LOG_ERR, "Something went horribly wrong. We couldn't get the data of a bucket we just found in the tree.");
-    port_driver_error(d, obj);
+    port_driver_not_found(d);
     return;
 }
 
@@ -357,7 +365,7 @@ static void port_driver_cursor_last(oleg_data *d, ol_record *obj) {
     ol_splay_tree_node *maximum = ols_subtree_maximum(d->db->tree->root);
 
     if (maximum == NULL) {
-        return port_driver_error(d, obj);
+        return port_driver_not_found(d);
     }
 
     /* Found next node. */
@@ -374,7 +382,7 @@ static void port_driver_cursor_last(oleg_data *d, ol_record *obj) {
     }
 
     ol_log_msg(LOG_ERR, "Something went horribly wrong. We couldn't get the data of a bucket we just found in the tree.");
-    port_driver_error(d, obj);
+    port_driver_not_found(d);
     return;
 }
 
@@ -388,9 +396,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
     debug("Command from server: %i", fn);
     if (fn == 0) {
-        port_driver_init(d, cmd);
-
-        return;
+        return port_driver_init(d, cmd);
     }
 
     /* Check to see if someone called ol_init */
@@ -409,6 +415,8 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     if (d->db == NULL) {
         ol_database *db;
         db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY | OL_F_AOL_FFLUSH | OL_F_LZ4 | OL_F_SPLAYTREE);
+        if (db == NULL)
+            return port_driver_error(d);
         d->db = db;
     }
 
@@ -439,7 +447,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
             port_driver_cursor_last(d, obj);
             break;
         default:
-            port_driver_error(d, obj);
+            port_driver_not_found(d);
     }
 
     if (obj) {
