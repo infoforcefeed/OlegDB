@@ -100,7 +100,7 @@ ol_database *ol_open(char *path, char *name, int features){
     /* We figure out the filename now incase someone flips the aol_init bit
      * later.
      */
-    new_db->aol_file = calloc(1, 512);
+    new_db->aol_file = calloc(1, AOL_FILENAME_ALLOC);
     check_mem(new_db->aol_file);
     new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
 
@@ -634,6 +634,55 @@ error:
 }
 
 int ol_smoosh(ol_database *db) {
+    char old_aol_filename[AOL_FILENAME_ALLOC] = {0};
+
+    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+        /* AOL is enabled. Create a new aol file that we'll be using. */
+        fclose(db->aolfd);
+
+        /* Create a new file which we'll move into the old ones place later */
+        strncp(db->aol_file, old_aol_filename, AOL_FILENAME_ALLOC);
+        db->get_db_file_name(db, "aol.new", new_db->aol_file);
+
+        /* Get a new file descriptor */
+        db->aolfd = fopen(db->aol_file, "ab+");
+    }
+
+    /* Iterate through the hash table instead of using the tree just
+     * so you can use this in case the tree isn't enabled. */
+    const int iterations = ol_ht_bucket_max(db->cur_ht_size);
+    const int rcrd_cnt = db->rcrd_cnt;
+
+    int i = 0;
+    for (; i < iterations; i++) {
+        if (db->hashes[i] != NULL) {
+            /* Found a bucket. */
+            ol_bucket *ptr, *next;
+            /* Start traversing the linked list of collisions, starting with
+             * the bucket we found. */
+            for (ptr = db->hashes[i]; NULL != ptr; ptr = next) {
+                if (!_has_bucket_expired(ptr)) {
+                    /* Bucket hasn't been deleted or expired. */
+                    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+                        /* AOL is enabled. Write it to the new AOL file. */
+                        ol_aol_write_cmd(db, "JAR", ptr);
+
+                        /* See if theres an expiration date we care about: */
+                        if (obj->expiration != -1) {
+                            struct tm new_expire;
+                            time_t passed_time = (time_t)obj->expiration;
+                            localtime_r(&passed_time, &new_expire);
+
+                            ol_aol_write_cmd(db, "SPOIL", ptr);
+                        }
+                    }
+                }
+                /* Get the next bucket in the collision chain. */
+                next = ptr->next;
+            }
+        }
+    }
+
     return 0;
 }
 
