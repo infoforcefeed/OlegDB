@@ -6,7 +6,7 @@
 -define(DEFAULT_HOST, "localhost").
 -define(DEFAULT_PORT, 8080).
 -define(ACCEPTOR_POOL_NUM, 64).
--define(COMPACTION_INTERVAL, 60 * 5000). % Five minutes
+-define(COMPACTION_INTERVAL, 60 * 10000). % Five minutes
 
 server_manager(Caller) ->
     server_manager(Caller, ?DEFAULT_HOST, ?DEFAULT_PORT).
