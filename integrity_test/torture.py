@@ -25,9 +25,8 @@ def thread_burn(thread_id):
             known_count = duff.headers['x-olegdb-rcrd-cnt']
         resp = requests.get(connection_str, stream=True)
         raw = resp.raw.read()
-        try:
-            assert(raw == compressed)
-        except AssertionError as e:
+
+        if raw != compressed:
             print "Assertion error: {} does not equal {}".format(hash(raw), hash(compressed))
             print "Raw: {}".format(raw)
             print "Response status: {}".format(resp.status_code)
