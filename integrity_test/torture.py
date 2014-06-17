@@ -47,7 +47,7 @@ def thread_burn(thread_id):
 def main():
     known_count = 0
     for x in range(0,3):
-        thread.start_new_thread(fill_fast, (x,))
+        thread.start_new_thread(thread_burn, (x,))
     fill_fast(x+1)
 
 if __name__ == '__main__':

@@ -636,6 +636,7 @@ error:
 int ol_smoosh(ol_database *db) {
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         /* AOL is enabled. Create a new aol file that we'll be using. */
+        fflush(db->aolfd);
         fclose(db->aolfd);
 
         /* Create a new file which we'll move into the old ones place later */
