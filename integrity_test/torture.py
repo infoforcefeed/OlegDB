@@ -2,6 +2,18 @@
 # -*- coding: utf-8 -*-
 import json, calendar, requests, time, urllib, os, random, zlib, thread
 
+# Fills up the server real fast. Stops at 100,000 keys.
+def fill_fast(thread_id):
+    i = 0
+    while True:
+        random_str = os.urandom(16)
+        connection_str = "".join(["http://localhost:8080/oleg/", str(thread_id), "_", str(i)])
+        requests.post(connection_str, data=random_str)
+        i = i + 1
+
+        if i > 100000:
+            break
+
 def thread_burn(thread_id):
     while True:
         random_length = (random.random() * 10000) + 1
@@ -35,8 +47,8 @@ def thread_burn(thread_id):
 def main():
     known_count = 0
     for x in range(0,3):
-        thread.start_new_thread(thread_burn, (x,))
-    thread_burn(x+1)
+        thread.start_new_thread(fill_fast, (x,))
+    fill_fast(x+1)
 
 if __name__ == '__main__':
     main()
