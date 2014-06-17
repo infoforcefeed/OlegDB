@@ -1,11 +1,10 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-import json, calendar, requests, time, urllib, os, random, zlib
+import json, calendar, requests, time, urllib, os, random, zlib, thread
 
-def main():
-    known_count = 0
+def thread_burn(thread_id):
     while True:
-        random_length = random.random() * 10000
+        random_length = (random.random() * 10000) + 1
         #compressed = "".join(["A" for i in range(0, int(random_length))])
         random_str = os.urandom(int(random_length))
         #compressed = zlib.compress(random_str)
@@ -15,7 +14,7 @@ def main():
         quoted = urllib.quote(random_key_str)
         expiration = int(calendar.timegm(time.gmtime()) + (random.random() * 10))
 
-        connection_str = "http://localhost:8080/{}".format(quoted)
+        connection_str = "http://localhost:8080/oleg/{}".format(quoted)
         requests.post(connection_str,
             data=compressed,
             headers={
@@ -33,6 +32,12 @@ def main():
             print "Raw: {}".format(raw)
             print "Response status: {}".format(resp.status_code)
             print "Last known count: {}".format(known_count)
+
+def main():
+    known_count = 0
+    for x in range(0,3):
+        thread.start_new_thread(thread_burn, (x,))
+    thread_burn(x+1)
 
 if __name__ == '__main__':
     main()
