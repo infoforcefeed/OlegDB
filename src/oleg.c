@@ -102,7 +102,7 @@ ol_database *ol_open(char *path, char *name, int features){
      */
     new_db->aol_file = calloc(1, AOL_FILENAME_ALLOC);
     check_mem(new_db->aol_file);
-    new_db->get_db_file_name(new_db, "aol", new_db->aol_file);
+    new_db->get_db_file_name(new_db, AOL_FILENAME, new_db->aol_file);
 
     /* Lets use an append-only log file */
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
@@ -634,24 +634,20 @@ error:
 }
 
 int ol_smoosh(ol_database *db) {
-    char old_aol_filename[AOL_FILENAME_ALLOC] = {0};
-
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         /* AOL is enabled. Create a new aol file that we'll be using. */
         fclose(db->aolfd);
 
         /* Create a new file which we'll move into the old ones place later */
-        strncp(db->aol_file, old_aol_filename, AOL_FILENAME_ALLOC);
-        db->get_db_file_name(db, "aol.new", new_db->aol_file);
+        db->get_db_file_name(db, "aol.new", db->aol_file);
 
         /* Get a new file descriptor */
-        db->aolfd = fopen(db->aol_file, "ab+");
+        db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
     }
 
     /* Iterate through the hash table instead of using the tree just
      * so you can use this in case the tree isn't enabled. */
     const int iterations = ol_ht_bucket_max(db->cur_ht_size);
-    const int rcrd_cnt = db->rcrd_cnt;
 
     int i = 0;
     for (; i < iterations; i++) {
@@ -668,11 +664,7 @@ int ol_smoosh(ol_database *db) {
                         ol_aol_write_cmd(db, "JAR", ptr);
 
                         /* See if theres an expiration date we care about: */
-                        if (obj->expiration != -1) {
-                            struct tm new_expire;
-                            time_t passed_time = (time_t)obj->expiration;
-                            localtime_r(&passed_time, &new_expire);
-
+                        if (ptr->expiration != NULL) {
                             ol_aol_write_cmd(db, "SPOIL", ptr);
                         }
                     }
@@ -683,7 +675,23 @@ int ol_smoosh(ol_database *db) {
         }
     }
 
-    return 0;
+    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+        /* Make sure all of the new stuff is written */
+        fflush(db->aolfd);
+        fclose(db->aolfd);
+
+        char new_filename[AOL_FILENAME_ALLOC] = {0};
+        /* Set the old filename. */
+        db->get_db_file_name(db, "aol.new", new_filename);
+        db->get_db_file_name(db, AOL_FILENAME, db->aol_file);
+        /* Rename the .aol.new file to just be .aol */
+        rename(new_filename, db->aol_file);
+
+        /* Get a new file descriptor */
+        db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
+    }
+
+    return 1;
 }
 
 char *ol_content_type(ol_database *db, const char *key, size_t klen) {

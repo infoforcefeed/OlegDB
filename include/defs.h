@@ -46,3 +46,8 @@
  */
 #define AOL_FILENAME_ALLOC 512
 
+/* xXx DEFINE=AOL_FILENAME xXx
+ * xXx DESCRIPTION=The file extension used for the AOL file. xXx
+ */
+#define AOL_FILENAME "aol"
+
