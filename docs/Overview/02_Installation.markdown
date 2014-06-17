@@ -30,10 +30,10 @@ your installation prefix is in your `PATH` variable  you should just be able to 
 something like the following:
 
 ````
-$ olegdb <data_directory>
+$ olegdb [data_directory]
 ````
 
-...where `<data_directory>` is the place you want OlegDB to store persistent data. 
+...where `[data_directory]` is the place you want OlegDB to store persistent data.
 Make it `/dev/null` if you want, I don't care. You can also specify
 IP/port information from the commandline:
 
