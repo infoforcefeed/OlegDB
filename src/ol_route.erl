@@ -32,7 +32,7 @@ prefix_operand({ReqType, Header, Operand}) ->
             % Well we've only got one cursor operand right now but CASE
             % STATEMENT ANYWAY
             case Operand of
-                match   ->
+                match ->
                     case ol_database:ol_prefix_match(Header) of
                         {ok, MatchesList}   -> ol_http:prefix_response(MatchesList);
                         not_found           -> ol_http:not_found_response();
