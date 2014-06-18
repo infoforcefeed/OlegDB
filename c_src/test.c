@@ -776,6 +776,56 @@ error:
     return 1;
 }
 
+int test_compaction(const ol_feature_flags features) {
+    ol_log_msg(LOG_INFO, "Writing database.");
+    ol_database *db = _test_db_open(features);
+
+    /* Anable AOL and INIT, no need to restore */
+    db->enable(OL_F_APPENDONLY, &db->feature_set);
+    ol_aol_init(db);
+
+    const int max_records = 10;
+    ol_log_msg(LOG_INFO, "Inserting %i records.", max_records);
+    int ret = _insert_keys(db, max_records);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
+    /* Delete a couple records. */
+    int i = 0;
+    for(; i < 2; i ++) {
+        char key[64] = "crazy hash";
+        char buf[20] = {0};
+        sprintf(buf, "%i", i);
+        strncat(key, buf, 30);
+        check(ol_scoop(db, key, strnlen(key, 64)) == 0, "Could not delete record %s.", key);
+    }
+
+    struct tm *now;
+    time_t current_time;
+    time(&current_time);
+    now = gmtime(&current_time);
+
+    /* Expire a couple records. */
+    for(; i < 5; i ++) {
+        char key[64] = "crazy hash";
+        char buf[20] = {0};
+        sprintf(buf, "%i", i);
+        strncat(key, buf, 30);
+        check(ol_spoil(db, key, strnlen(key, 64), now) == 0, "Could not spoil record %s.", key)
+    }
+
+    check(ol_squish(db), "Could not compact database.");
+
+    _test_db_close(db);
+    return 0;
+
+error:
+    _test_db_close(db);
+    return 9;
+}
+
 int test_can_match_prefixes(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     int next_records = 10;
@@ -870,10 +920,8 @@ void run_tests(int results[2]) {
     const int FEATURE_NUM = 4;
     for(; i <= FEATURE_NUM; i++) {
         const ol_feature_flags feature_set = i;
-        if ( feature_set & 1) {
-            ol_log_msg(LOG_INFO, "Break here!");
-        }
         /* Fucking macros man */
+        ol_run_test(test_compaction);
         ol_run_test(test_open_close);
         ol_run_test(test_bucket_max);
         ol_run_test(test_zero_length_keys);

@@ -386,6 +386,22 @@ static void port_driver_cursor_last(oleg_data *d, ol_record *obj) {
     return;
 }
 
+static void port_driver_squish(oleg_data *d) {
+    if (d->db == NULL)
+        return port_driver_error(d);
+
+    const int ret = ol_squish(d->db);
+
+    if (ret) {
+        ei_x_buff to_send;
+        _gen_atom(&to_send, "ok");
+        driver_output(d->port, to_send.buff, to_send.index);
+        ei_x_free(&to_send);
+        return;
+    }
+    return port_driver_error(d);
+}
+
 /* So this is where all the magic happens. If you want to know how we switch
  * on different commands, go look at ol_database:encode/1.
  */
@@ -397,6 +413,10 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     debug("Command from server: %i", fn);
     if (fn == 0) {
         return port_driver_init(d, cmd);
+    } else if (fn == 9) {
+        /* This is one of the more unique commands in that we don't
+         * need a decoded obj and in-fact aren't given one. */
+        return port_driver_squish(d);
     }
 
     /* Check to see if someone called ol_init */
