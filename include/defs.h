@@ -40,3 +40,14 @@
 * xXx DESCRIPTION=The default size of the values file on disk. 4 MB by default. xXx
 */
 #define VALUES_DEFAULT_SIZE 4194304
+
+/* xXx DEFINE=AOL_FILENAME_ALLOC xXx
+ * xXx DESCRIPTION=The number of bytes we allocate for the filename of the AOL file.
+ */
+#define AOL_FILENAME_ALLOC 512
+
+/* xXx DEFINE=AOL_FILENAME xXx
+ * xXx DESCRIPTION=The file extension used for the AOL file. xXx
+ */
+#define AOL_FILENAME "aol"
+

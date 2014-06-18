@@ -6,6 +6,7 @@
 -define(DEFAULT_HOST, "localhost").
 -define(DEFAULT_PORT, 8080).
 -define(ACCEPTOR_POOL_NUM, 64).
+-define(COMPACTION_INTERVAL, 60 * 10000). % Five minutes
 
 server_manager(Caller) ->
     server_manager(Caller, ?DEFAULT_HOST, ?DEFAULT_PORT).
@@ -72,9 +73,14 @@ supervise() ->
                     io:format("[-] Night night.~n"),
                     halt()
             end;
-        X -> io:format("[-] Receieved message: ~p~n", [X]),
-            supervise()
-    end.
+        {compact} -> % We don't really care who the message is from.
+            %io:format("[-] Compacting...~n"),
+            ol_database:ol_squish(),
+            %io:format("[-] Done compacting.~n"),
+            erlang:send_after(?COMPACTION_INTERVAL, satan, {compact});
+        X -> io:format("[-] Receieved message: ~p~n", [X])
+    end,
+    supervise().
 
 main() -> main([]).
 main([]) ->
@@ -98,6 +104,9 @@ main([DbLocation|Args]) ->
             end,
             register(satan, self()),
             io:format("[-] Death spiral. Running as ~p~n", [node()]),
+
+            % Setup the compaction routine:
+            erlang:send_after(?COMPACTION_INTERVAL, satan, {compact}),
             supervise();
         _ ->
             io:format("[X] Specified database directory does not exist.~n"),
