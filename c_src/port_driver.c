@@ -386,6 +386,45 @@ static void port_driver_cursor_last(oleg_data *d, ol_record *obj) {
     return;
 }
 
+static void port_driver_prefix_match(oleg_data *d, ol_record *obj) {
+    ol_val_array matches_list = NULL;
+    int match_num = ol_prefix_match(d->db, obj->key, obj->klen, &matches_list);
+    if (match_num > 0) {
+        ei_x_buff to_send;
+        ei_x_new_with_version(&to_send);
+
+        /* Response looks like this: */
+        /* {ok, ["list", "of", "matches"]} */
+        ei_x_encode_tuple_header(&to_send, 3);
+        ei_x_encode_atom(&to_send, "ok");
+        ei_x_encode_long(&to_send, (long)match_num);
+        ei_x_encode_list_header(&to_send, match_num);
+
+        int i = 0;
+        for(; i < match_num; i++) {
+            /* Matches should be null terminated. Unless somebody fucks with
+             * something. */
+            ei_x_encode_binary(&to_send, matches_list[i], strlen(matches_list[i]));
+        }
+        /* Apparently erlang is dumb and you need to end a list with an
+         * empty one. */
+        ei_x_encode_empty_list(&to_send);
+
+        driver_output(d->port, to_send.buff, to_send.index);
+        ei_x_free(&to_send);
+
+        /* Free everything we just sent over the wire. */
+        for (i = 0; i < match_num; i++) {
+            free(matches_list[i]);
+        }
+        free(matches_list);
+
+        return;
+    }
+
+    return port_driver_not_found(d);
+}
+
 static void port_driver_squish(oleg_data *d) {
     if (d->db == NULL)
         return port_driver_error(d);
@@ -465,6 +504,9 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
             break;
         case 8:
             port_driver_cursor_last(d, obj);
+            break;
+        case 10:
+            port_driver_prefix_match(d, obj);
             break;
         default:
             port_driver_not_found(d);

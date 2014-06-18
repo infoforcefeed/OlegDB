@@ -26,14 +26,16 @@ def thread_burn(thread_id):
         quoted = urllib.quote(random_key_str)
         expiration = int(calendar.timegm(time.gmtime()) + (random.random() * 10))
 
+        random_content_type = urllib.quote("A".join([str(os.urandom(10))]))
+
         connection_str = "http://localhost:8080/oleg/{}".format(quoted)
         requests.post(connection_str,
             data=compressed,
             headers={
-                "Content-Type": "text/html",
+                "Content-Type": random_content_type,
                 "X-OlegDB-use-by": expiration})
         duff = requests.head(connection_str) # For code coverage
-        if duff.status_code != 404:
+        if duff.status_code not in [404, 500]:
             known_count = duff.headers['x-olegdb-rcrd-cnt']
         resp = requests.get(connection_str, stream=True)
         raw = resp.raw.read()
@@ -48,6 +50,7 @@ def main():
     known_count = 0
     for x in range(0,3):
         thread.start_new_thread(thread_burn, (x,))
+        #thread.start_new_thread(fill_fast, (x,))
     fill_fast(x+1)
 
 if __name__ == '__main__':
