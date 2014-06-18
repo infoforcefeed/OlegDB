@@ -36,11 +36,7 @@ def thread_burn(thread_id):
                 "X-OlegDB-use-by": expiration})
         duff = requests.head(connection_str) # For code coverage
         if duff.status_code not in [404, 500]:
-            try:
-                known_count = duff.headers['x-olegdb-rcrd-cnt']
-            except KeyError:
-                import ipdb; ipdb.set_trace()
-                "asdf"
+            known_count = duff.headers['x-olegdb-rcrd-cnt']
         resp = requests.get(connection_str, stream=True)
         raw = resp.raw.read()
 
