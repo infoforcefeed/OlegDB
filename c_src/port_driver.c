@@ -390,7 +390,7 @@ static void port_driver_smoosh(oleg_data *d) {
     if (d->db == NULL)
         return port_driver_error(d);
 
-    const int ret = ol_smoosh(d->db);
+    const int ret = ol_squish(d->db);
 
     if (ret) {
         ei_x_buff to_send;

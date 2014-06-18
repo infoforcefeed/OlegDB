@@ -816,7 +816,7 @@ int test_compaction(const ol_feature_flags features) {
         check(ol_spoil(db, key, strnlen(key, 64), now) == 0, "Could not spoil record %s.", key)
     }
 
-    check(ol_smoosh(db), "Could not compact database.");
+    check(ol_squish(db), "Could not compact database.");
 
     _test_db_close(db);
     return 0;

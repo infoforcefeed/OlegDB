@@ -633,7 +633,7 @@ error:
     return 1;
 }
 
-int ol_smoosh(ol_database *db) {
+int ol_squish(ol_database *db) {
     int fflush_turned_off = 0;
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         /* Turn off fflush for the time being. We'll do it once at the end. */
