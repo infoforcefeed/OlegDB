@@ -34,9 +34,9 @@ prefix_operand({ReqType, Header, Operand}) ->
             case Operand of
                 match ->
                     case ol_database:ol_prefix_match(Header) of
-                        {ok, MatchesList}   -> ol_http:prefix_response(MatchesList);
-                        not_found           -> ol_http:not_found_response();
-                        X                   -> ol_http:error_response(X)
+                        {ok, MatchNum, MatchesList}     -> ol_http:prefix_response(MatchNum, MatchesList);
+                        not_found                       -> ol_http:not_found_response();
+                        X                               -> ol_http:error_response(X)
                     end
             end;
         true ->

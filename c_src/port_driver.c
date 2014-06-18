@@ -395,8 +395,9 @@ static void port_driver_prefix_match(oleg_data *d, ol_record *obj) {
 
         /* Response looks like this: */
         /* {ok, ["list", "of", "matches"]} */
-        ei_x_encode_tuple_header(&to_send, 2);
+        ei_x_encode_tuple_header(&to_send, 3);
         ei_x_encode_atom(&to_send, "ok");
+        ei_x_encode_long(&to_send, (long)match_num);
         ei_x_encode_list_header(&to_send, match_num);
 
         int i = 0;
