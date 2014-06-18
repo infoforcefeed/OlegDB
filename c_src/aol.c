@@ -46,7 +46,7 @@ void _deserialize_time(struct tm *fillout, char *buf) {
     fillout->tm_mon -= 1;
 }
 
-#define intlen(value) (value == 0 ? 1 : (int)floor(log10(value)+1))
+#define intlen(value) (value == 0 ? 1 : (int)(floor(log10(value)))+1)
 
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     int ret;
