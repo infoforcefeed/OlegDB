@@ -56,19 +56,19 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
         debug("Writing: \"%.*s\"", (int)bct->klen, bct->key);
         char aol_str[] =
             ":%zu:%s"    /* cmd length, cmd */
-            ":%zu:%s"    /* klen size, key */
-            ":%zu:%s"    /* ctype size, content_type */
+            ":%zu:%.*s"    /* klen size, key */
+            ":%zu:%.*s"    /* ctype size, content_type */
             ":%d:%d"     /* sizeof(original_size), original_size */
             ":%d:%d"     /* sizeof(size_t), data_size */
             ":%d:%d";    /* sizeof(size_t), offset into file */
 
         ret = fprintf(db->aolfd, aol_str,
-                strlen(cmd),                cmd,
-                bct->klen,                  bct->key,
-                bct->ctype_size,            bct->content_type,
-                intlen(bct->original_size), bct->original_size,
-                intlen(bct->data_size),     bct->data_size,
-                intlen(bct->data_offset),   bct->data_offset);
+                strlen(cmd),                                cmd,
+                bct->klen,          (int)bct->klen,         bct->key,
+                bct->ctype_size,    (int)bct->ctype_size,   bct->content_type,
+                intlen(bct->original_size),                 bct->original_size,
+                intlen(bct->data_size),                     bct->data_size,
+                intlen(bct->data_offset),                   bct->data_offset);
         check(ret > -1, "Error writing to file.");
         ret = fprintf(db->aolfd, "\n");
     } else if (strncmp(cmd, "SCOOP", 5) == 0) {
