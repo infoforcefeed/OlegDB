@@ -397,7 +397,7 @@ static void port_driver_prefix_match(oleg_data *d, ol_record *obj) {
         /* {ok, ["list", "of", "matches"]} */
         ei_x_encode_tuple_header(&to_send, 2);
         ei_x_encode_atom(&to_send, "ok");
-        ei_x_encode_tuple_header(&to_send, match_num);
+        ei_x_encode_list_header(&to_send, match_num);
 
         int i = 0;
         for(; i < match_num; i++) {
@@ -405,6 +405,9 @@ static void port_driver_prefix_match(oleg_data *d, ol_record *obj) {
              * something. */
             ei_x_encode_binary(&to_send, matches_list[i], strlen(matches_list[i]));
         }
+        /* Apparently erlang is dumb and you need to end a list with an
+         * empty one. */
+        ei_x_encode_empty_list(&to_send);
 
         driver_output(d->port, to_send.buff, to_send.index);
         ei_x_free(&to_send);

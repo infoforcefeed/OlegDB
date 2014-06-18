@@ -1,7 +1,7 @@
 %%% Common utility functions.
 -module(ol_util).
 -include("olegdb.hrl").
--export([read_all_data/2, read_remaining_data/2, bits_to_lower/1]).
+-export([read_all_data/2, read_remaining_data/2, bits_to_lower/1, list_to_bad_json/1]).
 read_remaining_data(Header, Socket) ->
     ExpectedLength = Header#ol_record.content_length,
     if
@@ -37,3 +37,12 @@ read_all_data1(Socket, ExpectedLength, Data) ->
 
 bits_to_lower(<<X,Rest/bits>>) -> <<(string:to_lower(X)), (bits_to_lower(Rest))/bits>>;
 bits_to_lower(_) -> <<>>.
+
+list_to_bad_json1([], ByteString) -> <<ByteString/binary, "]">>;
+list_to_bad_json1([ByteString|ListOfBits], Accumulator) when Accumulator == <<"[">> ->
+    % Don't encode a comma after the first value.
+    list_to_bad_json1(ListOfBits, <<Accumulator/binary,"\"",ByteString/binary,"\"">>);
+list_to_bad_json1([ByteString|ListOfBits], Accumulator) ->
+    list_to_bad_json1(ListOfBits, <<Accumulator/binary,",\"",ByteString/binary,"\"">>).
+
+list_to_bad_json(ListOfBits) -> list_to_bad_json1(ListOfBits, <<"[">>).

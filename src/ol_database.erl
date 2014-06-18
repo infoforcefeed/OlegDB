@@ -66,7 +66,7 @@ loop(Port) ->
             receive
                 %% Give the caller our result
                 {Port, {data, Data}} ->
-                    Caller ! {olegdb_port_driver, binary_to_term(Data)};
+                    Caller ! {olegdb_port_driver, binary_to_term(<<Data/binary>>)};
                 badarg ->
                     io:format("Badarg ~n"),
                         exit(port_terminated)
