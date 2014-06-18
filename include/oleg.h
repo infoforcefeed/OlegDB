@@ -44,7 +44,7 @@ typedef enum {
 } ol_state_flags;
 
 /* xXx TYPEDEF=ol_val_array xXx
-* xXx DESCRIPTION=This is shorthand for a pointer to an array of values, typically the same kind of values stored in an <a href="#ol_bucket">ol_bucket</a>->data_ptr object. xXx
+* xXx DESCRIPTION=This is shorthand for a pointer to an array of values, the same kind of values stored in an <a href="#ol_bucket">ol_bucket</a>'s data_offset. xXx
 */
 typedef char ** ol_val_array;
 
