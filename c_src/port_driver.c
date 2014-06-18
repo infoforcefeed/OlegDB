@@ -386,7 +386,7 @@ static void port_driver_cursor_last(oleg_data *d, ol_record *obj) {
     return;
 }
 
-static void port_driver_smoosh(oleg_data *d) {
+static void port_driver_squish(oleg_data *d) {
     if (d->db == NULL)
         return port_driver_error(d);
 
@@ -416,7 +416,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     } else if (fn == 9) {
         /* This is one of the more unique commands in that we don't
          * need a decoded obj and in-fact aren't given one. */
-        return port_driver_smoosh(d);
+        return port_driver_squish(d);
     }
 
     /* Check to see if someone called ol_init */
