@@ -29,6 +29,8 @@ parse_url(Url) ->
         [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_prev">>|_] -> {ok, DB_Name, Key, {cursor, prev}};
         [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_first">>|_] -> {ok, DB_Name, Key, {cursor, first}};
         [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_last">>|_] -> {ok, DB_Name, Key, {cursor, last}};
+        % Prefix matching:
+        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_match">>|_] -> {ok, DB_Name, Key, {prefix, match}};
         % Url was like /users/1 or /pictures/thing
         [_, <<DB_Name/binary>>, <<Key/binary>> |_] -> {ok, DB_Name, Key};
         % The url was like /test or /what, so just assume the default DB.

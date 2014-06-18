@@ -26,12 +26,26 @@ cursor_operand({ReqType, Header, Operand}) ->
             ol_http:error_response(<<"Cursors do not support the requested verb.">>)
     end.
 
+prefix_operand({ReqType, Header, Operand}) ->
+    if
+        ReqType == get ->
+            % Well we've only got one cursor operand right now but CASE
+            % STATEMENT ANYWAY
+            case Operand of
+                match   -> ol_http:prefix_response(ol_database:ol_prefix_match(Header))
+            end;
+        true ->
+            ol_http:error_response(<<"Prefix matching does not support the requested verb.">>)
+    end.
+
 route(Bits, Socket) ->
     case ol_parse:parse_http(Bits) of
         {ok, _, {Header, [send_100|_]}} ->
             hundred_handler(Header, Socket);
         {ok, ReqType, {Header, _}, {cursor, Operand}} ->
             cursor_operand({ReqType, Header, Operand});
+        {ok, ReqType, {Header, _}, {prefix, Operand}} ->
+            prefix_operand({ReqType, Header, Operand});
         {ok, ReqType, {Header, _}} ->
             case ReqType of
                 get ->
