@@ -322,7 +322,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
         size_t data_len = 0;
         data_len = deref->original_size;
 
-        dest = malloc(data_len);
+        dest = malloc(data_len + 1);
         check_mem(dest);
         if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
             int processed = 0;
@@ -333,6 +333,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
             check(to_check == data_ptr, "Could not copy data to buffer.");
         }
 
+        dest[data_len] = '\0';
         to_return[i] = dest;
     }
 

@@ -8,7 +8,8 @@
          bucket_meta_response/2,
          bucket_meta_response/3,
          cursor_bucket_response/3,
-         error_response/1
+         error_response/1,
+         prefix_response/1
         ]).
 
 get_response(ContentType, Data) ->
@@ -29,6 +30,18 @@ cursor_bucket_response(CursorContentType, CursorKey, CursorData) ->
         "Connection: close\r\n"
         "X-OlegDB-Key: ~s\r\n"
         "\r\n~s">>, [CursorContentType, byte_size(CursorData), CursorKey, CursorData]).
+
+prefix_response(MatchesList) ->
+    Converted = io_lib:format(<<"~p">>, [MatchesList]),
+    io:format(<<"~p">>, [MatchesList]),
+    io_lib:format(
+        <<"HTTP/1.1 200 OK\r\n"
+        "Server: OlegDB/fresh_cuts_n_jams\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: ~p\r\n"
+        "Connection: close\r\n"
+        "X-OlegDB-Matches: ~i\r\n"
+        "\r\n~p">>, [byte_size(Converted), length(MatchesList), MatchesList]).
 
 not_found_response() ->
     <<"HTTP/1.1 404 Not Found\r\n"
