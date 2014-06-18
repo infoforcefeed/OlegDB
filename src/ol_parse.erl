@@ -25,10 +25,10 @@ parse_url(Url) ->
         % Url was like //key. Bad!
         [_, <<>>, <<_/binary>>|_] -> {error, <<"No database specified.">>};
         % These handle cursor iteration:
-        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_next">>|_] -> {ok, DB_Name, Key, next};
-        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_prev">>|_] -> {ok, DB_Name, Key, prev};
-        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_first">>|_] -> {ok, DB_Name, Key, first};
-        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_last">>|_] -> {ok, DB_Name, Key, last};
+        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_next">>|_] -> {ok, DB_Name, Key, {cursor, next}};
+        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_prev">>|_] -> {ok, DB_Name, Key, {cursor, prev}};
+        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_first">>|_] -> {ok, DB_Name, Key, {cursor, first}};
+        [_, <<DB_Name/binary>>, <<Key/binary>>, <<"_last">>|_] -> {ok, DB_Name, Key, {cursor, last}};
         % Url was like /users/1 or /pictures/thing
         [_, <<DB_Name/binary>>, <<Key/binary>> |_] -> {ok, DB_Name, Key};
         % The url was like /test or /what, so just assume the default DB.

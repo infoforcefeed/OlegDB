@@ -30,7 +30,7 @@ route(Bits, Socket) ->
     case ol_parse:parse_http(Bits) of
         {ok, _, {Header, [send_100|_]}} ->
             hundred_handler(Header, Socket);
-        {ok, ReqType, {Header, _}, Operand} ->
+        {ok, ReqType, {Header, _}, {cursor, Operand}} ->
             cursor_operand({ReqType, Header, Operand});
         {ok, ReqType, {Header, _}} ->
             case ReqType of
