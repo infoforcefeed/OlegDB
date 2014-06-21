@@ -262,6 +262,8 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
         return -1;
     if (!prefix)
         return -1;
+    if (db->tree == NULL || db->tree->root == NULL)
+        return -1;
 
     ol_cursor cursor;
     char **to_return = NULL;
