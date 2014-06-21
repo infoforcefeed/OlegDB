@@ -96,7 +96,7 @@ int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size) {
     /* New total size */
     const size_t truncate_total = filesize + to_add;
 
-    values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
+    values_fd = open(values_filename, O_RDWR | O_CREAT | O_NOATIME, S_IWUSR | S_IRUSR);
     check(values_fd >= 0, "Could not open values file.");
 
     /* Set new size */
@@ -125,7 +125,7 @@ int _ol_open_values(ol_database *db) {
     size_t filesize = _ol_get_file_size(values_filename);
 
     debug("Opening %s for values", values_filename);
-    values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
+    values_fd = open(values_filename, O_RDWR | O_CREAT | O_NOATIME, S_IWUSR | S_IRUSR);
     check(values_fd >= 0, "Could not open file.");
 
     return _ol_open_values_with_fd(db, values_fd, filesize);
