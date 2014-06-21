@@ -86,7 +86,7 @@ ol_database *ol_open(char *path, char *name, int features){
     /* mmap() the values into memory. */
     new_db->values = NULL;
 
-    _ol_open_values(new_db);
+    check(_ol_open_values(new_db), "Could not open values file.");
 
     new_db->feature_set = features;
     new_db->state = OL_S_STARTUP;
