@@ -233,10 +233,13 @@ static void port_driver_not_found(oleg_data *d) {
     ei_x_free(&to_send);
 }
 
-static void port_driver_error(oleg_data *d) {
+static void port_driver_error(oleg_data *d, const char *msg) {
     /* Send something back so we're not blocking. */
     ei_x_buff to_send;
-    _gen_atom(&to_send, "error");
+    ei_x_new_with_version(&to_send);
+    ei_x_encode_tuple_header(&to_send, 2);
+    ei_x_encode_atom(&to_send, "error");
+    ei_x_encode_binary(&to_send, msg, strlen(msg));
     driver_output(d->port, to_send.buff, to_send.index);
     ei_x_free(&to_send);
 }
@@ -427,7 +430,7 @@ static void port_driver_prefix_match(oleg_data *d, ol_record *obj) {
 
 static void port_driver_squish(oleg_data *d) {
     if (d->db == NULL)
-        return port_driver_error(d);
+        return port_driver_error(d, "No database to squish.");
 
     const int ret = ol_squish(d->db);
 
@@ -438,7 +441,7 @@ static void port_driver_squish(oleg_data *d) {
         ei_x_free(&to_send);
         return;
     }
-    return port_driver_error(d);
+    return port_driver_error(d, "Database squishing failed.");
 }
 
 /* So this is where all the magic happens. If you want to know how we switch
@@ -475,7 +478,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         ol_database *db;
         db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY | OL_F_AOL_FFLUSH | OL_F_LZ4 | OL_F_SPLAYTREE);
         if (db == NULL)
-            return port_driver_error(d);
+            return port_driver_error(d, "Could not open database.");
         d->db = db;
     }
 

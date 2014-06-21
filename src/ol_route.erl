@@ -7,9 +7,10 @@ cursor_response(Response) ->
     case Response of
         {ok, ContentType, Key, Data} ->
             ol_http:cursor_bucket_response(ContentType, Key, Data);
+        {error, ErrMsg} -> ol_http:error_response(ErrMsg);
         not_found ->
             ol_http:not_found_response();
-        ErrMsg -> ol_http:error_response(ErrMsg)
+        _ -> ol_http:error_response(<<"Something went wrong.">>)
     end.
 
 cursor_operand({ReqType, Header, Operand}) ->
@@ -35,6 +36,7 @@ prefix_operand({ReqType, Header, Operand}) ->
                 match ->
                     case ol_database:ol_prefix_match(Header) of
                         {ok, MatchNum, MatchesList}     -> ol_http:prefix_response(MatchNum, MatchesList);
+                        {error, ErrMsg}                 -> ol_http:error_response(ErrMsg);
                         not_found                       -> ol_http:not_found_response();
                         X                               -> ol_http:error_response(X)
                     end
@@ -59,7 +61,7 @@ route(Bits, Socket) ->
                     case ol_database:ol_unjar(Header) of
                         {ok, ContentType, Data} ->
                             ol_http:get_response(ContentType, Data);
-                        error -> ol_http:error_response(<<"Something went wrong.">>);
+                        {error, ErrMsg} -> ol_http:error_response(ErrMsg);
                         _ -> ol_http:not_found_response()
                     end;
                 head ->
@@ -69,7 +71,7 @@ route(Bits, Socket) ->
                             ol_http:bucket_meta_response(ContentType, RcrdCnt);
                         {ok, ContentType, RcrdCnt, Expires} ->
                             ol_http:bucket_meta_response(ContentType, RcrdCnt, Expires);
-                        error -> ol_http:error_response(<<"Something went wrong.">>);
+                        {error, ErrMsg} -> ol_http:error_response(ErrMsg);
                         _ -> ol_http:not_found_response()
                     end;
                 post ->
@@ -77,14 +79,14 @@ route(Bits, Socket) ->
                     NewHeader = ol_util:read_remaining_data(Header, Socket),
                     case ol_database:ol_jar(NewHeader) of
                         ok -> ol_http:post_response();
-                        error -> ol_http:error_response(<<"Something went wrong.">>);
+                        {error, ErrMsg} -> ol_http:error_response(ErrMsg);
                         _ -> ol_http:not_found_response()
                     end;
                 delete ->
                     %io:format("[-] Deleting ~p~n", [Header#ol_record.key]),
                     case ol_database:ol_scoop(Header) of
                         ok -> ol_http:deleted_response();
-                        error -> ol_http:error_response(<<"Something went wrong.">>);
+                        {error, ErrMsg} -> ol_http:error_response(ErrMsg);
                         _ -> ol_http:not_found_response()
                     end;
                 {error, ErrMsg} ->
