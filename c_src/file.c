@@ -1,6 +1,7 @@
-#include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include "errhandle.h"
 #include "oleg.h"
@@ -38,6 +39,9 @@ void *_ol_mmap(size_t to_mmap, int fd) {
 
     to_return = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     check(to_return != MAP_FAILED, "Could not mmap file.");
+
+    const int check = madvise(to_return, to_mmap, MADV_RANDOM);
+    check_warn(check == 0, "Could not madvise file.");
     return to_return;
 
 error:
@@ -96,7 +100,7 @@ int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size) {
     /* New total size */
     const size_t truncate_total = filesize + to_add;
 
-    values_fd = open(values_filename, O_RDWR | O_CREAT | O_NOATIME, S_IWUSR | S_IRUSR);
+    values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
     check(values_fd >= 0, "Could not open values file.");
 
     /* Set new size */
@@ -125,7 +129,7 @@ int _ol_open_values(ol_database *db) {
     size_t filesize = _ol_get_file_size(values_filename);
 
     debug("Opening %s for values", values_filename);
-    values_fd = open(values_filename, O_RDWR | O_CREAT | O_NOATIME, S_IWUSR | S_IRUSR);
+    values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
     check(values_fd >= 0, "Could not open file.");
 
     return _ol_open_values_with_fd(db, values_fd, filesize);
