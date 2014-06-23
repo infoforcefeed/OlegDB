@@ -705,6 +705,56 @@ int test_lz4(const ol_feature_flags features) {
     return 0;
 }
 
+int test_magic_string_compression(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+    db->enable(OL_F_LZ4, &db->feature_set);
+
+    /* Sometimes LZ4 compresses strings to the same size. This test makes sure
+     * decompress still works in that case.
+     */
+
+    char key[] = "test_key";
+    /* Known fucked up string: */
+    unsigned char val[] = "{\"test\": 2, \"test3\": [\"a\", \"b\", \"c\"]}";
+    size_t val_len = strlen((char*)val);
+    int inserted = ol_jar(db, key, strlen(key), val, val_len);
+
+    if (inserted > 0) {
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
+        _test_db_close(db);
+        return 1;
+    }
+
+    size_t to_test;
+    unsigned char *item = NULL;
+    ol_unjar_ds(db, key, strlen(key), &item, &to_test);
+    ol_log_msg(LOG_INFO, "Retrieved value.");
+    if (item == NULL) {
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        _test_db_close(db);
+        free(item);
+        return 2;
+    }
+
+    if (memcmp(item, val, strlen((char*)val)) != 0) {
+        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        _test_db_close(db);
+        free(item);
+        return 3;
+    }
+
+    if (to_test != val_len) {
+        ol_log_msg(LOG_ERR, "Sizes were not the same. %p (to_test) vs. %p (val_len)\n", to_test, val_len);
+        _test_db_close(db);
+        free(item);
+        return 4;
+    }
+
+    free(item);
+    _test_db_close(db);
+    return 0;
+}
+
 int test_can_get_next_in_tree(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     int next_records = 10;
@@ -909,6 +959,7 @@ void run_tests(int results[2]) {
     const ol_feature_flags feature_set = DB_DEFAULT_FEATURES;
     ol_run_test(test_aol);
     ol_run_test(test_lz4);
+    ol_run_test(test_magic_string_compression);
     ol_run_test(test_can_find_all_nodes);
     ol_run_test(test_can_get_next_in_tree);
     ol_run_test(test_can_get_prev_in_tree);
