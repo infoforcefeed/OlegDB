@@ -96,6 +96,7 @@ bucket_meta_response(ContentType, RcrdCnt) ->
         "\r\n">>, [ContentType, RcrdCnt]).
 
 error_response(Data) ->
+    io:format("[x] Error: ~p~n", [Data]),
     io_lib:format(
         <<"HTTP/1.1 500 Internal Server Error\r\n"
         "Server: OlegDB/fresh_cuts_n_jams\r\n"

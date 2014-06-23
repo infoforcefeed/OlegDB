@@ -41,10 +41,12 @@ bits_to_lower(_) -> <<>>.
 list_to_bad_json1([], ByteString) -> <<ByteString/binary, "]">>;
 list_to_bad_json1([ByteString|ListOfBits], Accumulator) when Accumulator == <<"[">> ->
     % Don't encode a comma after the first value.
+    io:format("Replacing ~p~n", [ByteString]),
     Replaced = binary:replace(<<ByteString/binary>>, <<"\"">>, <<"\\\"">>, [global]),
     list_to_bad_json1(ListOfBits, <<Accumulator/binary,"\"",Replaced/binary,"\"">>);
 list_to_bad_json1([ByteString|ListOfBits], Accumulator) ->
-    Replaced = binary:replace(ByteString/binary, <<"\"">>, <<"\\\"">>, [global]),
+    io:format("Replacing ~p~n", [ByteString]),
+    Replaced = binary:replace(<<ByteString/binary>>, <<"\"">>, <<"\\\"">>, [global]),
     list_to_bad_json1(ListOfBits, <<Accumulator/binary,",\"",Replaced/binary,"\"">>).
 
 list_to_bad_json(ListOfBits) -> list_to_bad_json1(ListOfBits, <<"[">>).

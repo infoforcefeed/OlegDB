@@ -184,17 +184,18 @@ int ol_aol_restore(ol_database *db) {
 
             /* Short circuit check to see if the memory in the location is all
              * null. */
-            int memory_is_all_null = 0;
+            int memory_is_not_null = 0;
             int i = 0;
             for(;i < compressed_size; i++) {
-                if (data_ptr[i] != '\0') {
-                    memory_is_all_null = 1;
+                if ('\0' != data_ptr[i]) {
+                    debug("Data is not null on %zu.", data_offset + i);
+                    memory_is_not_null = 1;
                     break;
                 }
             }
 
             /* Check to see if the key is deleted: */
-            if (memory_is_all_null) {
+            if (memory_is_not_null) {
                 if (original_size != compressed_size) {
                     /* Data is compressed, gotta deal with that. */
                     char tmp_data[original_size];
