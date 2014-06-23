@@ -194,24 +194,29 @@ int ol_aol_restore(ol_database *db) {
                 }
             }
 
-            /* Check to see if the key is deleted: */
             if (memory_is_not_null) {
-                if (original_size != compressed_size) {
-                    /* Data is compressed, gotta deal with that. */
-                    char tmp_data[original_size];
-                    char *ret = memset(&tmp_data, 0, original_size);
-                    check(ret == tmp_data, "Could not initialize tmp_data parameter.");
+                /* Turns out that in rare cases LZ4 will compress to exactly
+                 * the same size as it's starting string. This means we can't
+                 * just check to see if original_size != compressed_size, so
+                 * instead we first attempt to decompress and check how many
+                 * chars were processed.
+                 */
+                char tmp_data[original_size];
+                char *ret = memset(&tmp_data, 0, original_size);
+                check(ret == tmp_data, "Could not initialize tmp_data parameter.");
 
-                    int processed = LZ4_decompress_fast((const char*)data_ptr, tmp_data, original_size);
-                    check(processed == compressed_size, "Could not decompress data. Data may have been previously deleted. %d != %d", (int)processed, (int)compressed_size);
+                int processed = LZ4_decompress_fast((const char*)data_ptr, (char *)tmp_data, original_size);
 
+                if (processed == compressed_size) {
                     ol_jar_ct(db, key->data, key->dlen, (unsigned char*)tmp_data, original_size, ct->data, ct->dlen);
                 } else {
-                    /* Data is uncompressed, no need for trickery. */
+                    if (original_size != compressed_size)
+                        ol_log_msg(LOG_WARN, "Could not decompress data that is probably compressed. Data may have been deleted.");
+                    /* Now that we've tried to decompress and failed, send off the raw data instead. */
                     ol_jar_ct(db, key->data, key->dlen, data_ptr, compressed_size, ct->data, ct->dlen);
                 }
             } else {
-                ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Deleted?");
+                ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Key has been deleted or updated.");
             }
             ol_string_free(&read_org_size);
             ol_string_free(&read_data_size);

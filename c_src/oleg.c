@@ -280,7 +280,7 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
                 return 0;
 
             /* Allocate memory to store memcpy'd data into. */
-            *data = malloc(bucket->original_size);
+            *data = calloc(1, bucket->original_size);
             check(*data != NULL, "Could not allocate memory for compressed data.");
 
             if (dsize != NULL) {
@@ -456,9 +456,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
             }
 
             new_bucket->data_size = cmsize;
-            new_bucket->data_offset = new_offset;
         } else {
-            new_bucket->data_size = vsize;
             _ol_ensure_values_file_size(db, new_bucket->data_size);
             new_data_ptr = db->values + db->val_size;
             memset(new_data_ptr, '\0', new_bucket->data_size);
@@ -469,7 +467,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
                 free(new_bucket);
                 return 3;
             }
-            new_bucket->data_offset = new_offset;
+            new_bucket->data_size = vsize;
         }
     } else {
         /* We still need to set the data size, but not the actual data. */
@@ -492,9 +490,10 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         } else {
             new_bucket->data_size = vsize;
         }
-        new_bucket->data_offset = db->val_size;
     }
 
+    /* Set the offset of the bucket before we increment it offset globally. */
+    new_bucket->data_offset = new_offset;
     /* Remember to increment the tracked data size of the DB. */
     db->val_size += new_bucket->data_size;
 
