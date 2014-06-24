@@ -52,7 +52,7 @@ def main(argv):
     v011_aol.close()
 
     output = argv[1] + ".json"
-    opened_output = open(output, "aw+")
+    opened_output = open(output, "w+")
     json.dump(database, opened_output, encoding='utf-8', separators=(',', ':'))
     opened_output.close()
 
