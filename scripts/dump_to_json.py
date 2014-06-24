@@ -53,7 +53,7 @@ def main(argv):
 
     output = argv[1] + ".json"
     opened_output = open(output, "aw+")
-    json.dump(database, opened_output, encoding='utf-8', indent=4)
+    json.dump(database, opened_output, encoding='utf-8', separators=(',', ':'))
     opened_output.close()
 
     return 0

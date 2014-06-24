@@ -102,7 +102,7 @@ ol_jar(OlRecord) ->
     if
         byte_size(OlRecord#ol_record.value) > 0 ->
             call_port({ol_jar, OlRecord});
-        true -> {error, no_data_posted}
+        true -> {error, <<"No data posted.">>}
     end.
 
 ol_unjar(OlRecord) ->
