@@ -417,19 +417,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     ct_real[ctsize] = '\0';
     new_bucket->content_type = ct_real;
 
-    int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
-    /* TODO: rehash this shit at 80% */
-    if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
-        debug("Record count is now %i; growing hash table.", db->rcrd_cnt);
-        ret = _ol_grow_and_rehash_db(db);
-        if (ret > 0) {
-            ol_log_msg(LOG_ERR, "Problem rehashing DB. Error code: %i", ret);
-            free(ct_real);
-            free(new_bucket);
-            return 4;
-        }
-    }
-
     new_bucket->original_size = vsize;
 
     /* Compute the new position of the data in the values file: */
@@ -457,6 +444,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
             new_bucket->data_size = cmsize;
         } else {
+            new_bucket->data_size = vsize;
             _ol_ensure_values_file_size(db, new_bucket->data_size);
             new_data_ptr = db->values + db->val_size;
             memset(new_data_ptr, '\0', new_bucket->data_size);
@@ -467,7 +455,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
                 free(new_bucket);
                 return 3;
             }
-            new_bucket->data_size = vsize;
         }
     } else {
         /* We still need to set the data size, but not the actual data. */
@@ -496,6 +483,20 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     new_bucket->data_offset = new_offset;
     /* Remember to increment the tracked data size of the DB. */
     db->val_size += new_bucket->data_size;
+
+    int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
+    /* TODO: rehash this shit at 80% */
+    if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
+        debug("Record count is now %i; growing hash table.", db->rcrd_cnt);
+        ret = _ol_grow_and_rehash_db(db);
+        if (ret > 0) {
+            ol_log_msg(LOG_ERR, "Problem rehashing DB. Error code: %i", ret);
+            free(ct_real);
+            free(new_bucket);
+            return 4;
+        }
+    }
+
 
     uint32_t hash;
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
