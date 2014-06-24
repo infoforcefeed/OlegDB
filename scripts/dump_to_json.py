@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import simplejson as json, sys, lz4
+import simplejson as json, sys, lz4, struct
 from datetime import datetime
 
 class FuckOffException(Exception):
@@ -37,7 +37,7 @@ def main(argv):
             klen, key = read_command(v011_aol)
             if cmd == 'JAR':
                 ctlen, ctype = read_command(v011_aol)
-                compressed_size, compressed = read_command(v011_aol)
+                originallen, original_size = read_command(v011_aol)
                 _ = v011_aol.read(1)
                 char = b""
                 length = b""
@@ -47,7 +47,10 @@ def main(argv):
                         raise FuckOffException()
                     if char != b':':
                         length = length + char
-                database[key] = unicode(lz4.dumps(v011_aol.read(int(length))), errors="ignore")
+                compressed = v011_aol.read(int(length))
+                pre_compressed = struct.pack("I", int(original_size)) + compressed
+                decompressed = lz4.decompress(pre_compressed)
+                database[key] = unicode(decompressed, errors="ignore")
             elif cmd == 'SPOIL':
                 # :5:SPOIL:30:10391merveill.espage%3D15_root:20:2014-04-28T12:44:12Z
                 datesize, date = read_command(v011_aol)
