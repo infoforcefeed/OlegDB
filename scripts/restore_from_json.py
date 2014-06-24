@@ -11,7 +11,7 @@ def main(argv):
 
     for key,value in database.items():
         host_str = u"http://localhost:8080/oleg/{}".format(key)
-        value_encoded = value.encode("utf-8")
+        value_encoded = value.decode("base64")
         resp = requests.post(host_str, data=value_encoded)
 
         if resp is None or resp.status_code != 200:

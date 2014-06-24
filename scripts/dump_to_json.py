@@ -50,7 +50,7 @@ def main(argv):
                 compressed = v011_aol.read(int(length))
                 pre_compressed = struct.pack("I", int(original_size)) + compressed
                 decompressed = lz4.decompress(pre_compressed)
-                database[key] = unicode(decompressed, errors="ignore")
+                database[key] = decompressed.encode("base64")
             elif cmd == 'SPOIL':
                 # :5:SPOIL:30:10391merveill.espage%3D15_root:20:2014-04-28T12:44:12Z
                 datesize, date = read_command(v011_aol)
