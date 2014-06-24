@@ -4,6 +4,7 @@
 #include "aol.h"
 #include "cursor.h"
 #include "errhandle.h"
+#include "file.h"
 #include "logging.h"
 #include "oleg.h"
 #include "test.h"
@@ -656,6 +657,23 @@ error:
     return 1;
 }
 
+int test_sync(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+
+    const char key[] = "testKey";
+    unsigned char value[] = "TestValue yo";
+
+    check(ol_jar(db, key, strlen(key), value, strlen((char *)value)) == 0, "Could not insert.");
+    check(ol_sync(db) == 0, "Could not sync database.");
+
+    _test_db_close(db);
+
+    return 0;
+
+error:
+    return 1;
+}
+
 int test_lz4(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     db->enable(OL_F_LZ4, &db->feature_set);
@@ -972,6 +990,7 @@ void run_tests(int results[2]) {
     for(; i <= FEATURE_NUM; i++) {
         const ol_feature_flags feature_set = i;
         /* Fucking macros man */
+        ol_run_test(test_sync);
         ol_run_test(test_compaction);
         ol_run_test(test_open_close);
         ol_run_test(test_bucket_max);
