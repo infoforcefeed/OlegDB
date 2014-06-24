@@ -48,6 +48,17 @@ void _deserialize_time(struct tm *fillout, char *buf) {
 
 #define intlen(value) (value == 0 ? 1 : (int)(floor(log10(value)))+1)
 
+int ol_aol_sync(const ol_database *db) {
+    /* Force the OS to flush write to hardware */
+    if (db->is_enabled(OL_F_AOL_FFLUSH, &db->feature_set))
+        check(fflush(db->aolfd) == 0, "Could not fflush.");
+    /* AOL should always fsync at least. */
+    check(fsync(fileno(db->aolfd)) == 0, "Could not fsync");
+    return 0;
+
+error:
+    return -1;
+}
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     int ret;
 
@@ -91,13 +102,7 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     }
 
     check(ret > -1, "Error writing to file.");
-
-    /* Force the OS to flush write to hardware */
-    if (db->is_enabled(OL_F_AOL_FFLUSH, &db->feature_set))
-        check(fflush(db->aolfd) == 0, "Could not fflush.");
-    /* AOL should always fsync at least. */
-    check(fsync(fileno(db->aolfd)) == 0, "Could not fsync");
-    return 0;
+    return ol_aol_sync(db);
 error:
     return -1;
 }

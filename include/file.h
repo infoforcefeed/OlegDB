@@ -1,4 +1,5 @@
 #pragma once
+#include <sys/stat.h>
 #include "oleg.h"
 
 /* Get the stat object of a file. */
@@ -17,3 +18,6 @@ int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size);
 /* Opens the values file for a database. */
 int _ol_open_values(ol_database *db);
 
+/* Makes sure the AOL and values file are sync'd to the
+ * disk. */
+int ol_sync(const ol_database *db);

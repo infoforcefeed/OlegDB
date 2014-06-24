@@ -107,10 +107,10 @@ typedef struct ol_meta {
 * xXx *meta=A pointer to a struct holding extra meta information. See <a href="#ol_meta">oleg_meta</a> for more information. xXx
 */
 typedef struct ol_database {
-    void      (*get_db_file_name)(struct ol_database *db,const char *p,char*);
+    void      (*get_db_file_name)(const struct ol_database *db,const char *p,char*);
     void      (*enable)(int, int*);
     void      (*disable)(int, int*);
-    bool      (*is_enabled)(int, int*);
+    bool      (*is_enabled)(const int, const int*);
     char      name[DB_NAME_SIZE];
     char      path[PATH_LENGTH];
     char      *aol_file;

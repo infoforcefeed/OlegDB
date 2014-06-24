@@ -13,6 +13,7 @@
          ol_first_key/1,
          ol_last_key/1,
          ol_squish/0,
+         ol_sync/0,
          ol_prefix_match/1,
          ol_scoop/1]).
 
@@ -50,6 +51,7 @@ encode({ol_first_key, X}) ->    [7, term_to_binary(X)];
 encode({ol_last_key, X}) ->     [8, term_to_binary(X)];
 encode({ol_squish}) ->          [9];
 encode({ol_prefix_match, X}) -> [10, term_to_binary(X)];
+encode({ol_sync}) ->            [11];
 encode(_) ->
     io:format("Don't know how to decode that.~n"),
     exit(unknown_call).
@@ -129,3 +131,5 @@ ol_squish() ->
 
 ol_prefix_match(OlRecord) ->
     call_port({ol_prefix_match, OlRecord}).
+
+ol_sync() -> call_port({ol_sync}).

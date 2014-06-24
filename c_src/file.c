@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "aol.h"
 #include "errhandle.h"
 #include "oleg.h"
 #include "file.h"
@@ -120,9 +121,10 @@ error:
 
 
 int _ol_open_values(ol_database *db) {
+    check(db != NULL, "DB is NULL.");
+
     int values_fd = 0;
     char values_filename[DB_NAME_SIZE] = { 0 };
-    check(db != NULL, "DB is NULL.");
 
     /* Figure out the filename */
     db->get_db_file_name(db, VALUES_FILENAME, values_filename);
@@ -135,4 +137,24 @@ int _ol_open_values(ol_database *db) {
     return _ol_open_values_with_fd(db, values_fd, filesize);
 error:
     return 0;
+}
+
+int ol_sync(const ol_database *db) {
+    check(db != NULL, "DB is NULL.");
+    char values_filename[DB_NAME_SIZE] = { 0 };
+
+    /* Figure out the filename */
+    db->get_db_file_name(db, VALUES_FILENAME, values_filename);
+    size_t filesize = _ol_get_file_size(values_filename);
+
+    if (db->values != NULL) {
+        msync(db->values, filesize, MS_SYNC);
+    }
+
+    if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set))
+        ol_aol_sync(db);
+
+    return 0;
+error:
+    return -1;
 }

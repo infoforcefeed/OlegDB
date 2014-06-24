@@ -25,7 +25,7 @@ inline int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
 }
 
-void _ol_get_file_name(ol_database *db, const char *p, char *o_file) {
+void _ol_get_file_name(const ol_database *db, const char *p, char *o_file) {
     sprintf(o_file, "%s/%s.%s", db->path, db->name, p);
 }
 
@@ -37,7 +37,7 @@ void _ol_disable(int feature, int *feature_set) {
     *feature_set &= ~feature;
 }
 
-bool _ol_is_enabled(int feature, int *feature_set) {
+bool _ol_is_enabled(const int feature, const int *feature_set) {
     return (*feature_set & feature) == feature;
 }
 

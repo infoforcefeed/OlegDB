@@ -6,7 +6,10 @@
 -define(DEFAULT_HOST, "localhost").
 -define(DEFAULT_PORT, 8080).
 -define(ACCEPTOR_POOL_NUM, 64).
+
+% Recurring tasks:
 -define(COMPACTION_INTERVAL, 60 * 10000). % Five minutes
+-define(SYNC_INTERVAL, 10 * 1000). % 10 Seconds
 
 server_manager(Caller) ->
     server_manager(Caller, ?DEFAULT_HOST, ?DEFAULT_PORT).
@@ -78,6 +81,10 @@ supervise() ->
             ol_database:ol_squish(),
             %io:format("[-] Done compacting.~n"),
             erlang:send_after(?COMPACTION_INTERVAL, satan, {compact});
+        {fsync} ->
+            % Sync every ten seconds
+            ol_database:ol_sync(),
+            erlang:send_after(?SYNC_INTERVAL, satan, {fsync});
         X -> io:format("[-] Receieved message: ~p~n", [X])
     end,
     supervise().
@@ -107,6 +114,9 @@ main([DbLocation|Args]) ->
 
             % Setup the compaction routine:
             erlang:send_after(?COMPACTION_INTERVAL, satan, {compact}),
+            % Setup the fsync routine:
+            erlang:send_after(?SYNC_INTERVAL, satan, {fsync}),
+
             supervise();
         _ ->
             io:format("[X] Specified database directory does not exist.~n"),
