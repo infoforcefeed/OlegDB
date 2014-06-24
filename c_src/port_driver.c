@@ -496,7 +496,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     /* Open up a db if we don't have on already */
     if (d->db == NULL) {
         ol_database *db;
-        db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY | OL_F_AOL_FFLUSH | OL_F_LZ4 | OL_F_SPLAYTREE);
+        db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY | OL_F_LZ4 | OL_F_SPLAYTREE);
         if (db == NULL)
             return port_driver_error(d, "Could not open database.");
         d->db = db;
