@@ -300,7 +300,6 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
             saw_bigger_value = 1;
         }
 
-
         if (!olc_step(&cursor))
             break;
         current_node = _olc_get_node(&cursor);
