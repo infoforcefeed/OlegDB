@@ -636,7 +636,42 @@ error:
 int ol_cas(ol_database *db, const char *key, const size_t klen,
                             unsigned char *value, size_t vsize,
                             const unsigned char *ovalue, const size_t ovsize) {
-    return 0;
+    char _key[KEY_SIZE] = {'\0'};
+    size_t _klen = 0;
+
+    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
+    check_warn(_klen > 0, "Key length of zero not allowed.");
+
+    if (bucket == NULL)
+        return 1;
+
+    /* Quick fail if the two sizes don't match */
+    if (bucket->original_size != ovsize)
+        return 1;
+
+    /* ATOMIC, GOOOO! */
+    const unsigned char *data_ptr = db->values + bucket->data_offset;
+    if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+        char decompressed[bucket->original_size];
+        memset(decompressed, '\0', bucket->original_size);
+
+        int processed = 0;
+        processed = LZ4_decompress_fast((char *)data_ptr,
+                                        (char *)decompressed,
+                                        bucket->original_size);
+        check(processed == bucket->data_size, "Could not decompress data.");
+
+        if (memcmp(decompressed, ovalue, ovsize) == 0)
+            return ol_jar(db, key, klen, value, vsize);
+    } else {
+        if (memcmp(data_ptr, ovalue, ovsize) == 0)
+            return ol_jar(db, key, klen, value, vsize);
+    }
+
+    return 1;
+
+error:
+    return 1;
 }
 
 int ol_squish(ol_database *db) {

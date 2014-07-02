@@ -99,6 +99,29 @@ error:
     return 1;
 }
 
+int test_cas(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+    char key[] = "menopause";
+
+    unsigned char value[] = "<p>The jackal wishes you a merry christmas.</p>";
+    size_t vsize = strlen((char *)value);
+
+    unsigned char new_value[] = "<p>The jackal does not wish upon you anything at this time.</p>";
+    size_t nvsize = strlen((char *)new_value);
+
+    check(ol_jar(db, key, strnlen(key, KEY_SIZE), value, vsize) == 0, "Could not jar key.");
+
+    check(ol_cas(db, key, strnlen(key, KEY_SIZE), new_value, nvsize, value, vsize) == 0, "Could not CAS.");
+    check(ol_cas(db, key, strnlen(key, KEY_SIZE), value, vsize, value, vsize) != 0, "CAS's when we shouldn't have.");
+
+    _test_db_close(db);
+    return 0;
+
+error:
+    _test_db_close(db);
+    return 1;
+}
+
 int test_jar(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
 
@@ -996,6 +1019,7 @@ void run_tests(int results[2]) {
         ol_run_test(test_bucket_max);
         ol_run_test(test_zero_length_keys);
         ol_run_test(test_jar);
+        ol_run_test(test_cas);
         ol_run_test(test_unjar);
         ol_run_test(test_scoop);
         ol_run_test(test_expiration);

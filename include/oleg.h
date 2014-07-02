@@ -279,7 +279,7 @@ int ol_squish(ol_database *db);
 
 /* xXx FUNCTION=ol_cas xXx
  * xXx DESCRIPTION=ol_jar operation that atomically compares-and-swaps old data for new data. xXx
- * xXx RETUNRS=1 if successful, 0 if otherwise. xXx
+ * xXx RETUNRS=0 on success. xXx
  * xXx *db=The database to operate on. xXx
  * xXx *key=The key to check. xXx
  * xXx klen=The length of the key. xXx
