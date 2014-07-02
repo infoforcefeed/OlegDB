@@ -326,21 +326,35 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     if (bucket->data_size > 0)
         memset(old_data_ptr, '\0', bucket->data_size);
     /* Compute the new position of the data in the values file: */
-    const size_t new_offset = db->val_size;
+    size_t new_offset = db->val_size;
     unsigned char *new_data_ptr = NULL;
 
     /* Compress using LZ4 if enabled */
     size_t cmsize = 0;
     if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         int maxoutsize = LZ4_compressBound(vsize);
-        _ol_ensure_values_file_size(db, maxoutsize);
-        new_data_ptr = db->values + db->val_size;
+        if (maxoutsize <=  bucket->data_size) {
+            /* We don't need to put this value at the end of the file if the
+             * new value is small enough. */
+            new_data_ptr = old_data_ptr;
+            new_offset = bucket->data_offset;
+        } else {
+            _ol_ensure_values_file_size(db, maxoutsize);
+            new_data_ptr = db->values + db->val_size;
+        }
 
         cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
                                       (int)vsize);
     } else {
-        _ol_ensure_values_file_size(db, vsize);
-        new_data_ptr = db->values + db->val_size;
+        if (vsize <= bucket->data_size) {
+            /* We don't need to put this value at the end of the file if the
+             * new value is small enough. */
+            new_data_ptr = old_data_ptr;
+            new_offset = bucket->data_offset;
+        } else {
+            _ol_ensure_values_file_size(db, vsize);
+            new_data_ptr = db->values + db->val_size;
+        }
         if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
             return 4;
     }
