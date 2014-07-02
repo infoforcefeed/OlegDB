@@ -277,6 +277,21 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
  */
 int ol_squish(ol_database *db);
 
+/* xXx FUNCTION=ol_cas xXx
+ * xXx DESCRIPTION=ol_jar operation that atomically compares-and-swaps old data for new data. xXx
+ * xXx RETUNRS=0 on success. xXx
+ * xXx *db=The database to operate on. xXx
+ * xXx *key=The key to check. xXx
+ * xXx klen=The length of the key. xXx
+ * xXx *value=The value to insert. xXx
+ * xXx vsize=The size of the value in bytes. xXx
+ * xXx *ovalue=The old value to compare against. xXx
+ * xXx ovsize=The size of the old value in bytes. xXx
+ */
+int ol_cas(ol_database *db, const char *key, const size_t klen,
+                            unsigned char *value, size_t vsize,
+                            const unsigned char *ovalue, const size_t ovsize);
+
 #ifdef __cplusplus
 }
 #endif
