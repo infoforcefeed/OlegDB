@@ -222,6 +222,10 @@ int ol_aol_restore(ol_database *db) {
                 }
             } else {
                 ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Key has been deleted or updated.");
+                /* Even though the value wasn't there, it was at some point. So
+                 * if we're replaying state, we need to increment db->val_size by
+                 * the amount expected. */
+                db->val_size += compressed_size;
             }
             ol_string_free(&read_org_size);
             ol_string_free(&read_data_size);

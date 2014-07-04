@@ -38,18 +38,32 @@ read_all_data1(Socket, ExpectedLength, Data) ->
 bits_to_lower(<<X,Rest/bits>>) -> <<(string:to_lower(X)), (bits_to_lower(Rest))/bits>>;
 bits_to_lower(_) -> <<>>.
 
-escape_dquotes(String) ->
-    binary:replace(<<String/binary>>, <<"\"">>, <<"\\\"">>, [global]).
+escape_special_func({ReplaceMe, ReplaceWith}, Accum) ->
+    %% Val is a 2-tuple of {replaceMe, replaceWith}
+    binary:replace(<<Accum/binary>>, ReplaceMe, ReplaceWith, [global]).
+
+escape_special(BinaryString) ->
+    AllChars = [ {<<"\\">>, <<"\\\\">>}
+               , {<<"\"">>, <<"\\\"">>}
+               , {<<"\b">>, <<"\\\b">>}
+               , {<<"\f">>, <<"\\\f">>}
+               , {<<"\n">>, <<"\\\n">>}
+               , {<<"\r">>, <<"\\\r">>}
+               , {<<"\t">>, <<"\\\t">>}
+               , {<<"\v">>, <<"\\\v">>}
+               , {<<"'">>, <<"\\\'">>}
+               ],
+    lists:foldl(fun(Val, Accum) -> escape_special_func(Val, Accum) end, <<BinaryString/binary>>, AllChars).
 
 list_to_bad_json1([], ByteString) -> <<ByteString/binary, "]">>;
 list_to_bad_json1([ByteString|ListOfBits], Accumulator) when Accumulator == <<"[">> ->
     % Don't encode a comma after the first value.
     %io:format("Replacing ~p~n", [ByteString]),
-    Replaced = escape_dquotes(ByteString),
+    Replaced = escape_special(ByteString),
     list_to_bad_json1(ListOfBits, <<Accumulator/binary,"\"",Replaced/binary,"\"">>);
 list_to_bad_json1([ByteString|ListOfBits], Accumulator) ->
     %io:format("Replacing ~p~n", [ByteString]),
-    Replaced = escape_dquotes(ByteString),
+    Replaced = escape_special(ByteString),
     list_to_bad_json1(ListOfBits, <<Accumulator/binary,",\"",Replaced/binary,"\"">>).
 
 list_to_bad_json(ListOfBits) -> list_to_bad_json1(ListOfBits, <<"[">>).

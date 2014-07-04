@@ -4,7 +4,7 @@ import sys
 
 def main(args):
     opened = open(args[1], "rb")
-    url = "http://localhost:8080/{}".format(args[1])
+    url = "http://localhost:8080/oleg/{}".format(args[1])
     if len(args) != 3:
         requests.post(url, data=opened)
         print "Posted to {}.".format(url)
