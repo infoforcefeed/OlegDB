@@ -106,7 +106,7 @@ ol_splay_tree_node *ols_subtree_maximum(ol_splay_tree_node *node) {
 }
 
 ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const void *ref_obj) {
-    check(klen < KEY_SIZE, "Key is too long.");
+    check(klen <= KEY_SIZE, "Key is too long.");
     check(key != NULL, "Key is null.");
     ol_splay_tree_node *current_node = NULL, *previous_node = NULL;
     current_node = tree->root;
@@ -195,7 +195,7 @@ int ols_delete(ol_splay_tree *tree, ol_splay_tree_node *node) {
 }
 
 ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen) {
-    check(klen < KEY_SIZE, "Key is too long.");
+    check(klen <= KEY_SIZE, "Key is too long.");
     check(key != NULL, "Key is null.");
     ol_splay_tree_node *current_node = tree->root;
 
