@@ -945,7 +945,7 @@ int test_can_match_prefixes(const ol_feature_flags features) {
         return 1;
     }
 
-    /* Realy fuck this tree up */
+    /* Really fuck this tree up */
     int max_records = next_records;
     int i = 0;
     for (i = 0; i < max_records; i++) {
