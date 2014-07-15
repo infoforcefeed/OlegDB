@@ -51,3 +51,9 @@
  */
 #define AOL_FILENAME "aol"
 
+/* Different OSs use different APIs, here are all the OS-specific typedefs */
+#ifdef sun
+typedef caddr_t mmap_addr;
+#else
+typedef unsigned char* mmap_addr;
+#endif

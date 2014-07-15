@@ -183,9 +183,9 @@ int ol_aol_restore(ol_database *db) {
             size_t compressed_size = (size_t)strtol(read_data_size->data, NULL, 10);
             size_t data_offset = (size_t)strtol(value->data, NULL, 10);
 
-            /* Pointer in the values file to where the data for this command 
+            /* Pointer in the values file to where the data for this command
              * should be. */
-            unsigned char *data_ptr = db->values + data_offset;
+            mmap_addr data_ptr = db->values + data_offset;
 
             /* Short circuit check to see if the memory in the location is all
              * null. */
@@ -218,7 +218,7 @@ int ol_aol_restore(ol_database *db) {
                     if (original_size != compressed_size)
                         ol_log_msg(LOG_WARN, "Could not decompress data that is probably compressed. Data may have been deleted.");
                     /* Now that we've tried to decompress and failed, send off the raw data instead. */
-                    ol_jar_ct(db, key->data, key->dlen, data_ptr, compressed_size, ct->data, ct->dlen);
+                    ol_jar_ct(db, key->data, key->dlen, (unsigned char*)data_ptr, compressed_size, ct->data, ct->dlen);
                 }
             } else {
                 ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Key has been deleted or updated.");
