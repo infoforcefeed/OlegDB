@@ -8,7 +8,11 @@ SOVERSION=0
 BUILD_DIR=$(shell pwd)/build/
 LIB_DIR=$(BUILD_DIR)lib/
 BIN_DIR=$(BUILD_DIR)bin/
-PREFIX?=/usr/local
+ifeq ($(uname_S),SunOS)
+	PREFIX?=/opt/local
+else
+	PREFIX?=/usr/local
+endif
 INSTALL_LIB=$(PREFIX)/lib/
 INSTALL_BIN=$(PREFIX)/bin/
 INSTALL_INCLUDE=$(PREFIX)/include/
