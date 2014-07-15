@@ -53,7 +53,7 @@
 
 /* Different OSs use different APIs, here are all the OS-specific typedefs */
 #ifdef sun
-typedef caddr_t mmap_addr;
+#define MMAP_ADDR caddr_t
 #else
-typedef unsigned char* mmap_addr;
+#define MMAP_ADDR unsigned char*
 #endif

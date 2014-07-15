@@ -289,7 +289,7 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
                 check(ret == dsize, "Could not copy data size into input data_size param.");
             }
 
-            mmap_addr data_ptr = db->values + bucket->data_offset;
+            MMAP_ADDR data_ptr = db->values + bucket->data_offset;
             /* Decomperss with LZ4 if enabled */
             if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
                 int processed = 0;
@@ -321,13 +321,13 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
         unsigned char *value, size_t vsize, const char *ct, const size_t ctsize) {
     debug("Reallocating bucket.");
 
-    mmap_addr old_data_ptr = db->values + bucket->data_offset;
+    MMAP_ADDR old_data_ptr = db->values + bucket->data_offset;
     /* Clear out the old data in the file. */
     if (bucket->data_size > 0)
         memset(old_data_ptr, '\0', bucket->data_size);
     /* Compute the new position of the data in the values file: */
     size_t new_offset = db->val_size;
-    mmap_addr new_data_ptr = NULL;
+    MMAP_ADDR new_data_ptr = NULL;
 
     /* Compress using LZ4 if enabled */
     size_t cmsize = 0;
@@ -437,7 +437,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     const size_t new_offset = db->val_size;
 
     if (db->state != OL_S_STARTUP) {
-        mmap_addr new_data_ptr = NULL;
+        MMAP_ADDR new_data_ptr = NULL;
 
         if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
             /* Compress using LZ4 if enabled */
@@ -635,7 +635,7 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
             ols_delete(db->tree, to_free->node);
             to_free->node = NULL;
         }
-        mmap_addr data_ptr = db->values + to_free->data_offset;
+        MMAP_ADDR data_ptr = db->values + to_free->data_offset;
         const size_t data_size = to_free->data_size;
         if (data_size != 0)
             memset(data_ptr, '\0', data_size);
@@ -664,7 +664,7 @@ int ol_cas(ol_database *db, const char *key, const size_t klen,
         return 1;
 
     /* ATOMIC, GOOOO! */
-    const mmap_addr data_ptr = db->values + bucket->data_offset;
+    const MMAP_ADDR data_ptr = db->values + bucket->data_offset;
     if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         char decompressed[bucket->original_size];
         memset(decompressed, '\0', bucket->original_size);
