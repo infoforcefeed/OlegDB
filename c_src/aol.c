@@ -185,7 +185,7 @@ int ol_aol_restore(ol_database *db) {
 
             /* Pointer in the values file to where the data for this command
              * should be. */
-            mmap_addr data_ptr = db->values + data_offset;
+            MMAP_ADDR data_ptr = db->values + data_offset;
 
             /* Short circuit check to see if the memory in the location is all
              * null. */
