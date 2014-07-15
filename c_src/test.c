@@ -587,10 +587,7 @@ int test_feature_flags(const ol_feature_flags features) {
     return 0;
 }
 
-int test_aol(const ol_feature_flags features) {
-    ol_log_msg(LOG_INFO, "Writing database.");
-    ol_database *db = _test_db_open(features);
-
+int _test_aol(const ol_feature_flags features, ol_database *db) {
     /* Anable AOL and INIT, no need to restore */
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
@@ -649,9 +646,34 @@ int test_aol(const ol_feature_flags features) {
         return 6;
     }
 
-    _test_db_close(db);
     return 0;
+}
 
+int test_aol(const ol_feature_flags features) {
+    ol_log_msg(LOG_INFO, "Writing database.");
+    ol_database *db = _test_db_open(features);
+
+    int to_return = _test_aol(features, db);
+
+    _test_db_close(db);
+    return to_return;
+}
+
+int test_aol_and_compaction(const ol_feature_flags features) {
+    ol_log_msg(LOG_INFO, "Writing database.");
+    ol_database *db = _test_db_open(features);
+
+    int to_return = _test_aol(features, db);
+
+    ol_squish(db);
+    ol_close(db);
+
+    db = ol_open(DB_PATH, DB_NAME, DB_DEFAULT_FEATURES | OL_F_APPENDONLY);
+    if (db == NULL)
+        return 6;
+
+    _test_db_close(db);
+    return to_return;
 }
 
 int test_expiration(const ol_feature_flags features) {
@@ -998,6 +1020,7 @@ void run_tests(int results[2]) {
     /* These tests are special and depend on certain features being enabled
      * or disabled. */
     const ol_feature_flags feature_set = DB_DEFAULT_FEATURES;
+    ol_run_test(test_aol_and_compaction);
     ol_run_test(test_aol);
     ol_run_test(test_lz4);
     ol_run_test(test_magic_string_compression);
