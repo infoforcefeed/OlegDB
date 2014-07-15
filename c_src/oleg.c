@@ -222,7 +222,7 @@ static inline int _has_bucket_expired(const ol_bucket *bucket) {
     gmtime_r(&current, &utctime);
     current = timegm(&utctime);
     if (bucket->expiration != NULL) {
-        made = timelocal(bucket->expiration);
+        made = mktime(bucket->expiration);
         debug("Made Expiration: %lu", (long)made);
     } else {
         return 0;

@@ -212,7 +212,7 @@ static void port_driver_bucket_meta(oleg_data *d, ol_record *obj) {
             ei_x_encode_atom(&to_send, "ok");
             ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
             ei_x_encode_long(&to_send, (long)d->db->rcrd_cnt);
-            ei_x_encode_long(&to_send, (long)timelocal(time_retrieved));
+            ei_x_encode_long(&to_send, (long)mktime(time_retrieved));
         } else {
             ei_x_encode_tuple_header(&to_send, 3);
             ei_x_encode_atom(&to_send, "ok");
