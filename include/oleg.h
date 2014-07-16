@@ -172,7 +172,7 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
  * xXx *value=The value to insert. xXx
  * xXx vsize=The size of the value in bytes. xXx
  */
-int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char* value, size_t vsize);
+int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value, size_t vsize);
 
 /* xXx FUNCTION=ol_jar_ct xXx
  * xXx DESCRIPTION=Wrapped by <a href="#ol_jar">ol_jar</a>, this function will set a value in the database. It differs only in that it allows you to specify a content type to store in addition to the value. xXx
@@ -185,7 +185,7 @@ int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char* value, 
  * xXx *content_type=The content type to store, or really anything. Store your middle name if you want to. xXx
  * xXx content_type_size=The length of the content_type string. xXx
  */
-int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char* value, size_t vsize,
+int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *value, size_t vsize,
         const char *content_type, const size_t content_type_size);
 
 /* xXx FUNCTION=ol_content_type xXx
