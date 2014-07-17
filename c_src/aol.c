@@ -126,7 +126,7 @@ ol_string *_ol_read_data(FILE *fd) {
         data->data = calloc(1, total_size);
         check(fread(data->data, l, 1, fd) == 1, "Could not read from AOL file.");
         data->data[l] = '\0';
-        data->dlen = total_size;
+        data->dlen = l; /* Don't use total_size here because it's an off-by-1. */
         return data;
     } else if (c == EOF) {
         data->dlen = 0;
@@ -222,11 +222,14 @@ int ol_aol_restore(ol_database *db) {
                 }
             } else {
                 ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Key has been deleted or updated.");
-                /* Even though the value wasn't there, it was at some point. So
-                 * if we're replaying state, we need to increment db->val_size by
-                 * the amount expected. */
-                db->val_size += compressed_size;
             }
+
+            /* Important: Set the new offset to compressed_size + data_offset.
+             * We need to do this because compaction/squishing will leave holes
+             * in the data that we need to account for during replay.
+             */
+            db->val_size = compressed_size + data_offset;
+
             ol_string_free(&read_org_size);
             ol_string_free(&read_data_size);
             ol_string_free(&ct);
