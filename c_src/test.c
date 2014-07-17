@@ -615,7 +615,8 @@ int _test_aol(const ol_feature_flags features, ol_database *db) {
     now = gmtime(&current_time);
 
     /* Expire a key */
-    if (ol_spoil(db, "crazy hash1", strlen("crazy hash1"), now) == 0) {
+    const char to_spoil[] = "crazy hash0";
+    if (ol_spoil(db, to_spoil, strlen(to_spoil), now) == 0) {
         ol_log_msg(LOG_INFO, "Spoiled record.");
     } else {
         ol_log_msg(LOG_ERR, "Could not spoil record.");
@@ -665,6 +666,7 @@ int test_aol_and_compaction(const ol_feature_flags features) {
 
     int to_return = _test_aol(features, db);
 
+    ol_log_msg(LOG_INFO, "Squishing database.");
     ol_squish(db);
     ol_close(db);
 
@@ -672,6 +674,19 @@ int test_aol_and_compaction(const ol_feature_flags features) {
     if (db == NULL)
         return 6;
 
+    size_t to_test;
+    const char key[] = "crazy hash1";
+    unsigned char *item = NULL;
+    ol_unjar_ds(db, key, strlen(key), &item, &to_test);
+    ol_log_msg(LOG_INFO, "Retrieved value.");
+    if (item == NULL) {
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        _test_db_close(db);
+        free(item);
+        return 7;
+    }
+
+    free(item);
     _test_db_close(db);
     return to_return;
 }
