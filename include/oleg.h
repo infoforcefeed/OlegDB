@@ -133,7 +133,7 @@ typedef struct ol_database {
  * xXx *name=The name of the database. This is used to create the dumpfile, and keep track of the database. xXx
  * xXx features=Features to enable when the database is initialized. You can logically OR multiple features together. xXx
  */
-ol_database *ol_open(char *path, char *name, int features);
+ol_database *ol_open(const char *path, const char *name, int features);
 
 /* xXx FUNCTION=ol_close xXx
  * xXx DESCRIPTION=Closes a database cleanly and frees memory. xXx

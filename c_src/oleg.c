@@ -41,7 +41,7 @@ bool _ol_is_enabled(const int feature, const int *feature_set) {
     return (*feature_set & feature) == feature;
 }
 
-ol_database *ol_open(char *path, char *name, int features){
+ol_database *ol_open(const char *path, const char *name, int features){
     debug("Opening \"%s\" database", name);
     ol_database *new_db = calloc(1, sizeof(ol_database));
 
