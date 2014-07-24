@@ -299,8 +299,8 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
                 check(processed == bucket->data_size, "Could not decompress data.");
             } else {
                 /* We know data isn't NULL by this point. */
-                char *ret = strncpy((char *)*data, (char *)data_ptr, bucket->original_size);
-                check(ret == (char *)*data, "Could not copy data into output data param.");
+                unsigned char *ret = memcpy(*data, data_ptr, bucket->original_size);
+                check(ret == *data, "Could not copy data into output data param.");
             }
 
             /* Key found, tell somebody. */

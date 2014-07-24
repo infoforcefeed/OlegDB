@@ -398,7 +398,7 @@ int test_unjar_msgpack(const ol_feature_flags features) {
         "\x74\x61\x72\x2e\x67\x7a"
     };
 
-    int inserted = ol_jar(db, key, strlen(key), val, strlen((char*)val));
+    int inserted = ol_jar(db, key, strlen(key), val, sizeof(val) / sizeof(unsigned char));
 
     if (inserted > 0) {
         ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
@@ -416,7 +416,7 @@ int test_unjar_msgpack(const ol_feature_flags features) {
         return 2;
     }
 
-    if (memcmp(item, val, sizeof(val) / (sizeof(unsigned char))) != 0) {
+    if (memcmp(item, val, sizeof(val) / sizeof(unsigned char)) != 0) {
         ol_log_msg(LOG_ERR, "Returned value was not the same.");
         free(item);
         _test_db_close(db);
