@@ -328,7 +328,7 @@ int test_unjar_ds(const ol_feature_flags features) {
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
-        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        ol_log_msg(LOG_ERR, "Returned value was not the same.");
         free(item);
         _test_db_close(db);
         return 3;
@@ -373,7 +373,51 @@ int test_unjar(const ol_feature_flags features) {
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
-        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        ol_log_msg(LOG_ERR, "Returned value was not the same.");
+        free(item);
+        _test_db_close(db);
+        return 3;
+    }
+
+    _test_db_close(db);
+    free(item);
+    return 0;
+}
+
+int test_unjar_msgpack(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(OL_F_SPLAYTREE);
+
+    char key[64] = "all_jobs";
+    /* msgpack-encoded std::pair<bool, std::string>: */
+    unsigned char val[] = {
+        "\x91\x92\xc2\xda\x00\x28\x2f\x74"
+        "\x6d\x70\x2f\x6b\x79\x6f\x74\x6f"
+        "\x70\x61\x6e\x74\x72\x79\x5f\x74"
+        "\x65\x73\x74\x2f\x2e\x2f\x74\x61"
+        "\x72\x62\x61\x6c\x6c\x5f\x61\x2e"
+        "\x74\x61\x72\x2e\x67\x7a"
+    };
+
+    int inserted = ol_jar(db, key, strlen(key), val, strlen((char*)val));
+
+    if (inserted > 0) {
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
+        _test_db_close(db);
+        return 1;
+    }
+
+    unsigned char *item = NULL;
+    ol_unjar(db, key, strlen(key), &item);
+    ol_log_msg(LOG_INFO, "Retrieved value.");
+    if (item == NULL) {
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        free(item);
+        _test_db_close(db);
+        return 2;
+    }
+
+    if (memcmp(item, val, sizeof(val) / (sizeof(unsigned char))) != 0) {
+        ol_log_msg(LOG_ERR, "Returned value was not the same.");
         free(item);
         _test_db_close(db);
         return 3;
@@ -438,7 +482,7 @@ int test_update(const ol_feature_flags features) {
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
-        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        ol_log_msg(LOG_ERR, "Returned value was not the same.");
         _test_db_close(db);
         free(item);
         return 3;
@@ -1035,6 +1079,7 @@ void run_tests(int results[2]) {
     /* These tests are special and depend on certain features being enabled
      * or disabled. */
     const ol_feature_flags feature_set = DB_DEFAULT_FEATURES;
+    ol_run_test(test_unjar_msgpack);
     ol_run_test(test_aol_and_compaction);
     ol_run_test(test_aol);
     ol_run_test(test_lz4);
