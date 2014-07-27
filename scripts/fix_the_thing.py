@@ -13,9 +13,11 @@ def main():
         chunks = []
         chunks.append("")
         for thing, _ in tups:
-            chunks.append("{}:{}".format(len(thing), thing))
+            stripped = thing.strip()
+            chunks.append("{}:{}".format(len(stripped), stripped))
 
-        fixed.write(":".join(chunks))
+        joined = "{}{}".format(":".join(chunks), "\n")
+        fixed.write(joined)
 
 
     fixed.close()
