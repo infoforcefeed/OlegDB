@@ -50,8 +50,8 @@ $(BIN_DIR)ol_database.beam: ./src/ol_database.erl FORCE
 $(BIN_DIR)%.beam: ./src/%.erl
 	erlc $(ERLFLAGS) $<
 
-oleg_test: liboleg $(BIN_DIR)oleg_test
-$(BIN_DIR)oleg_test: test.o main.o
+oleg_test: $(BIN_DIR)oleg_test
+$(BIN_DIR)oleg_test: liboleg test.o main.o
 	$(CC) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
 liboleg: $(LIB_DIR)liboleg.so

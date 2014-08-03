@@ -220,9 +220,14 @@ int ol_aol_restore(ol_database *db) {
                     /* Now that we've tried to decompress and failed, send off the raw data instead. */
                     ol_jar_ct(db, key->data, key->dlen, data_ptr, compressed_size, ct->data, ct->dlen);
                 }
-            } else {
+            }
+#ifdef DEBUG
+            /* This happens a lot and isn't bad, so I'm commenting it out. */
+            else {
+
                 ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Key has been deleted or updated.");
             }
+#endif
 
             /* Important: Set the new offset to compressed_size + data_offset.
              * We need to do this because compaction/squishing will leave holes
