@@ -33,7 +33,7 @@ static int _test_db_close(ol_database *db) {
     db->get_db_file_name(db, VALUES_FILENAME, values_filename);
 
     char aol_filename[DB_NAME_SIZE] = { 0 };
-    strncpy(aol_filename, db->aol_file, strlen(db->aol_file));
+    strncpy(aol_filename, db->aol_file, DB_NAME_SIZE);
     int should_delete_aol = db->is_enabled(OL_F_APPENDONLY, &db->feature_set);
 
     int ret = ol_close(db);
@@ -943,8 +943,7 @@ int test_can_get_prev_in_tree(const ol_feature_flags features) {
     return 0;
 
 error:
-    if (db != NULL)
-        _test_db_close(db);
+    _test_db_close(db);
     return 1;
 }
 

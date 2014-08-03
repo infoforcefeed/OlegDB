@@ -240,7 +240,7 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
     _ol_trunc(key, klen, *_key);
     *_klen = strnlen(*_key, KEY_SIZE);
 
-    if (_klen == 0)
+    if (*_klen == 0)
         return NULL;
 
     MurmurHash3_x86_32(*_key, *_klen, DEVILS_SEED, &hash);
@@ -752,13 +752,16 @@ int ol_squish(ol_database *db) {
         db->get_db_file_name(db, "aol.new", new_filename);
         db->get_db_file_name(db, AOL_FILENAME, db->aol_file);
         /* Rename the .aol.new file to just be .aol */
-        rename(new_filename, db->aol_file);
+        check(rename(new_filename, db->aol_file) == 0, "Could not rename new AOL to old AOL.");
 
         /* Get a new file descriptor */
         db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
     }
 
     return 1;
+
+error:
+    return 0;
 }
 
 char *ol_content_type(ol_database *db, const char *key, size_t klen) {
