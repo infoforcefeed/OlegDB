@@ -46,6 +46,8 @@ void *_ol_mmap(size_t to_mmap, int fd) {
     return to_return;
 
 error:
+    if (to_return)
+        munmap(to_return, to_mmap);
     return NULL;
 }
 
