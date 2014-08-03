@@ -41,7 +41,7 @@ bool _ol_is_enabled(const int feature, const int *feature_set) {
     return (*feature_set & feature) == feature;
 }
 
-ol_database *ol_open(char *path, char *name, int features){
+ol_database *ol_open(const char *path, const char *name, int features){
     debug("Opening \"%s\" database", name);
     ol_database *new_db = calloc(1, sizeof(ol_database));
 
@@ -222,7 +222,7 @@ static inline int _has_bucket_expired(const ol_bucket *bucket) {
     gmtime_r(&current, &utctime);
     current = timegm(&utctime);
     if (bucket->expiration != NULL) {
-        made = timelocal(bucket->expiration);
+        made = mktime(bucket->expiration);
         debug("Made Expiration: %lu", (long)made);
     } else {
         return 0;
@@ -299,8 +299,8 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
                 check(processed == bucket->data_size, "Could not decompress data.");
             } else {
                 /* We know data isn't NULL by this point. */
-                char *ret = strncpy((char *)*data, (char *)data_ptr, bucket->original_size);
-                check(ret == (char *)*data, "Could not copy data into output data param.");
+                unsigned char *ret = memcpy(*data, data_ptr, bucket->original_size);
+                check(ret == *data, "Could not copy data into output data param.");
             }
 
             /* Key found, tell somebody. */

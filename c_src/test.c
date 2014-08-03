@@ -328,7 +328,7 @@ int test_unjar_ds(const ol_feature_flags features) {
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
-        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        ol_log_msg(LOG_ERR, "Returned value was not the same.");
         free(item);
         _test_db_close(db);
         return 3;
@@ -373,7 +373,51 @@ int test_unjar(const ol_feature_flags features) {
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
-        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        ol_log_msg(LOG_ERR, "Returned value was not the same.");
+        free(item);
+        _test_db_close(db);
+        return 3;
+    }
+
+    _test_db_close(db);
+    free(item);
+    return 0;
+}
+
+int test_unjar_msgpack(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(OL_F_SPLAYTREE);
+
+    char key[64] = "all_jobs";
+    /* msgpack-encoded std::pair<bool, std::string>: */
+    unsigned char val[] = {
+        "\x91\x92\xc2\xda\x00\x28\x2f\x74"
+        "\x6d\x70\x2f\x6b\x79\x6f\x74\x6f"
+        "\x70\x61\x6e\x74\x72\x79\x5f\x74"
+        "\x65\x73\x74\x2f\x2e\x2f\x74\x61"
+        "\x72\x62\x61\x6c\x6c\x5f\x61\x2e"
+        "\x74\x61\x72\x2e\x67\x7a"
+    };
+
+    int inserted = ol_jar(db, key, strlen(key), val, sizeof(val) / sizeof(unsigned char));
+
+    if (inserted > 0) {
+        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
+        _test_db_close(db);
+        return 1;
+    }
+
+    unsigned char *item = NULL;
+    ol_unjar(db, key, strlen(key), &item);
+    ol_log_msg(LOG_INFO, "Retrieved value.");
+    if (item == NULL) {
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        free(item);
+        _test_db_close(db);
+        return 2;
+    }
+
+    if (memcmp(item, val, sizeof(val) / sizeof(unsigned char)) != 0) {
+        ol_log_msg(LOG_ERR, "Returned value was not the same.");
         free(item);
         _test_db_close(db);
         return 3;
@@ -438,7 +482,7 @@ int test_update(const ol_feature_flags features) {
     }
 
     if (memcmp(item, val, strlen((char*)val)) != 0) {
-        ol_log_msg(LOG_ERR, "Returned value was not the same.\n");
+        ol_log_msg(LOG_ERR, "Returned value was not the same.");
         _test_db_close(db);
         free(item);
         return 3;
@@ -587,10 +631,7 @@ int test_feature_flags(const ol_feature_flags features) {
     return 0;
 }
 
-int test_aol(const ol_feature_flags features) {
-    ol_log_msg(LOG_INFO, "Writing database.");
-    ol_database *db = _test_db_open(features);
-
+int _test_aol(const ol_feature_flags features, ol_database *db) {
     /* Anable AOL and INIT, no need to restore */
     db->enable(OL_F_APPENDONLY, &db->feature_set);
     ol_aol_init(db);
@@ -618,7 +659,8 @@ int test_aol(const ol_feature_flags features) {
     now = gmtime(&current_time);
 
     /* Expire a key */
-    if (ol_spoil(db, "crazy hash1", strlen("crazy hash1"), now) == 0) {
+    const char to_spoil[] = "crazy hash0";
+    if (ol_spoil(db, to_spoil, strlen(to_spoil), now) == 0) {
         ol_log_msg(LOG_INFO, "Spoiled record.");
     } else {
         ol_log_msg(LOG_ERR, "Could not spoil record.");
@@ -649,9 +691,48 @@ int test_aol(const ol_feature_flags features) {
         return 6;
     }
 
-    _test_db_close(db);
     return 0;
+}
 
+int test_aol(const ol_feature_flags features) {
+    ol_log_msg(LOG_INFO, "Writing database.");
+    ol_database *db = _test_db_open(features);
+
+    int to_return = _test_aol(features, db);
+
+    _test_db_close(db);
+    return to_return;
+}
+
+int test_aol_and_compaction(const ol_feature_flags features) {
+    ol_log_msg(LOG_INFO, "Writing database.");
+    ol_database *db = _test_db_open(features);
+
+    int to_return = _test_aol(features, db);
+
+    ol_log_msg(LOG_INFO, "Squishing database.");
+    ol_squish(db);
+    ol_close(db);
+
+    db = ol_open(DB_PATH, DB_NAME, DB_DEFAULT_FEATURES | OL_F_APPENDONLY);
+    if (db == NULL)
+        return 6;
+
+    size_t to_test;
+    const char key[] = "crazy hash1";
+    unsigned char *item = NULL;
+    ol_unjar_ds(db, key, strlen(key), &item, &to_test);
+    ol_log_msg(LOG_INFO, "Retrieved value.");
+    if (item == NULL) {
+        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
+        _test_db_close(db);
+        free(item);
+        return 7;
+    }
+
+    free(item);
+    _test_db_close(db);
+    return to_return;
 }
 
 int test_expiration(const ol_feature_flags features) {
@@ -945,7 +1026,7 @@ int test_can_match_prefixes(const ol_feature_flags features) {
         return 1;
     }
 
-    /* Realy fuck this tree up */
+    /* Really fuck this tree up */
     int max_records = next_records;
     int i = 0;
     for (i = 0; i < max_records; i++) {
@@ -998,6 +1079,8 @@ void run_tests(int results[2]) {
     /* These tests are special and depend on certain features being enabled
      * or disabled. */
     const ol_feature_flags feature_set = DB_DEFAULT_FEATURES;
+    ol_run_test(test_unjar_msgpack);
+    ol_run_test(test_aol_and_compaction);
     ol_run_test(test_aol);
     ol_run_test(test_lz4);
     ol_run_test(test_magic_string_compression);
