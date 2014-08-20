@@ -5,19 +5,19 @@
 
 /* Leaves of the splay tree */
 typedef struct ol_splay_tree_node {
-    struct  ol_splay_tree_node *left;
-    struct  ol_splay_tree_node *right;
-    struct  ol_splay_tree_node *parent;
+	struct  ol_splay_tree_node *left;
+	struct  ol_splay_tree_node *right;
+	struct  ol_splay_tree_node *parent;
 
-    char    key[KEY_SIZE];
-    size_t  klen;
-    const void *ref_obj;
+	char    key[KEY_SIZE];
+	size_t  klen;
+	const void *ref_obj;
 } ol_splay_tree_node;
 
 /* The actual splay tree object */
 typedef struct ol_splay_tree {
-    ol_splay_tree_node *root;
-    int rcrd_cnt;
+	ol_splay_tree_node *root;
+	int rcrd_cnt;
 } ol_splay_tree;
 
 /* Insert and splay the tree. rej_obj is a pointer to an object somewhere in

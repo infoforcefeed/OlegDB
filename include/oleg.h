@@ -27,10 +27,10 @@ extern "C" {
 * xXx OL_F_AOL_FFLUSH=Make sure AOL data is REAAAALLY written to disk. This will run fflush after every AOL write. Otherwise, fsync only. xXx
 */
 typedef enum {
-    OL_F_APPENDONLY     = 1 << 0,
-    OL_F_SPLAYTREE      = 1 << 1,
-    OL_F_LZ4            = 1 << 2,
-    OL_F_AOL_FFLUSH     = 1 << 3
+	OL_F_APPENDONLY     = 1 << 0,
+	OL_F_SPLAYTREE      = 1 << 1,
+	OL_F_LZ4            = 1 << 2,
+	OL_F_AOL_FFLUSH     = 1 << 3
 } ol_feature_flags;
 
 /* xXx ENUM=ol_state_flags xXx
@@ -39,8 +39,8 @@ typedef enum {
 * xXx OL_S_AOKAY=The normal operating state, the database is a-okay xXx
 */
 typedef enum {
-    OL_S_STARTUP        = 0,
-    OL_S_AOKAY          = 1
+	OL_S_STARTUP        = 0,
+	OL_S_AOKAY          = 1
 } ol_state_flags;
 
 /* xXx TYPEDEF=ol_val_array xXx
@@ -62,16 +62,16 @@ typedef char ** ol_val_array;
 * xXx *node=A pointer to this objects node in the splay tree. xXx
 */
 typedef struct ol_bucket {
-    char                key[KEY_SIZE]; /* The key used to reference the data */
-    size_t              klen;
-    char                *content_type;
-    size_t              ctype_size;
-    size_t              data_offset;
-    size_t              data_size;
-    size_t              original_size;
-    struct ol_bucket    *next; /* The next ol_bucket in this chain, if any */
-    struct tm           *expiration;
-    ol_splay_tree_node  *node;
+	char                key[KEY_SIZE]; /* The key used to reference the data */
+	size_t              klen;
+	char                *content_type;
+	size_t              ctype_size;
+	size_t              data_offset;
+	size_t              data_size;
+	size_t              original_size;
+	struct ol_bucket    *next; /* The next ol_bucket in this chain, if any */
+	struct tm           *expiration;
+	ol_splay_tree_node  *node;
 } ol_bucket;
 
 /* xXx STRUCT=ol_meta xXx
@@ -80,8 +80,8 @@ typedef struct ol_bucket {
 * xXx key_collisions=The number of keys that have collided over the lifetime of this database. xXx
 */
 typedef struct ol_meta {
-    time_t      created;
-    int         key_collisions;
+	time_t      created;
+	int         key_collisions;
 } ol_meta;
 
 /* xXx STRUCT=ol_database xXx
@@ -107,23 +107,23 @@ typedef struct ol_meta {
 * xXx *meta=A pointer to a struct holding extra meta information. See <a href="#ol_meta">oleg_meta</a> for more information. xXx
 */
 typedef struct ol_database {
-    void      (*get_db_file_name)(const struct ol_database *db,const char *p,char*);
-    void      (*enable)(int, int*);
-    void      (*disable)(int, int*);
-    bool      (*is_enabled)(const int, const int*);
-    char      name[DB_NAME_SIZE];
-    char      path[PATH_LENGTH];
-    char      *aol_file;
-    FILE      *aolfd;
-    int       feature_set;
-    short int state;
-    int       rcrd_cnt;
-    size_t    cur_ht_size;
-    ol_bucket **hashes;
-    unsigned char *values;
-    size_t    val_size;
-    ol_splay_tree *tree;
-    ol_meta   *meta;
+	void (*get_db_file_name)(const struct ol_database *db, const char *p, char*);
+	void (*enable)(int, int*);
+	void (*disable)(int, int*);
+	bool (*is_enabled)(const int, const int*);
+	char      name[DB_NAME_SIZE];
+	char      path[PATH_LENGTH];
+	char      *aol_file;
+	FILE      *aolfd;
+	int       feature_set;
+	short int state;
+	int       rcrd_cnt;
+	size_t    cur_ht_size;
+	ol_bucket **hashes;
+	unsigned char *values;
+	size_t    val_size;
+	ol_splay_tree *tree;
+	ol_meta   *meta;
 } ol_database;
 
 /* xXx FUNCTION=ol_open xXx
@@ -186,7 +186,7 @@ int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value, 
  * xXx content_type_size=The length of the content_type string. xXx
  */
 int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *value, size_t vsize,
-        const char *content_type, const size_t content_type_size);
+              const char *content_type, const size_t content_type_size);
 
 /* xXx FUNCTION=ol_content_type xXx
  * xXx DESCRIPTION=Retrieves the content type for a given key from the database. xXx
@@ -268,7 +268,7 @@ int ol_exists(ol_database *db, const char *key, size_t klen);
  * xXx *_klen=The length of the truncated key. xXx
  */
 ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t klen,
-                         char (*_key)[KEY_SIZE], size_t *_klen);
+                         char(*_key)[KEY_SIZE], size_t *_klen);
 
 /* xXx FUNCTION=ol_squish xXx
  * xXx DESCRIPTION=Compacts both the aol file (if enabled) and the values file. This is a blocking operation. xXx
@@ -289,8 +289,8 @@ int ol_squish(ol_database *db);
  * xXx ovsize=The size of the old value in bytes. xXx
  */
 int ol_cas(ol_database *db, const char *key, const size_t klen,
-                            unsigned char *value, size_t vsize,
-                            const unsigned char *ovalue, const size_t ovsize);
+           unsigned char *value, size_t vsize,
+           const unsigned char *ovalue, const size_t ovsize);
 
 #ifdef __cplusplus
 }
