@@ -7,8 +7,8 @@
 
 /* The main cursor object. Remembers iteration and whatever. */
 typedef struct ol_cursor {
-    ol_splay_tree_node *maximum, *minimum;
-    ol_splay_tree_node *current_node;
+	ol_splay_tree_node *maximum, *minimum;
+	ol_splay_tree_node *current_node;
 } ol_cursor;
 
 /* TODO: Lock/unlock the DB for insertion when these happen. */

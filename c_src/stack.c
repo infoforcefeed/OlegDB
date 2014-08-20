@@ -6,33 +6,28 @@
  * it.
  * Oh, how I pine for better recursion.
  */
-inline void spush(ol_stack **stack, void *data) {
-    check(stack != NULL, "Stack is null.");
-    check(data != NULL, "Data is null.");
-
-    ol_stack *to_push = NULL;
-    to_push = malloc(sizeof(ol_stack));
-    check_mem(to_push);
-
-    to_push->data = data;
-    to_push->next = *stack;
-
-    *stack = to_push;
-
+inline void spush(ol_stack **stack, void *data)
+{
+	check(stack != NULL, "Stack is null.");
+	check(data != NULL, "Data is null.");
+	ol_stack *to_push = NULL;
+	to_push = malloc(sizeof(ol_stack));
+	check_mem(to_push);
+	to_push->data = data;
+	to_push->next = *stack;
+	*stack = to_push;
 error:
-    return;
+	return;
 }
 
-inline void *spop(ol_stack **stack) {
-    check(stack != NULL, "Stack is null.");
-
-    ol_stack *top = *stack;
-    *stack = top->next;
-    void *data = top->data;
-
-    free(top);
-    return data;
-
+inline void *spop(ol_stack **stack)
+{
+	check(stack != NULL, "Stack is null.");
+	ol_stack *top = *stack;
+	*stack = top->next;
+	void *data = top->data;
+	free(top);
+	return data;
 error:
-    return NULL;
+	return NULL;
 }
