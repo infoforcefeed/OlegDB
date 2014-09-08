@@ -92,9 +92,7 @@ ol_database *ol_open(const char *path, const char *name, int features){
     new_db->state = OL_S_STARTUP;
     /* Allocate a splay tree if we're into that */
     if (new_db->is_enabled(OL_F_SPLAYTREE, &new_db->feature_set)) {
-        new_db->tree = malloc(sizeof(ol_splay_tree));
-        new_db->tree->root = NULL;
-        new_db->tree->rcrd_cnt = 0;
+        ols_init(&new_db->tree);
     }
 
     /* We figure out the filename now incase someone flips the aol_init bit

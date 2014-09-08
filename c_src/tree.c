@@ -10,6 +10,12 @@
 #include "errhandle.h"
 #include "cursor.h"
 
+void ols_init(ol_splay_tree **tree) {
+    (*tree) = malloc(sizeof(ol_splay_tree));
+    (*tree)->root = NULL;
+    (*tree)->rcrd_cnt = 0;
+}
+
 static inline void _ols_left_rotate(ol_splay_tree *tree, ol_splay_tree_node *node) {
     ol_splay_tree_node *right_child = node->right;
 

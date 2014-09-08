@@ -64,7 +64,7 @@ static void oleg_stop(ErlDrvData data) {
 error:
     /* Fall through to here. */
     driver_free(data);
-    ols_close(db->tree);
+    ols_close(tree);
 }
 
 static void _gen_atom(ei_x_buff *to_send, const char *str) {
