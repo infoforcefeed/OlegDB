@@ -11,6 +11,9 @@ typedef struct ol_cursor {
     ol_splay_tree_node *current_node;
 } ol_cursor;
 
+/* Generic init for stepping through a tree. */
+int olc_generic_init(ol_splay_tree *tree, ol_cursor *cursor);
+
 /* TODO: Lock/unlock the DB for insertion when these happen. */
 /* Creates a cursor for use. Returns 0 on failure, 1 on success.*/
 int olc_init(ol_database *db, ol_cursor *cursor_ref);

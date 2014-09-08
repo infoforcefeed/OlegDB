@@ -3,17 +3,21 @@
 #include "errhandle.h"
 #include "tree.h"
 
+int olc_generic_init(ol_splay_tree *tree, ol_cursor *cursor) {
+    /* Init the cursor */
+    cursor->current_node = NULL;
+    cursor->maximum = ols_subtree_maximum(tree->root);
+    cursor->minimum = ols_subtree_minimum(tree->root);
+    cursor->current_node = ols_subtree_minimum(tree->root);
+
+    return 1;
+}
+
 int olc_init(ol_database *db, ol_cursor *cursor) {
     if (!db->is_enabled(OL_F_SPLAYTREE, &db->feature_set))
         return 0;
 
-    /* Init the cursor */
-    cursor->current_node = NULL;
-    cursor->maximum = ols_subtree_maximum(db->tree->root);
-    cursor->minimum = ols_subtree_minimum(db->tree->root);
-    cursor->current_node = ols_subtree_minimum(db->tree->root);
-
-    return 1;
+    return olc_generic_init(db->tree, cursor);
 }
 
 ol_splay_tree_node *_olc_get_node(ol_cursor *cursor) {

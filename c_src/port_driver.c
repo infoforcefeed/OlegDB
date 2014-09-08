@@ -11,6 +11,7 @@
 #include "cursor.h"
 #include "oleg.h"
 #include "logging.h"
+#include "tree.h"
 
 /* Needed for R14B or earlier */
 #if (ERL_DRV_EXTENDED_MAJOR_VERSION < 2)
@@ -20,7 +21,7 @@
 /* This is used to store and manipulate state. */
 typedef struct {
     ErlDrvPort port;
-    ol_database *db;
+    ol_splay_tree *databases;
     char db_loc[255];
 } oleg_data;
 
@@ -40,17 +41,30 @@ typedef struct {
 static ErlDrvData oleg_start(ErlDrvPort port, char *buff) {
     oleg_data *d = (oleg_data*)driver_alloc(sizeof(oleg_data));
     d->port = port;
-    d->db = NULL;
+    d->databases = NULL;
     d->db_loc[0] = '\0';
     return (ErlDrvData)d;
 }
 
 static void oleg_stop(ErlDrvData data) {
     oleg_data *d = (oleg_data*)data;
-    if (d->db != NULL) {
-        ol_close(d->db);
+    ol_splay_tree *tree = d->databases;
+
+    ol_cursor cursor;
+    check(olc_generic_init(tree, &cursor), "Could not init cursor.");
+    while(olc_step(&cursor)) {
+        ol_splay_tree_node *node = _olc_get_node(&cursor);
+        check(node != NULL, "Could not retrieve a node.");
+        ol_database *db = (ol_database *)node->ref_obj;
+
+        if (db != NULL)
+            ol_close(db);
     }
+
+error:
+    /* Fall through to here. */
     driver_free(data);
+    ols_close(db->tree);
 }
 
 static void _gen_atom(ei_x_buff *to_send, const char *str) {
