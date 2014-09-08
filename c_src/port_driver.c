@@ -153,9 +153,9 @@ static void port_driver_init(oleg_data *d, char *cmd) {
     ei_x_free(&to_send);
 }
 
-static void port_driver_jar(oleg_data *d, ol_record *obj) {
+static void port_driver_jar(oleg_data *d, ol_database *db, ol_record *obj) {
     int res = 0;
-    res = ol_jar_ct(d->db, obj->key, obj->klen, obj->data, obj->data_len,
+    res = ol_jar_ct(db, obj->key, obj->klen, obj->data, obj->data_len,
            obj->content_type, obj->ct_len);
 
     debug("Expiration: %li", obj->expiration);
@@ -163,7 +163,7 @@ static void port_driver_jar(oleg_data *d, ol_record *obj) {
         struct tm new_expire;
         time_t passed_time = (time_t)obj->expiration;
         localtime_r(&passed_time, &new_expire);
-        ol_spoil(d->db, obj->key, obj->klen, &new_expire);
+        ol_spoil(db, obj->key, obj->klen, &new_expire);
     }
     ei_x_buff to_send;
     ei_x_new_with_version(&to_send);
@@ -177,17 +177,17 @@ static void port_driver_jar(oleg_data *d, ol_record *obj) {
     ei_x_free(&to_send);
 }
 
-static void port_driver_unjar(oleg_data *d, ol_record *obj) {
+static void port_driver_unjar(oleg_data *d, ol_database *db, ol_record *obj) {
     size_t val_size;
     /* TODO: Fix this when we have one clean function to retrieve content type
      * and data at the same time.
      */
     unsigned char *data = NULL;
-    int ret = ol_unjar_ds(d->db, obj->key, obj->klen, &data, &val_size);
+    int ret = ol_unjar_ds(db, obj->key, obj->klen, &data, &val_size);
     ei_x_buff to_send;
     ei_x_new_with_version(&to_send);
     if (ret == 0) {
-        char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
+        char *content_type_retrieved = ol_content_type(db, obj->key, obj->klen);
         ei_x_encode_tuple_header(&to_send, 3);
         ei_x_encode_atom(&to_send, "ok");
         ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
@@ -200,8 +200,8 @@ static void port_driver_unjar(oleg_data *d, ol_record *obj) {
     free(data);
 }
 
-static void port_driver_scoop(oleg_data *d, ol_record *obj) {
-    int ret = ol_scoop(d->db, obj->key, obj->klen);
+static void port_driver_scoop(oleg_data *d, ol_database *db, ol_record *obj) {
+    int ret = ol_scoop(db, obj->key, obj->klen);
     ei_x_buff to_send;
     ei_x_new_with_version(&to_send);
     if (ret == 0)
@@ -212,26 +212,26 @@ static void port_driver_scoop(oleg_data *d, ol_record *obj) {
     ei_x_free(&to_send);
 }
 
-static void port_driver_bucket_meta(oleg_data *d, ol_record *obj) {
-    char *content_type_retrieved = ol_content_type(d->db, obj->key, obj->klen);
+static void port_driver_bucket_meta(oleg_data *d, ol_database *db, ol_record *obj) {
+    char *content_type_retrieved = ol_content_type(db, obj->key, obj->klen);
     ei_x_buff to_send;
     ei_x_new_with_version(&to_send);
     if (content_type_retrieved != NULL) {
         struct tm *time_retrieved = NULL;
-        time_retrieved = ol_expiration_time(d->db, obj->key, obj->klen);
+        time_retrieved = ol_expiration_time(db, obj->key, obj->klen);
 
         /* If we have an expiration time, send it back with the content type. */
         if (time_retrieved != NULL) {
             ei_x_encode_tuple_header(&to_send, 4);
             ei_x_encode_atom(&to_send, "ok");
             ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
-            ei_x_encode_long(&to_send, (long)d->db->rcrd_cnt);
+            ei_x_encode_long(&to_send, (long)db->rcrd_cnt);
             ei_x_encode_long(&to_send, (long)mktime(time_retrieved));
         } else {
             ei_x_encode_tuple_header(&to_send, 3);
             ei_x_encode_atom(&to_send, "ok");
             ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
-            ei_x_encode_long(&to_send, (long)d->db->rcrd_cnt);
+            ei_x_encode_long(&to_send, (long)db->rcrd_cnt);
         }
     } else {
         ei_x_encode_atom(&to_send, "not_found");
@@ -280,17 +280,17 @@ static inline void port_driver_cursor_response(oleg_data *d, const ol_bucket *bu
     return;
 }
 
-static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
+static void port_driver_cursor_next(oleg_data *d, ol_database *db, ol_record *obj) {
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
 
-    ol_bucket *bucket = ol_get_bucket(d->db, obj->key, obj->klen, &_key, &_klen);
+    ol_bucket *bucket = ol_get_bucket(db, obj->key, obj->klen, &_key, &_klen);
 
     if (bucket == NULL)
         return port_driver_not_found(d);
 
     ol_splay_tree_node *node = bucket->node;
-    ol_splay_tree_node *maximum = ols_subtree_maximum(d->db->tree->root);
+    ol_splay_tree_node *maximum = ols_subtree_maximum(db->tree->root);
 
     /* Get the next successor to this node. */
     if (!_olc_next(&node, maximum) || node == bucket->node) {
@@ -306,7 +306,7 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     ol_bucket *next_bucket = (ol_bucket *)node->ref_obj;
 
     /* Let ol_unjar_ds handle decompression and whatever else for us: */
-    int ret = ol_unjar_ds(d->db, next_bucket->key, next_bucket->klen, &data, &val_size);
+    int ret = ol_unjar_ds(db, next_bucket->key, next_bucket->klen, &data, &val_size);
     if (ret == 0) {
         port_driver_cursor_response(d, next_bucket, data, val_size);
         return;
@@ -317,17 +317,17 @@ static void port_driver_cursor_next(oleg_data *d, ol_record *obj) {
     return;
 }
 
-static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
+static void port_driver_cursor_prev(oleg_data *d, ol_database *db, ol_record *obj) {
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
 
-    ol_bucket *bucket = ol_get_bucket(d->db, obj->key, obj->klen, &_key, &_klen);
+    ol_bucket *bucket = ol_get_bucket(db, obj->key, obj->klen, &_key, &_klen);
 
     if (bucket == NULL)
         return port_driver_not_found(d);
 
     ol_splay_tree_node *node = bucket->node;
-    ol_splay_tree_node *minimum = ols_subtree_minimum(d->db->tree->root);
+    ol_splay_tree_node *minimum = ols_subtree_minimum(db->tree->root);
 
     /* Get the next successor to this node. */
     if (!_olc_prev(&node, minimum) || node == bucket->node) {
@@ -343,7 +343,7 @@ static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
     ol_bucket *prev_bucket = (ol_bucket *)node->ref_obj;
 
     /* Let ol_unjar_ds handle decompression and whatever else for us: */
-    int ret = ol_unjar_ds(d->db, prev_bucket->key, prev_bucket->klen, &data, &val_size);
+    int ret = ol_unjar_ds(db, prev_bucket->key, prev_bucket->klen, &data, &val_size);
     if (ret == 0) {
         port_driver_cursor_response(d, prev_bucket, data, val_size);
         return;
@@ -354,8 +354,8 @@ static void port_driver_cursor_prev(oleg_data *d, ol_record *obj) {
     return;
 }
 
-static void port_driver_cursor_first(oleg_data *d, ol_record *obj) {
-    ol_splay_tree_node *minimum = ols_subtree_minimum(d->db->tree->root);
+static void port_driver_cursor_first(oleg_data *d, ol_database *db, ol_record *obj) {
+    ol_splay_tree_node *minimum = ols_subtree_minimum(db->tree->root);
 
     if (minimum == NULL) {
         return port_driver_not_found(d);
@@ -368,7 +368,7 @@ static void port_driver_cursor_first(oleg_data *d, ol_record *obj) {
     ol_bucket *bucket = (ol_bucket *)minimum->ref_obj;
 
     /* Let ol_unjar_ds handle decompression and whatever else for us: */
-    int ret = ol_unjar_ds(d->db, bucket->key, bucket->klen, &data, &val_size);
+    int ret = ol_unjar_ds(db, bucket->key, bucket->klen, &data, &val_size);
     if (ret == 0) {
         port_driver_cursor_response(d, bucket, data, val_size);
         return;
@@ -379,8 +379,8 @@ static void port_driver_cursor_first(oleg_data *d, ol_record *obj) {
     return;
 }
 
-static void port_driver_cursor_last(oleg_data *d, ol_record *obj) {
-    ol_splay_tree_node *maximum = ols_subtree_maximum(d->db->tree->root);
+static void port_driver_cursor_last(oleg_data *d, ol_database *db, ol_record *obj) {
+    ol_splay_tree_node *maximum = ols_subtree_maximum(db->tree->root);
 
     if (maximum == NULL) {
         return port_driver_not_found(d);
@@ -393,7 +393,7 @@ static void port_driver_cursor_last(oleg_data *d, ol_record *obj) {
     ol_bucket *bucket = (ol_bucket *)maximum->ref_obj;
 
     /* Let ol_unjar_ds handle decompression and whatever else for us: */
-    int ret = ol_unjar_ds(d->db, bucket->key, bucket->klen, &data, &val_size);
+    int ret = ol_unjar_ds(db, bucket->key, bucket->klen, &data, &val_size);
     if (ret == 0) {
         port_driver_cursor_response(d, bucket, data, val_size);
         return;
@@ -404,9 +404,9 @@ static void port_driver_cursor_last(oleg_data *d, ol_record *obj) {
     return;
 }
 
-static void port_driver_prefix_match(oleg_data *d, ol_record *obj) {
+static void port_driver_prefix_match(oleg_data *d, ol_database *db, ol_record *obj) {
     ol_val_array matches_list = NULL;
-    int match_num = ol_prefix_match(d->db, obj->key, obj->klen, &matches_list);
+    int match_num = ol_prefix_match(db, obj->key, obj->klen, &matches_list);
     if (match_num > 0) {
         ei_x_buff to_send;
         ei_x_new_with_version(&to_send);
@@ -443,11 +443,11 @@ static void port_driver_prefix_match(oleg_data *d, ol_record *obj) {
     return port_driver_not_found(d);
 }
 
-static void port_driver_squish(oleg_data *d) {
-    if (d->db == NULL)
+static void port_driver_squish(oleg_data *d, ol_database *db) {
+    if (db == NULL)
         return port_driver_error(d, "No database to squish.");
 
-    const int ret = ol_squish(d->db);
+    const int ret = ol_squish(db);
 
     if (ret) {
         ei_x_buff to_send;
@@ -459,11 +459,11 @@ static void port_driver_squish(oleg_data *d) {
     return port_driver_error(d, "Database squishing failed.");
 }
 
-static void port_driver_sync(oleg_data *d) {
-    if (d->db == NULL)
+static void port_driver_sync(oleg_data *d, ol_database *db) {
+    if (db == NULL)
         return port_driver_error(d, "No database to fsync.");
 
-    const int ret = ol_sync(d->db);
+    const int ret = ol_sync(db);
 
     if (ret) {
         ei_x_buff to_send;
@@ -488,11 +488,31 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         return port_driver_init(d, cmd);
     } else if (fn == 9) {
         /* This is one of the more unique commands in that we don't
-         * need a decoded obj. We aren't even given one. */
-        return port_driver_squish(d);
+         * need a decoded obj. We aren't even given one. Squish everyone. */
+        ol_cursor cursor;
+        olc_generic_init(d->databases, &cursor);
+
+        while(olc_step(&cursor)) {
+            ol_splay_tree_node *node = _olc_get_node(&cursor);
+            ol_database *db = (ol_database *)node->ref_obj;
+
+            if (db != NULL)
+                port_driver_squish(d, db);
+        }
+        /* Don't do anything else. */
+        return;
     } else if (fn == 11) {
         /* Similar to squish above. */
-        return port_driver_sync(d);
+        ol_cursor cursor;
+        olc_generic_init(d->databases, &cursor);
+
+        while(olc_step(&cursor)) {
+            ol_splay_tree_node *node = _olc_get_node(&cursor);
+            ol_database *db = (ol_database *)node->ref_obj;
+
+            if (db != NULL)
+                port_driver_sync(d, db);
+        }
     }
 
     /* Check to see if someone called ol_init */
@@ -508,42 +528,54 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     obj = read_record(cmd, 1);
 
     /* Open up a db if we don't have on already */
-    if (d->db == NULL) {
-        ol_database *db;
+    if (d->databases == NULL) {
+        ols_init(&(d->databases));
+    }
+
+    /* Find the database in the list of opened databases. */
+    const size_t dbname_len = strnlen(obj->database_name, DB_NAME_SIZE);
+    ol_splay_tree_node *found = ols_find(d->databases, obj->database_name, dbname_len);
+
+    /* If we didn't find it, create it. */
+    if (found == NULL) {
+        ol_database *db = NULL;
         db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY | OL_F_LZ4 | OL_F_SPLAYTREE);
         if (db == NULL)
             return port_driver_error(d, "Could not open database.");
-        d->db = db;
+        ol_splay_tree_node *node = ols_insert(d->databases, obj->database_name, dbname_len, db);
+        found = node;
     }
+
+    ol_database *found_db = (ol_database *)found->ref_obj;
 
     /* Figure out what the frontend wants us to do */
     switch (fn) {
         case 1:
-            port_driver_jar(d, obj);
+            port_driver_jar(d, found_db, obj);
             break;
         case 2:
-            port_driver_unjar(d, obj);
+            port_driver_unjar(d, found_db, obj);
             break;
         case 3:
-            port_driver_scoop(d, obj);
+            port_driver_scoop(d, found_db, obj);
             break;
         case 4:
-            port_driver_bucket_meta(d, obj);
+            port_driver_bucket_meta(d, found_db, obj);
             break;
         case 5:
-            port_driver_cursor_next(d, obj);
+            port_driver_cursor_next(d, found_db, obj);
             break;
         case 6:
-            port_driver_cursor_prev(d, obj);
+            port_driver_cursor_prev(d, found_db, obj);
             break;
         case 7:
-            port_driver_cursor_first(d, obj);
+            port_driver_cursor_first(d, found_db, obj);
             break;
         case 8:
-            port_driver_cursor_last(d, obj);
+            port_driver_cursor_last(d, found_db, obj);
             break;
         case 10:
-            port_driver_prefix_match(d, obj);
+            port_driver_prefix_match(d, found_db, obj);
             break;
         default:
             port_driver_not_found(d);

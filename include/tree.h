@@ -20,6 +20,9 @@ typedef struct ol_splay_tree {
     int rcrd_cnt;
 } ol_splay_tree;
 
+/* Creates a new tree. */
+void ols_init(ol_splay_tree **tree);
+
 /* Insert and splay the tree. rej_obj is a pointer to an object somewhere in
  * memory that you want to reference from this node. */
 ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_t klen, const void *ref_obj);
