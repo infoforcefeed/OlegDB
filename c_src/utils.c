@@ -29,3 +29,7 @@ int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
     index = hash & (ol_ht_bucket_max(ht_size) - 1);
     return index;
 }
+
+const int _ol_compute_padded_size(const int size) {
+    return (size + 4095) & ~4095;
+}
