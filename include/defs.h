@@ -4,7 +4,7 @@
 /* xXx DEFINE=VERSION xXx
 * xXx DESCRIPTION=The current version of the OlegDB. xXx
 */
-#define VERSION "0.1.4"
+#define VERSION "0.1.5"
 
 /* xXx DEFINE=KEY_SIZE xXx
 * xXx DESCRIPTION=The hardcoded upperbound for key lengths. xXx
