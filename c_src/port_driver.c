@@ -443,36 +443,18 @@ static void port_driver_prefix_match(oleg_data *d, ol_database *db, ol_record *o
     return port_driver_not_found(d);
 }
 
-static void port_driver_squish(oleg_data *d, ol_database *db) {
+static int port_driver_squish(oleg_data *d, ol_database *db) {
     if (db == NULL)
-        return port_driver_error(d, "No database to squish.");
+        return 0;
 
-    const int ret = ol_squish(db);
-
-    if (ret) {
-        ei_x_buff to_send;
-        _gen_atom(&to_send, "ok");
-        driver_output(d->port, to_send.buff, to_send.index);
-        ei_x_free(&to_send);
-        return;
-    }
-    return port_driver_error(d, "Database squishing failed.");
+    return ol_squish(db);
 }
 
-static void port_driver_sync(oleg_data *d, ol_database *db) {
+static int port_driver_sync(oleg_data *d, ol_database *db) {
     if (db == NULL)
-        return port_driver_error(d, "No database to fsync.");
+        return 0;
 
-    const int ret = ol_sync(db);
-
-    if (ret) {
-        ei_x_buff to_send;
-        _gen_atom(&to_send, "ok");
-        driver_output(d->port, to_send.buff, to_send.index);
-        ei_x_free(&to_send);
-        return;
-    }
-    return port_driver_error(d, "fsync failed.");
+    return ol_sync(db);
 }
 
 /* So this is where all the magic happens. If you want to know how we switch
@@ -487,32 +469,62 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     if (fn == 0) {
         return port_driver_init(d, cmd);
     } else if (fn == 9) {
+        if (d->databases == NULL)
+            return;
+
         /* This is one of the more unique commands in that we don't
          * need a decoded obj. We aren't even given one. Squish everyone. */
         ol_cursor cursor;
         olc_generic_init(d->databases, &cursor);
 
+        int ret = 1;
         while(olc_step(&cursor)) {
             ol_splay_tree_node *node = _olc_get_node(&cursor);
             ol_database *db = (ol_database *)node->ref_obj;
 
             if (db != NULL)
-                port_driver_squish(d, db);
+                ret = ret && port_driver_squish(d, db);
         }
+
+        if (ret) {
+            ei_x_buff to_send;
+            _gen_atom(&to_send, "ok");
+            driver_output(d->port, to_send.buff, to_send.index);
+            ei_x_free(&to_send);
+        } else {
+            port_driver_error(d, "Could not squish all databases.");
+        }
+
         /* Don't do anything else. */
         return;
     } else if (fn == 11) {
+        if (d->databases == NULL)
+            return;
+
         /* Similar to squish above. */
         ol_cursor cursor;
         olc_generic_init(d->databases, &cursor);
 
+        int ret = 0;
         while(olc_step(&cursor)) {
             ol_splay_tree_node *node = _olc_get_node(&cursor);
             ol_database *db = (ol_database *)node->ref_obj;
 
             if (db != NULL)
-                port_driver_sync(d, db);
+                ret = ret && port_driver_sync(d, db);
         }
+
+        if (ret) {
+            ei_x_buff to_send;
+            _gen_atom(&to_send, "ok");
+            driver_output(d->port, to_send.buff, to_send.index);
+            ei_x_free(&to_send);
+        } else {
+            port_driver_error(d, "Could not fsync all databases.");
+        }
+
+        /* Don't do anything else. */
+        return;
     }
 
     /* Check to see if someone called ol_init */
@@ -537,13 +549,15 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     ol_splay_tree_node *found = ols_find(d->databases, obj->database_name, dbname_len);
 
     /* If we didn't find it, create it. */
-    if (found == NULL) {
+    if (found == NULL && obj->database_name != NULL) {
         ol_database *db = NULL;
         db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY | OL_F_LZ4 | OL_F_SPLAYTREE);
         if (db == NULL)
             return port_driver_error(d, "Could not open database.");
         ol_splay_tree_node *node = ols_insert(d->databases, obj->database_name, dbname_len, db);
         found = node;
+    } else if (obj->database_name == NULL) {
+        return port_driver_error(d, "Something went wrong, trying to operate on a null database.");
     }
 
     ol_database *found_db = (ol_database *)found->ref_obj;
