@@ -487,6 +487,9 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     if (fn == 0) {
         return port_driver_init(d, cmd);
     } else if (fn == 9) {
+        if (d->databases == NULL)
+            return;
+
         /* This is one of the more unique commands in that we don't
          * need a decoded obj. We aren't even given one. Squish everyone. */
         ol_cursor cursor;
@@ -502,6 +505,9 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         /* Don't do anything else. */
         return;
     } else if (fn == 11) {
+        if (d->databases == NULL)
+            return;
+
         /* Similar to squish above. */
         ol_cursor cursor;
         olc_generic_init(d->databases, &cursor);
@@ -513,6 +519,8 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
             if (db != NULL)
                 port_driver_sync(d, db);
         }
+        /* Don't do anything else. */
+        return;
     }
 
     /* Check to see if someone called ol_init */
@@ -537,13 +545,15 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
     ol_splay_tree_node *found = ols_find(d->databases, obj->database_name, dbname_len);
 
     /* If we didn't find it, create it. */
-    if (found == NULL) {
+    if (found == NULL && obj->database_name != NULL) {
         ol_database *db = NULL;
         db = ol_open(d->db_loc, obj->database_name, OL_F_APPENDONLY | OL_F_LZ4 | OL_F_SPLAYTREE);
         if (db == NULL)
             return port_driver_error(d, "Could not open database.");
         ol_splay_tree_node *node = ols_insert(d->databases, obj->database_name, dbname_len, db);
         found = node;
+    } else if (obj->database_name == NULL) {
+        return port_driver_error(d, "Something went wrong, trying to operate on a null database.");
     }
 
     ol_database *found_db = (ol_database *)found->ref_obj;
