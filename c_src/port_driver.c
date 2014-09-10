@@ -470,7 +470,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         return port_driver_init(d, cmd);
     } else if (fn == 9) {
         if (d->databases == NULL)
-            return;
+            return port_driver_error(d, "No databases initialized.");
 
         /* This is one of the more unique commands in that we don't
          * need a decoded obj. We aren't even given one. Squish everyone. */
@@ -499,7 +499,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
         return;
     } else if (fn == 11) {
         if (d->databases == NULL)
-            return;
+            return port_driver_error(d, "No databases initialized.");
 
         /* Similar to squish above. */
         ol_cursor cursor;
