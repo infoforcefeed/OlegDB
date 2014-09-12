@@ -9,6 +9,7 @@
 #include "oleg.h"
 #include "test.h"
 #include "tree.h"
+#include "transaction.h"
 
 #define DB_DEFAULT_FEATURES OL_F_SPLAYTREE | OL_F_LZ4
 
@@ -94,6 +95,25 @@ int test_zero_length_keys(const ol_feature_flags features) {
     _test_db_close(db);
     return 0;
 
+error:
+    _test_db_close(db);
+    return 1;
+}
+
+int test_transactions(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+    char key[] = "rampant destruction";
+    unsigned char value[] = "The Churning Black Waters";
+    size_t vsize = strlen((char*)value);
+
+    check(ol_jar(db, key, strnlen(key, KEY_SIZE), value, vsize) == 0, "Could not jar key.");
+    const int tx_id = olt_begin(db);
+
+    check(tx_id != -1, "Could not begin transaction.");
+    check(olt_commit(db, tx_id) == 0, "Could not commit transaction.");
+
+    _test_db_close(db);
+    return 0;
 error:
     _test_db_close(db);
     return 1;

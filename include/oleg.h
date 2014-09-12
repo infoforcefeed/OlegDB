@@ -25,12 +25,14 @@ extern "C" {
 * xXx OL_F_SPLAYTREE=Whether or not to enable to splay tree in the server. This can have a performance impact. xXx
 * xXx OL_F_LZ4=Enable LZ4 compression. xXx
 * xXx OL_F_AOL_FFLUSH=Make sure AOL data is REAAAALLY written to disk. This will run fflush after every AOL write. Otherwise, fsync only. xXx
+* xXx OL_F_IMPLICIT_TRANSACTIONS=All operations not a part of a transaction create and finish transactions within that operation. EG a CAS operation with start/commit/abort during the length of it's run. xXx
 */
 typedef enum {
-    OL_F_APPENDONLY     = 1 << 0,
-    OL_F_SPLAYTREE      = 1 << 1,
-    OL_F_LZ4            = 1 << 2,
-    OL_F_AOL_FFLUSH     = 1 << 3
+    OL_F_APPENDONLY                 = 1 << 0,
+    OL_F_SPLAYTREE                  = 1 << 1,
+    OL_F_LZ4                        = 1 << 2,
+    OL_F_AOL_FFLUSH                 = 1 << 3,
+    OL_F_IMPLICIT_TRANSACTIONS      = 1 << 4
 } ol_feature_flags;
 
 /* xXx ENUM=ol_state_flags xXx
@@ -100,26 +102,28 @@ typedef struct ol_meta {
 * xXx *values=This is where values for hashes are stored. This is a pointer to an mmap()'d region of memory. xXx
 * xXx val_size=The size of the sum total of records in the db, in bytes. It is <strong>not</strong> the size of the file on disk. xXx
 * xXx *tree=A pointer to the splay tree holding the ordered list of keys. xXx
+* xXx *cur_transactions=The current open/uncommitted transactions. Represented with a splay tree. xXx
 * xXx *meta=A pointer to a struct holding extra meta information. See <a href="#ol_meta">oleg_meta</a> for more information. xXx
 */
 typedef struct ol_database {
-    void      (*get_db_file_name)(const struct ol_database *db,const char *p,char*);
-    void      (*enable)(int, int*);
-    void      (*disable)(int, int*);
-    bool      (*is_enabled)(const int, const int*);
-    char      name[DB_NAME_SIZE];
-    char      path[PATH_LENGTH];
-    char      *aol_file;
-    FILE      *aolfd;
-    int       feature_set;
-    short int state;
-    int       rcrd_cnt;
-    size_t    cur_ht_size;
-    ol_bucket **hashes;
-    unsigned char *values;
-    size_t    val_size;
-    ol_splay_tree *tree;
-    ol_meta   *meta;
+    void            (*get_db_file_name)(const struct ol_database *db,const char *p,char*);
+    void            (*enable)(int, int*);
+    void            (*disable)(int, int*);
+    bool            (*is_enabled)(const int, const int*);
+    char            name[DB_NAME_SIZE];
+    char            path[PATH_LENGTH];
+    char            *aol_file;
+    FILE            *aolfd;
+    int             feature_set;
+    short int       state;
+    int             rcrd_cnt;
+    size_t          cur_ht_size;
+    ol_bucket       **hashes;
+    unsigned char   *values;
+    size_t          val_size;
+    ol_splay_tree   *tree;
+    ol_splay_tree   *cur_transactions;
+    ol_meta         *meta;
 } ol_database;
 
 /* xXx FUNCTION=ol_open xXx
