@@ -357,16 +357,6 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
             return 4;
     }
 
-    char *ct_real = realloc(bucket->content_type, ctsize+1);
-    if (strncpy(ct_real, ct, ctsize) != ct_real) {
-        free(ct_real);
-        return 5;
-    }
-    ct_real[ctsize] = '\0';
-
-    /* bucket->klen = _klen; */
-    bucket->ctype_size = ctsize;
-    bucket->content_type = ct_real;
     if (bucket->expiration != NULL) {
         free(bucket->expiration);
         bucket->expiration = NULL;
@@ -417,18 +407,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
     }
 
     new_bucket->klen = _klen;
-    new_bucket->ctype_size = ctsize;
-
-    char *ct_real = calloc(1, ctsize+1);
-    if (strncpy(ct_real, ct, ctsize) != ct_real) {
-        /* Free allocated memory since we're not going to use them */
-        free(ct_real);
-        free(new_bucket);
-        return 7;
-    }
-    ct_real[ctsize] = '\0';
-    new_bucket->content_type = ct_real;
-
     new_bucket->original_size = vsize;
 
     /* Compute the new position of the data in the values file: */
@@ -449,7 +427,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
                                                  (int)vsize);
             if (cmsize == 0) {
                 /* Free allocated data */
-                free(new_bucket->content_type);
                 free(new_bucket);
                 return 1;
             }
@@ -463,7 +440,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
             if (memcpy(new_data_ptr, value, vsize) != new_data_ptr) {
                 /* Free allocated memory since we're not going to use them */
-                free(new_bucket->content_type);
                 free(new_bucket);
                 return 3;
             }
@@ -503,7 +479,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         ret = _ol_grow_and_rehash_db(db);
         if (ret > 0) {
             ol_log_msg(LOG_ERR, "Problem rehashing DB. Error code: %i", ret);
-            free(ct_real);
             free(new_bucket);
             return 4;
         }
@@ -760,25 +735,6 @@ int ol_squish(ol_database *db) {
 
 error:
     return 0;
-}
-
-char *ol_content_type(ol_database *db, const char *key, size_t klen) {
-    char _key[KEY_SIZE] = {'\0'};
-    size_t _klen = 0;
-    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
-
-    if (bucket != NULL) {
-        if (!_has_bucket_expired(bucket)) {
-            return bucket->content_type;
-        } else {
-            /* It's dead, get rid of it. */
-            check(ol_scoop(db, key, klen) == 0, "Could not delete a bucket!")
-        }
-    }
-
-error:
-    return NULL;
 }
 
 struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {

@@ -30,11 +30,9 @@ typedef struct {
     char database_name[DB_NAME_SIZE];
     char *key;
     size_t klen;
-    size_t ct_len;
     size_t data_len;
     int version;
     long expiration;
-    char content_type[255];
     unsigned char *data;
 } ol_record;
 
@@ -90,7 +88,7 @@ static ol_record *read_record(char *buf, int index) {
     if (ei_decode_tuple_header(buf, &index, &arity))
         ol_log_msg(LOG_WARN, "Could not decode tuple header.\n");
 
-    if (arity != 7)
+    if (arity != 6)
         ol_log_msg(LOG_WARN, "Arity was not as expected.\n");
 
     if (ei_decode_atom(buf, &index, atom))
@@ -113,12 +111,6 @@ static ol_record *read_record(char *buf, int index) {
     new_obj->klen = len;
     debug("Key: %s", new_obj->key);
     debug("get_type klen: %zu", new_obj->klen);
-
-    if (ei_decode_binary(buf, &index, new_obj->content_type, &len))
-        ol_log_msg(LOG_WARN, "Could not get content-type.");
-    new_obj->ct_len = len;
-    new_obj->content_type[len] = '\0';
-    debug("Content type: %s", new_obj->content_type);
 
     /* This stuff is all to get the data. */
     ei_get_type(buf, &index, &type, &data_size);
@@ -155,8 +147,7 @@ static void port_driver_init(oleg_data *d, char *cmd) {
 
 static void port_driver_jar(oleg_data *d, ol_database *db, ol_record *obj) {
     int res = 0;
-    res = ol_jar_ct(db, obj->key, obj->klen, obj->data, obj->data_len,
-           obj->content_type, obj->ct_len);
+    res = ol_jar(db, obj->key, obj->klen, obj->data, obj->data_len);
 
     debug("Expiration: %li", obj->expiration);
     if (obj->expiration != -1) {
@@ -187,10 +178,8 @@ static void port_driver_unjar(oleg_data *d, ol_database *db, ol_record *obj) {
     ei_x_buff to_send;
     ei_x_new_with_version(&to_send);
     if (ret == 0) {
-        char *content_type_retrieved = ol_content_type(db, obj->key, obj->klen);
-        ei_x_encode_tuple_header(&to_send, 3);
+        ei_x_encode_tuple_header(&to_send, 2);
         ei_x_encode_atom(&to_send, "ok");
-        ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
         ei_x_encode_binary(&to_send, data, val_size);
     } else {
         ei_x_encode_atom(&to_send, "not_found");
@@ -213,24 +202,22 @@ static void port_driver_scoop(oleg_data *d, ol_database *db, ol_record *obj) {
 }
 
 static void port_driver_bucket_meta(oleg_data *d, ol_database *db, ol_record *obj) {
-    char *content_type_retrieved = ol_content_type(db, obj->key, obj->klen);
+    int exists = ol_exists(db, obj->key, obj->klen);
     ei_x_buff to_send;
     ei_x_new_with_version(&to_send);
-    if (content_type_retrieved != NULL) {
+    if (exists == 0) {
         struct tm *time_retrieved = NULL;
         time_retrieved = ol_expiration_time(db, obj->key, obj->klen);
 
         /* If we have an expiration time, send it back with the content type. */
         if (time_retrieved != NULL) {
-            ei_x_encode_tuple_header(&to_send, 4);
+            ei_x_encode_tuple_header(&to_send, 3);
             ei_x_encode_atom(&to_send, "ok");
-            ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
             ei_x_encode_long(&to_send, (long)db->rcrd_cnt);
             ei_x_encode_long(&to_send, (long)mktime(time_retrieved));
         } else {
-            ei_x_encode_tuple_header(&to_send, 3);
+            ei_x_encode_tuple_header(&to_send, 2);
             ei_x_encode_atom(&to_send, "ok");
-            ei_x_encode_binary(&to_send, content_type_retrieved, strlen(content_type_retrieved));
             ei_x_encode_long(&to_send, (long)db->rcrd_cnt);
         }
     } else {
@@ -265,11 +252,10 @@ static inline void port_driver_cursor_response(oleg_data *d, const ol_bucket *bu
 
     ei_x_buff to_send;
     ei_x_new_with_version(&to_send);
-    ei_x_encode_tuple_header(&to_send, 4);
+    ei_x_encode_tuple_header(&to_send, 3);
 
     /* Send back ok, content type, key for bucket, and value for bucket */
     ei_x_encode_atom(&to_send, "ok");
-    ei_x_encode_binary(&to_send, bucket->content_type, bucket->ctype_size);
     ei_x_encode_binary(&to_send, bucket->key, bucket->klen);
     ei_x_encode_binary(&to_send, data, val_size);
 

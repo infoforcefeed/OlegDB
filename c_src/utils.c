@@ -18,7 +18,6 @@ ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
 
 void _ol_free_bucket(ol_bucket **ptr) {
     free((*ptr)->expiration);
-    free((*ptr)->content_type);
     free((*ptr));
     *ptr = NULL;
 }

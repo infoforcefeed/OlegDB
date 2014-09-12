@@ -52,8 +52,6 @@ typedef char ** ol_val_array;
 * xXx DESCRIPTION=This is the object stored in the database's hashtable. Contains references to value, key, etc. xXx
 * xXx key[KEY_SIZE]=The key used for this bucket. xXx
 * xXx klen=Length of the key. xXx
-* xXx *content_type=The content-type of this object. If using the server, this defaults to "application/octet-stream". xXx
-* xXx ctype_size=Length of the string representing content-type. xXx
 * xXx data_offset=Location of this key's value (data) in the values file on disk. xXx
 * xXx data_size=Length of the value (data) in bytes. This is the size of the data stored in memory. xXx
 * xXx original_size=Length of the value (data) in bytes. This is the original length of the data we receieved, non-compressed. xXx
@@ -64,8 +62,6 @@ typedef char ** ol_val_array;
 typedef struct ol_bucket {
     char                key[KEY_SIZE]; /* The key used to reference the data */
     size_t              klen;
-    char                *content_type;
-    size_t              ctype_size;
     size_t              data_offset;
     size_t              data_size;
     size_t              original_size;
@@ -164,7 +160,7 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
 int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize);
 
 /* xXx FUNCTION=ol_jar xXx
- * xXx DESCRIPTION=This is OlegDB's canonical 'set' function. Put a value into the mayo (the database). It's easy to piss in a bucket, it's not easy to piss in 19 jars. Uses default content type. xXx
+ * xXx DESCRIPTION=This is OlegDB's canonical 'set' function. Put a value into the mayo (the database). It's easy to piss in a bucket, it's not easy to piss in 19 jars. xXx
  * xXx RETURNS=0 on success. xXx
  * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
@@ -173,29 +169,6 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
  * xXx vsize=The size of the value in bytes. xXx
  */
 int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value, size_t vsize);
-
-/* xXx FUNCTION=ol_jar_ct xXx
- * xXx DESCRIPTION=Wrapped by <a href="#ol_jar">ol_jar</a>, this function will set a value in the database. It differs only in that it allows you to specify a content type to store in addition to the value. xXx
- * xXx RETURNS=0 on sucess. xXx
- * xXx *db=Database to set the value to. xXx
- * xXx *key=The key to use. xXx
- * xXx klen=The length of the key. xXx
- * xXx *value=The value to insert. xXx
- * xXx vsize=The size of the value in bytes. xXx
- * xXx *content_type=The content type to store, or really anything. Store your middle name if you want to. xXx
- * xXx content_type_size=The length of the content_type string. xXx
- */
-int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *value, size_t vsize,
-        const char *content_type, const size_t content_type_size);
-
-/* xXx FUNCTION=ol_content_type xXx
- * xXx DESCRIPTION=Retrieves the content type for a given key from the database. xXx
- * xXx RETURNS=Stored content type, or NULL if it was not found. xXx
- * xXx *db=Database to retrieve value from. xXx
- * xXx *key=The key to use. xXx
- * xXx klen=The length of the key. xXx
- */
-char *ol_content_type(ol_database *db, const char *key, size_t klen);
 
 /* xXx FUNCTION=ol_expiration xXx
  * xXx DESCRIPTION=Retrieves the expiration time for a given key from the database. xXx

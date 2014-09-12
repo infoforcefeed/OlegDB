@@ -84,8 +84,6 @@ parse_header1([Line|Header], {Record, Options}) ->
         <<"x-olegdb-use-by: ", Timestamp/binary>> ->
             Time = list_to_integer(binary_to_list(Timestamp)),
             parse_header1(Header, {Record#ol_record{expiration_time=Time}, Options});
-        <<"content-type: ", CType/binary>> ->
-            parse_header1(Header, {Record#ol_record{content_type=CType}, Options});
         _ ->
             parse_header1(Header, {Record, Options})
     end.

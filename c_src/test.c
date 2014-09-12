@@ -550,64 +550,6 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
     return 0;
 }
 
-int test_ct(const ol_feature_flags features) {
-    ol_database *db = _test_db_open(features);
-
-    char key1[] = "test_key", key2[] = "test_key2";
-    char ct1[] = "application/json", ct2[] = "image/png";
-    unsigned char v1[] = "ILL BURN YOUR HOUSE DOWN",
-                  v2[] = "test_Value";
-    int inserted = ol_jar_ct(db, key1, strlen(key1),
-        v1, strlen((char*)v2),
-        ct1, strlen(ct1));
-
-    if (inserted > 0) {
-        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        _test_db_close(db);
-        return 1;
-    }
-
-    inserted = ol_jar_ct(db, key2, strlen(key2),
-        v2, strlen((char*)v2),
-        ct2, strlen(ct2));
-
-    if (inserted > 0) {
-        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        _test_db_close(db);
-        return 1;
-    }
-
-    int ret = ol_exists(db, key1, strlen(key1));
-    if (ret != 0) {
-        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key1);
-        _test_db_close(db);
-        return 2;
-    }
-
-    ret = ol_exists(db, key2, strlen(key2));
-    if (ret != 0) {
-        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key2);
-        _test_db_close(db);
-        return 2;
-    }
-
-    char *ctr = ol_content_type(db, key1, strlen(key1));
-    if (strncmp(ct1, ctr, strlen(ct1)) != 0) {
-        ol_log_msg(LOG_ERR, "Content types were different.\n");
-        return 3;
-    }
-
-    char *ctr2 = ol_content_type(db, key2, strlen(key2));
-    if (strncmp(ct2, ctr2, strlen(ct2)) != 0) {
-        ol_log_msg(LOG_ERR, "Content types were different.\n");
-        return 3;
-    }
-    ol_log_msg(LOG_INFO, "Content type retrieved successfully.");
-
-    _test_db_close(db);
-    return 0;
-}
-
 int test_feature_flags(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
 
@@ -1108,7 +1050,6 @@ void run_tests(int results[2]) {
         ol_run_test(test_update);
         ol_run_test(test_lots_of_deletes);
         ol_run_test(test_unjar_ds);
-        ol_run_test(test_ct);
         ol_run_test(test_feature_flags);
     }
 

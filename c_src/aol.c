@@ -68,15 +68,17 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
         char aol_str[] =
             ":%zu:%s"    /* cmd length, cmd */
             ":%zu:%.*s"    /* klen size, key */
-            ":%zu:%.*s"    /* ctype size, content_type */
+            ":%i:%s"    /* !!! DEPRECATED !!! ctype size, content_type */
             ":%d:%d"     /* sizeof(original_size), original_size */
             ":%d:%d"     /* sizeof(size_t), data_size */
             ":%d:%d";    /* sizeof(size_t), offset into file */
 
+
+        /* TODO: Write a real fix for the removal of content type stuff. */
         ret = fprintf(db->aolfd, aol_str,
                 strlen(cmd),                                cmd,
                 bct->klen,          (int)bct->klen,         bct->key,
-                bct->ctype_size,    (int)bct->ctype_size,   bct->content_type,
+                1, " ",
                 intlen(bct->original_size),                 bct->original_size,
                 intlen(bct->data_size),                     bct->data_size,
                 intlen(bct->data_offset),                   bct->data_offset);
@@ -213,12 +215,12 @@ int ol_aol_restore(ol_database *db) {
                 int processed = LZ4_decompress_fast((const char*)data_ptr, (char *)tmp_data, original_size);
 
                 if (processed == compressed_size) {
-                    ol_jar_ct(db, key->data, key->dlen, (unsigned char*)tmp_data, original_size, ct->data, ct->dlen);
+                    ol_jar(db, key->data, key->dlen, (unsigned char*)tmp_data, original_size);
                 } else {
                     if (original_size != compressed_size)
                         ol_log_msg(LOG_WARN, "Could not decompress data that is probably compressed. Data may have been deleted.");
                     /* Now that we've tried to decompress and failed, send off the raw data instead. */
-                    ol_jar_ct(db, key->data, key->dlen, data_ptr, compressed_size, ct->data, ct->dlen);
+                    ol_jar(db, key->data, key->dlen, data_ptr, compressed_size);
                 }
             }
 #ifdef DEBUG
