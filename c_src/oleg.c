@@ -20,6 +20,7 @@
 #include "rehash.h"
 #include "utils.h"
 #include "lz4.h"
+#include "transaction.h"
 
 inline int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
@@ -64,6 +65,7 @@ ol_database *ol_open(const char *path, const char *name, int features){
     new_db->meta->key_collisions = 0;
     new_db->rcrd_cnt = 0;
     new_db->val_size = 0;
+    new_db->cur_transactions = NULL;
 
     /* Null every pointer before initialization in case something goes wrong */
     new_db->aol_file = NULL;
