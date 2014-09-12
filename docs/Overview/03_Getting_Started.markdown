@@ -21,26 +21,19 @@ Deleting keys can be done by using DELETE:
 $ curl -X DELETE http://localhost:8080/turtles/red
 ````
 
-You can also tell Oleg what the `Content-Type` of that key's value is:
-
-````
-$ curl -X POST -H "Content-Type: text/html" -d '&lt;p&gt;Raphael&lt;/p&gt;' http://localhost:8080/turtles/red
-````
-
 OlegDB supports lazy key expiration. You can specify an expiration date by setting the
 `X-OlegDB-use-by` header to a *UTC* POSIX timestamp .
 
 ````
 $ curl -X POST \
 -H "X-OlegDB-use-by: $(date +%s)" \
--H "Content-Type: application/json" \
 -d '{turtle: "Johnny", age: 34}' http://localhost:8080/turtles/Johnny
 &gt; POST /turtles/Johnny HTTP/1.1
 &gt; User-Agent: curl/7.22.0 (x86_64-pc-linux-gnu) libcurl/7.22.0
 &gt; Host: localhost:8080
 &gt; Accept: */*
 &gt; X-OlegDB-use-by: 1394323192
-&gt; Content-Type: application/json
+&gt; Content-Type: application/octet-stream
 &gt; Content-Length: 27
 &gt;
 \* upload completely sent off: 27out of 27 bytes
@@ -89,7 +82,7 @@ $ curl -v -X HEAD http://localhost:8080/turtles/Johnny
 \* Server OlegDB/fresh_cuts_n_jams is not blacklisted
 &lt; Server: OlegDB/fresh_cuts_n_jams
 &lt; Content-Length: 0
-&lt; Content-Type: application/json
+&lt; Content-Type: application/octet-stream
 &lt; Expires: 1395368972
 &lt;
 ````

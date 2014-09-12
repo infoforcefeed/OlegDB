@@ -22,7 +22,7 @@ $ curl -v localhost:8080/oleg//_first
 &gt;
 &lt; HTTP/1.1 200 OK
 &lt; Server: OlegDB/fresh_cuts_n_jams
-&lt; Content-Type: application/x-www-form-urlencoded
+&lt; Content-Type: application/octet-stream
 &lt; Content-Length: 22
 &lt; Connection: close
 &lt; X-OlegDB-Key: aaa
@@ -46,7 +46,7 @@ $ curl -v localhost:8080/oleg/aaa/_next
 &gt;
 &lt; HTTP/1.1 200 OK
 &lt; Server: OlegDB/fresh_cuts_n_jams
-&lt; Content-Type: application/x-www-form-urlencoded
+&lt; Content-Type: application/octet-stream
 &lt; Content-Length: 22
 &lt; Connection: close
 &lt; X-OlegDB-Key: bbb
@@ -95,7 +95,7 @@ $ curl -v localhost:8080/oleg//_last
 &gt;
 &lt; HTTP/1.1 200 OK
 &lt; Server: OlegDB/fresh_cuts_n_jams
-&lt; Content-Type: application/x-www-form-urlencoded
+&lt; Content-Type: application/octet-stream
 &lt; Content-Length: 22
 &lt; Connection: close
 &lt; X-OlegDB-Key: bbb
@@ -110,7 +110,7 @@ $ curl -v localhost:8080/oleg/bbb/_prev
 &gt;
 &lt; HTTP/1.1 200 OK
 &lt; Server: OlegDB/fresh_cuts_n_jams
-&lt; Content-Type: application/x-www-form-urlencoded
+&lt; Content-Type: application/octet-stream
 &lt; Content-Length: 22
 &lt; Connection: close
 &lt; X-OlegDB-Key: aaa
