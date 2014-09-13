@@ -160,7 +160,7 @@ int ol_close(ol_database *db){
     /* Sync and close values file. */
     if (db->val_size > 0) {
         msync(db->values, db->val_size, MS_SYNC);
-        munmap(db->values, db->val_size);
+        _ol_close_values(db);
     }
     free(db->aol_file);
     free(db->meta);

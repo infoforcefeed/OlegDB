@@ -55,6 +55,9 @@ error:
 int _ol_open_values_with_fd(ol_database *db, const int fd, const size_t filesize) {
     const size_t to_mmap = filesize == 0 ? VALUES_DEFAULT_SIZE : filesize;
 
+    int flock_ret = flock(fd, LOCK_EX | LOCK_NB);
+    check(flock_ret == 0, "Could not lock values file.");
+
     /* TODO: Do we need madivse(MADV_HUGEPAGE); here? */
     db->values = _ol_mmap(to_mmap, fd);
     check(db->values != NULL, "Could not mmap values file.");
@@ -71,14 +74,20 @@ int _ol_open_values_with_fd(ol_database *db, const int fd, const size_t filesize
         }
     }
 
-    close(fd);
+    db->valuesfd = fd;
     return 1;
 
 error:
-    if (fd >=0) {
+    if (fd >= 0) {
         close(fd);
     }
     return 0;
+}
+
+void _ol_close_values(ol_database *db) {
+    munmap(db->values, db->val_size);
+    flock(db->valuesfd, LOCK_UN);
+    close(db->valuesfd);
 }
 
 int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size) {
@@ -110,7 +119,7 @@ int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size) {
     /* Set new size */
     check(ftruncate(values_fd, truncate_total) != -1, "Could not truncate file to new size for values.");
     /* TODO: Can we use realloc here instead of munmapping and then remapping? */
-    munmap(db->values, db->val_size);
+    _ol_close_values(db);
 
     return _ol_open_values_with_fd(db, values_fd, truncate_total);
 
@@ -136,9 +145,6 @@ int _ol_open_values(ol_database *db) {
     debug("Opening %s for values", values_filename);
     values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
     check(values_fd >= 0, "Could not open file.");
-
-    int flock_ret = flock(values_fd, LOCK_EX);
-    check(flock_ret == 0, "Could not lock values file.");
 
     return _ol_open_values_with_fd(db, values_fd, filesize);
 error:

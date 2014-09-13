@@ -671,6 +671,8 @@ int test_aol_and_compaction(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
 
     int to_return = _test_aol(features, db);
+    if (to_return != 0)
+        return to_return;
 
     ol_log_msg(LOG_INFO, "Squishing database.");
     ol_squish(db);
@@ -1034,6 +1036,8 @@ int test_can_match_prefixes(const ol_feature_flags features) {
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
+    int *errno_p = __errno_location(); /* 1337 hax */
+    check(errno_p != NULL, "Fuck off gcc");
 
     ol_test_start();
 

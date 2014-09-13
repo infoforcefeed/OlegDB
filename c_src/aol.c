@@ -21,7 +21,7 @@ int ol_aol_init(ol_database *db) {
         db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
         check(db->aolfd != NULL, "Error opening append only file");
 
-        int flock_ret = flock(fileno(db->aolfd), LOCK_EX);
+        int flock_ret = flock(fileno(db->aolfd), LOCK_NB | LOCK_EX);
         check(flock_ret == 0, "Could not lock AOL file.");
     }
 

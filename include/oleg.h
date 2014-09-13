@@ -102,6 +102,7 @@ typedef struct ol_meta {
 * xXx cur_ht_size=The current amount, in bytes, of space allocated for storing <a href="#ol_bucket">ol_bucket</a> objects. xXx
 * xXx **hashes=The actual hashtable. Stores <a href="#ol_bucket">ol_bucket</a> instances. xXx
 * xXx *values=This is where values for hashes are stored. This is a pointer to an mmap()'d region of memory. xXx
+* xXx valuesfd=The file descriptor of the values file. xXx
 * xXx val_size=The size of the sum total of records in the db, in bytes. It is <strong>not</strong> the size of the file on disk. xXx
 * xXx *tree=A pointer to the splay tree holding the ordered list of keys. xXx
 * xXx *cur_transactions=The current open/uncommitted transactions. Represented with a splay tree. xXx
@@ -122,6 +123,7 @@ typedef struct ol_database {
     size_t          cur_ht_size;
     ol_bucket       **hashes;
     unsigned char   *values;
+    int             valuesfd;
     size_t          val_size;
     ol_splay_tree   *tree;
     ol_splay_tree   *cur_transactions;
