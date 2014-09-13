@@ -1,3 +1,4 @@
+#include <sys/file.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -135,6 +136,9 @@ int _ol_open_values(ol_database *db) {
     debug("Opening %s for values", values_filename);
     values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
     check(values_fd >= 0, "Could not open file.");
+
+    int flock_ret = flock(values_fd, LOCK_EX);
+    check(flock_ret == 0, "Could not lock values file.");
 
     return _ol_open_values_with_fd(db, values_fd, filesize);
 error:

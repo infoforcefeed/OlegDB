@@ -5,6 +5,7 @@
 #include "errhandle.h"
 #include "lz4.h"
 
+#include <sys/file.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -19,6 +20,9 @@ int ol_aol_init(ol_database *db) {
         debug("Append only log: %s", db->aol_file);
         db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
         check(db->aolfd != NULL, "Error opening append only file");
+
+        int flock_ret = flock(fileno(db->aolfd), LOCK_EX);
+        check(flock_ret == 0, "Could not lock AOL file.");
     }
 
     return 0;

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/file.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -151,6 +152,7 @@ int ol_close(ol_database *db){
     if (db->aolfd) {
         debug("Force flushing files");
         fflush(db->aolfd);
+        flock(fileno(db->aolfd), LOCK_UN);
         fclose(db->aolfd);
         debug("Files flushed to disk");
     }
