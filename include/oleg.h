@@ -25,14 +25,12 @@ extern "C" {
 * xXx OL_F_SPLAYTREE=Whether or not to enable to splay tree in the server. This can have a performance impact. xXx
 * xXx OL_F_LZ4=Enable LZ4 compression. xXx
 * xXx OL_F_AOL_FFLUSH=Make sure AOL data is REAAAALLY written to disk. This will run fflush after every AOL write. Otherwise, fsync only. xXx
-* xXx OL_F_IMPLICIT_TRANSACTIONS=All operations not a part of a transaction create and finish transactions within that operation. EG a CAS operation with start/commit/abort during the length of it's run. xXx
 */
 typedef enum {
     OL_F_APPENDONLY                 = 1 << 0,
     OL_F_SPLAYTREE                  = 1 << 1,
     OL_F_LZ4                        = 1 << 2,
-    OL_F_AOL_FFLUSH                 = 1 << 3,
-    OL_F_IMPLICIT_TRANSACTIONS      = 1 << 4
+    OL_F_AOL_FFLUSH                 = 1 << 3
 } ol_feature_flags;
 
 /* xXx ENUM=ol_state_flags xXx
