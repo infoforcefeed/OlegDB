@@ -100,16 +100,16 @@ error:
     return 1;
 }
 
-int test_transactions(const ol_feature_flags features) {
+int test_basic_transaction(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     char key[] = "rampant destruction";
     unsigned char value[] = "The Churning Black Waters";
     size_t vsize = strlen((char*)value);
 
     check(ol_jar(db, key, strnlen(key, KEY_SIZE), value, vsize) == 0, "Could not jar key.");
-    const int tx_id = olt_begin(db);
+    transaction_id tx_id = olt_begin(db);
 
-    check(tx_id != -1, "Could not begin transaction.");
+    check(tx_id != NULL, "Could not begin transaction.");
     check(olt_commit(db, tx_id) == 0, "Could not commit transaction.");
 
     _test_db_close(db);
