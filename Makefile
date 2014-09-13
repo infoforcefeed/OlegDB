@@ -95,7 +95,7 @@ libinstall: liboleg
 	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
 	install ./include/*.h $(INSTALL_INCLUDE)
 
-test: all
+test: liboleg oleg_test
 	./run_tests.sh
 
 clean:
