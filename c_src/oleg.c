@@ -320,7 +320,7 @@ error:
 }
 
 static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
-        unsigned char *value, size_t vsize, const char *ct, const size_t ctsize) {
+                                        unsigned char *value, size_t vsize) {
     debug("Reallocating bucket.");
 
     unsigned char *old_data_ptr = db->values + bucket->data_offset;
@@ -387,7 +387,7 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 }
 
 int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
-        size_t vsize, const char *ct, const size_t ctsize) {
+        size_t vsize) {
     int ret;
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
@@ -396,7 +396,7 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
     /* Check to see if we have an existing entry with that key */
     if (bucket != NULL) {
-        return _ol_reallocate_bucket(db, bucket, value, vsize, ct, ctsize);
+        return _ol_reallocate_bucket(db, bucket, value, vsize);
     }
 
     /* Looks like we don't have an old hash */
@@ -509,12 +509,7 @@ error:
 
 int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         size_t vsize) {
-    return _ol_jar(db, key, klen, value, vsize, "application/octet-stream", 24);
-}
-
-int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *value,
-        size_t vsize, const char *content_type, const size_t content_type_size) {
-    return _ol_jar(db, key, klen, value, vsize, content_type, content_type_size);
+    return _ol_jar(db, key, klen, value, vsize);
 }
 
 int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiration_date) {
