@@ -182,30 +182,6 @@ static inline void _ol_trunc(const char *key, size_t klen, char *out) {
     out[real_key_len] = '\0';
 }
 
-int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash) {
-    /* TODO: error codes? */
-    int index = _ol_calc_idx(db->cur_ht_size, hash);
-    if (db->hashes[index] != NULL) {
-        db->meta->key_collisions++;
-        ol_bucket *tmp_bucket = db->hashes[index];
-        tmp_bucket = _ol_get_last_bucket_in_slot(tmp_bucket);
-        tmp_bucket->next = bucket;
-    } else {
-        db->hashes[index] = bucket;
-    }
-    db->rcrd_cnt++;
-
-    if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
-        /* Put the bucket into the tree */
-        ol_splay_tree_node *node = NULL;
-        node = ols_insert(db->tree, bucket->key, bucket->klen, bucket);
-        /* Make sure the bucket can reference the node. */
-        bucket->node = node;
-    }
-
-    return 0;
-}
-
 int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data) {
     return ol_unjar_ds(db, key, klen, data, NULL);
 }
@@ -319,192 +295,36 @@ error:
     return 2;
 }
 
-static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
-                                        unsigned char *value, size_t vsize) {
-    debug("Reallocating bucket.");
-
-    unsigned char *old_data_ptr = db->values + bucket->data_offset;
-    /* Clear out the old data in the file. */
-    if (bucket->data_size > 0)
-        memset(old_data_ptr, '\0', bucket->data_size);
-    /* Compute the new position of the data in the values file: */
-    size_t new_offset = db->val_size;
-    unsigned char *new_data_ptr = NULL;
-
-    /* Compress using LZ4 if enabled */
-    size_t cmsize = 0;
-    if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-        int maxoutsize = LZ4_compressBound(vsize);
-        if (maxoutsize <=  bucket->data_size) {
-            /* We don't need to put this value at the end of the file if the
-             * new value is small enough. */
-            new_data_ptr = old_data_ptr;
-            new_offset = bucket->data_offset;
-        } else {
-            _ol_ensure_values_file_size(db, maxoutsize);
-            new_data_ptr = db->values + db->val_size;
-        }
-
-        cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
-                                      (int)vsize);
-    } else {
-        if (vsize <= bucket->data_size) {
-            /* We don't need to put this value at the end of the file if the
-             * new value is small enough. */
-            new_data_ptr = old_data_ptr;
-            new_offset = bucket->data_offset;
-        } else {
-            _ol_ensure_values_file_size(db, vsize);
-            new_data_ptr = db->values + db->val_size;
-        }
-        if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
-            return 4;
-    }
-
-    if (bucket->expiration != NULL) {
-        free(bucket->expiration);
-        bucket->expiration = NULL;
-    }
-
-    /* Set original_size regardless of lz4 compression. This ensures we always
-     * have something to write to the AOL. */
-    bucket->original_size = vsize;
-    if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-        bucket->data_size = cmsize;
-    } else {
-        bucket->data_size = vsize;
-    }
-    bucket->data_offset = new_offset;
-
-    /* Remember to increment the tracked data size of the DB. */
-    db->val_size += bucket->data_size;
-
-    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) && db->state != OL_S_STARTUP) {
-        ol_aol_write_cmd(db, "JAR", bucket);
-    }
-
-    return 0;
-}
-
 int ol_jar(ol_database *db, const char *key, size_t klen,
            unsigned char *value, size_t vsize) {
-    int ret;
-    char _key[KEY_SIZE] = {'\0'};
-    size_t _klen = 0;
-    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
 
-    /* Check to see if we have an existing entry with that key */
-    if (bucket != NULL) {
-        return _ol_reallocate_bucket(db, bucket, value, vsize);
+    /* Is disabled_tx enabled? lksjdlkfpfpfllfplflpf */
+    if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set)) {
+        /* Fake a transaction: */
+        ol_transaction stack_tx = {
+            .tx_id = 0,
+            .parent_db = NULL,
+            .transaction_db = db
+        };
+        return olt_jar(&stack_tx, key, klen, value, vsize);
     }
 
-    /* Looks like we don't have an old hash */
-    ol_bucket *new_bucket = calloc(1, sizeof(ol_bucket));
-    if (new_bucket == NULL)
-        return 1;
+    ol_transaction *tx = olt_begin(db);
+    int jar_ret = 10;
+    check(tx != NULL, "Could not begin implicit transaction.");
 
-    /* copy _key into new bucket */
-    if (strncpy(new_bucket->key, _key, _klen) != new_bucket->key) {
-        free(new_bucket);
-        return 2;
-    }
+    jar_ret = olt_jar(tx, key, klen, value, vsize);
+    check(jar_ret == 0, "Could not jar value. Aborting.");
 
-    new_bucket->klen = _klen;
-    new_bucket->original_size = vsize;
+    check(olt_commit(tx) == 0, "Could not commit transaction.");
 
-    /* Compute the new position of the data in the values file: */
-    const size_t new_offset = db->val_size;
-
-    if (db->state != OL_S_STARTUP) {
-        unsigned char *new_data_ptr = NULL;
-
-        if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-            /* Compress using LZ4 if enabled */
-            int maxoutsize = LZ4_compressBound(vsize);
-            _ol_ensure_values_file_size(db, maxoutsize);
-            new_data_ptr = db->values + db->val_size;
-            memset(new_data_ptr, '\0', maxoutsize);
-
-            /* All these fucking casts */
-            size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
-                                                 (int)vsize);
-            if (cmsize == 0) {
-                /* Free allocated data */
-                free(new_bucket);
-                return 1;
-            }
-
-            new_bucket->data_size = cmsize;
-        } else {
-            new_bucket->data_size = vsize;
-            _ol_ensure_values_file_size(db, new_bucket->data_size);
-            new_data_ptr = db->values + db->val_size;
-            memset(new_data_ptr, '\0', new_bucket->data_size);
-
-            if (memcpy(new_data_ptr, value, vsize) != new_data_ptr) {
-                /* Free allocated memory since we're not going to use them */
-                free(new_bucket);
-                return 3;
-            }
-        }
-    } else {
-        /* We still need to set the data size, but not the actual data. */
-        if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-            /* Since LZ4_compressBound only provides the worst case scenario
-             * and not what the data actually compressed to (we're replaying
-             * the AOL file, remember?) we have to compress it again and grab
-             * the amount of bytes processed.
-             * TODO: This is dumb. Make a function that just sets the bucket size.
-             * This new mythical function should also handle setting the data_offset
-             * of the bucket.
-             */
-            int maxoutsize = LZ4_compressBound(vsize);
-            char tmp_data[maxoutsize];
-            /* Don't need to memset tmp_data because I don't care about it. */
-
-            size_t cmsize = (size_t)LZ4_compress((char *)value, (char *)tmp_data,
-                                                 (int)vsize);
-            new_bucket->data_size = cmsize;
-        } else {
-            new_bucket->data_size = vsize;
-        }
-    }
-
-    /* Set the offset of the bucket before we increment it offset globally. */
-    new_bucket->data_offset = new_offset;
-    /* Remember to increment the tracked data size of the DB. */
-    db->val_size += new_bucket->data_size;
-
-    int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
-    /* TODO: rehash this shit at 80% */
-    if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
-        debug("Record count is now %i; growing hash table.", db->rcrd_cnt);
-        ret = _ol_grow_and_rehash_db(db);
-        if (ret > 0) {
-            ol_log_msg(LOG_ERR, "Problem rehashing DB. Error code: %i", ret);
-            free(new_bucket);
-            return 4;
-        }
-    }
-
-
-    uint32_t hash;
-    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
-    ret = _ol_set_bucket(db, new_bucket, hash);
-
-    if(ret > 0)
-        ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);
-
-    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
-            db->state != OL_S_STARTUP) {
-        ol_aol_write_cmd(db, "JAR", new_bucket);
-    }
-
-    return 0;
+    return jar_ret;
 
 error:
-    return 1;
+    if (tx != NULL && jar_ret != 10)
+        olt_abort(tx);
+
+    return jar_ret;
 }
 
 int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiration_date) {

@@ -3,6 +3,10 @@
 #include "oleg.h"
 #include "utils.h"
 #include "logging.h"
+#include "errhandle.h"
+#include "lz4.h"
+#include "file.h"
+#include "aol.h"
 
 ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
     ol_bucket *tmp_bucket = bucket;
@@ -31,4 +35,95 @@ int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
 
 const int _ol_compute_padded_size(const int size) {
     return (size + 4095) & ~4095;
+}
+
+int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
+                          unsigned char *value, size_t vsize) {
+    debug("Reallocating bucket.");
+
+    unsigned char *old_data_ptr = db->values + bucket->data_offset;
+    /* Clear out the old data in the file. */
+    if (bucket->data_size > 0)
+        memset(old_data_ptr, '\0', bucket->data_size);
+    /* Compute the new position of the data in the values file: */
+    size_t new_offset = db->val_size;
+    unsigned char *new_data_ptr = NULL;
+
+    /* Compress using LZ4 if enabled */
+    size_t cmsize = 0;
+    if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+        int maxoutsize = LZ4_compressBound(vsize);
+        if (maxoutsize <=  bucket->data_size) {
+            /* We don't need to put this value at the end of the file if the
+             * new value is small enough. */
+            new_data_ptr = old_data_ptr;
+            new_offset = bucket->data_offset;
+        } else {
+            _ol_ensure_values_file_size(db, maxoutsize);
+            new_data_ptr = db->values + db->val_size;
+        }
+
+        cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
+                                      (int)vsize);
+    } else {
+        if (vsize <= bucket->data_size) {
+            /* We don't need to put this value at the end of the file if the
+             * new value is small enough. */
+            new_data_ptr = old_data_ptr;
+            new_offset = bucket->data_offset;
+        } else {
+            _ol_ensure_values_file_size(db, vsize);
+            new_data_ptr = db->values + db->val_size;
+        }
+        if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
+            return 4;
+    }
+
+    if (bucket->expiration != NULL) {
+        free(bucket->expiration);
+        bucket->expiration = NULL;
+    }
+
+    /* Set original_size regardless of lz4 compression. This ensures we always
+     * have something to write to the AOL. */
+    bucket->original_size = vsize;
+    if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+        bucket->data_size = cmsize;
+    } else {
+        bucket->data_size = vsize;
+    }
+    bucket->data_offset = new_offset;
+
+    /* Remember to increment the tracked data size of the DB. */
+    db->val_size += bucket->data_size;
+
+    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) && db->state != OL_S_STARTUP) {
+        ol_aol_write_cmd(db, "JAR", bucket);
+    }
+
+    return 0;
+}
+
+int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash) {
+    /* TODO: error codes? */
+    int index = _ol_calc_idx(db->cur_ht_size, hash);
+    if (db->hashes[index] != NULL) {
+        db->meta->key_collisions++;
+        ol_bucket *tmp_bucket = db->hashes[index];
+        tmp_bucket = _ol_get_last_bucket_in_slot(tmp_bucket);
+        tmp_bucket->next = bucket;
+    } else {
+        db->hashes[index] = bucket;
+    }
+    db->rcrd_cnt++;
+
+    if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
+        /* Put the bucket into the tree */
+        ol_splay_tree_node *node = NULL;
+        node = ols_insert(db->tree, bucket->key, bucket->klen, bucket);
+        /* Make sure the bucket can reference the node. */
+        bucket->node = node;
+    }
+
+    return 0;
 }
