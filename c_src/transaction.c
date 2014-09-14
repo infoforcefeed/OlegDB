@@ -7,8 +7,33 @@
 #include "errhandle.h"
 #include "transaction.h"
 #include "utils.h"
+#include "tree.h"
+
+/* Where we start our transactions from. */
+transaction_id global_transaction_id = 1;
+
+char *tx_to_str(const transaction_id tx_id) {
+    char *_key = NULL;
+    _key = malloc(sizeof(char) * KEY_SIZE);
+    check_mem(_key);
+    snprintf(_key, KEY_SIZE, "%" PRIu64, tx_id);
+
+error:
+    return NULL;
+}
+
+ol_splay_tree_node *ols_find_tx_id(ol_splay_tree *tree, const transaction_id key) {
+    const size_t klen = intlen(key);
+    char *_key = tx_to_str(key);
+
+    ol_splay_tree_node *node = ols_find(tree, _key, klen);
+    free(_key);
+
+    return node;
+}
 
 transaction_id olt_begin(ol_database *db) {
+    ol_transaction *new_transaction = NULL;
     check(db->cur_transactions != NULL, "No transaction tree.");
     check(db != NULL, "No database specified in transaction begin.");
 
@@ -24,19 +49,20 @@ transaction_id olt_begin(ol_database *db) {
     snprintf(new_path, PATH_LENGTH, "%s/%s", db->path, "tx");
 
     /* Convert our integer tx_id into a string */
-    char _key[KEY_SIZE] = {0};
-    snprintf(_key, KEY_SIZE, "%" PRIu64, stack_tx.tx_id);
+    char *name = tx_to_str(stack_tx.tx_id);
+    check(name != NULL, "Could not convert tx_id to str.");
 
-    stack_tx.transaction_db = ol_open(new_path, _key, db->feature_set);
+    stack_tx.transaction_db = ol_open(new_path, name, db->feature_set);
     check(stack_tx.transaction_db != NULL, "Could not open transaction database.");
+    free(name);
 
     /* Copy the stack thing into the heap thing. */
-    ol_transaction *new_transaction = NULL;
     new_transaction = malloc(sizeof(ol_transaction));
     check_mem(new_transaction);
     memcpy(new_transaction, &stack_tx, sizeof(ol_transaction));
+    free(name);
 
-    return -1;
+    return 0;
 
 error:
     if (new_transaction != NULL)
@@ -48,8 +74,7 @@ int olt_commit(ol_database *db, transaction_id tx_id) {
     check(db->cur_transactions != NULL, "No transaction tree.");
 
     /* XXX: How do I turn a tx_id into a string? */
-    ol_splay_tree_node *found_tx = ols_find(db->cur_transactions,
-                                            obj->database_name, dbname_len);
+    ol_splay_tree_node *found_tx = ols_find_tx_id(db->cur_transactions, tx_id);
     check(found_tx != NULL, "Could not find transaction in tree.");
 
     return 1;

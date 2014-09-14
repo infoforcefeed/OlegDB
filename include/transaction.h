@@ -10,7 +10,7 @@ typedef struct ol_transaction {
 } ol_transaction;
 
 /* Incrementing counter of transaction IDs. Restarts with the program. */
-transaction_id global_transaction_id = 0;
+extern transaction_id global_transaction_id;
 
 /* Begins a new transaction. Fails if one is in progress. Returns the new transaction ID on success, NULL on failure. */
 transaction_id olt_begin(ol_database *db);
@@ -20,6 +20,9 @@ int olt_commit(ol_database *db, const transaction_id tx_id);
 
 /* Aborts the current database transaction. Returns 0 on success. */
 int olt_abort(ol_database *db, const transaction_id tx_id);
+
+/* Internal function used to find a transaction in a splay tree. */
+ol_splay_tree_node *ols_find_tx_id(ol_splay_tree *tree, const transaction_id key);
 
 /* ACTUAL COMMANDS */
 /* --------------- */

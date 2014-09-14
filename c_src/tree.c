@@ -201,15 +201,6 @@ int ols_delete(ol_splay_tree *tree, ol_splay_tree_node *node) {
     return 0;
 }
 
-ol_splay_tree_node *ols_find_int(ol_splay_tree *tree, const int key) {
-    const size_t klen = intlen(key);
-    char _key[KEY_SIZE] = {0};
-
-    snprintf(_key, KEY_SIZE, "%d", key);
-
-    return ols_find(tree, _key, klen);
-}
-
 ol_splay_tree_node *ols_find(ol_splay_tree *tree, const char *key, size_t klen) {
     check(klen <= KEY_SIZE, "Key is too long.");
     check(key != NULL, "Key is null.");
