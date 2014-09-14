@@ -52,7 +52,10 @@ transaction_id olt_begin(ol_database *db) {
     char *name = tx_to_str(stack_tx.tx_id);
     check(name != NULL, "Could not convert tx_id to str.");
 
-    stack_tx.transaction_db = ol_open(new_path, name, db->feature_set);
+    /* Make sure implciti transactions is turned OFF, because otherwise we'll
+     * get endless recursion. Wooo! */
+    ol_feature_flags flags = OL_F_APPENDONLY | OL_F_SPLAYTREE | OL_F_LZ4;
+    stack_tx.transaction_db = ol_open(new_path, name, flags);
     check(stack_tx.transaction_db != NULL, "Could not open transaction database.");
     free(name);
 
