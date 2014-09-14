@@ -386,7 +386,7 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     return 0;
 }
 
-int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
+int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
         size_t vsize) {
     int ret;
     char _key[KEY_SIZE] = {'\0'};
@@ -505,11 +505,6 @@ int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
 
 error:
     return 1;
-}
-
-int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
-        size_t vsize) {
-    return _ol_jar(db, key, klen, value, vsize);
 }
 
 int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiration_date) {
