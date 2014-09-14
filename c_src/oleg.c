@@ -386,8 +386,8 @@ static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     return 0;
 }
 
-int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
-        size_t vsize) {
+int ol_jar(ol_database *db, const char *key, size_t klen,
+           unsigned char *value, size_t vsize) {
     int ret;
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
