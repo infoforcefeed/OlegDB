@@ -109,7 +109,7 @@ int test_basic_transaction(const ol_feature_flags features) {
     check(ol_jar(db, key, strnlen(key, KEY_SIZE), value, vsize) == 0, "Could not jar key.");
     transaction_id tx_id = olt_begin(db);
 
-    check(tx_id != NULL, "Could not begin transaction.");
+    check(tx_id != -1, "Could not begin transaction.");
     check(olt_commit(db, tx_id) == 0, "Could not commit transaction.");
 
     _test_db_close(db);

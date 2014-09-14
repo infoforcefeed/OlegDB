@@ -1,7 +1,10 @@
 #pragma once
+#include <math.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 /* Utility functions that don't have a home. */
+
+#define intlen(value) (value == 0 ? 1 : (int)(floor(log10(value)))+1)
 
 /* Internal function used to get the last bucket on the
  * linked list of ol_bucket objects in a db slot. */

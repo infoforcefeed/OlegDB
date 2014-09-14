@@ -130,7 +130,7 @@ typedef struct ol_database {
 
 /* xXx FUNCTION=ol_open xXx
  * xXx DESCRIPTION=Opens a database for use. xXx
- * xXx RETURNS=A new database object. xXx
+ * xXx RETURNS=A new database object. NULL on failure. xXx
  * xXx *path=The directory where the database will be stored. xXx
  * xXx *name=The name of the database. This is used to create the dumpfile, and keep track of the database. xXx
  * xXx features=Features to enable when the database is initialized. You can logically OR multiple features together. xXx

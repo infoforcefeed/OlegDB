@@ -4,6 +4,7 @@
 #include "logging.h"
 #include "errhandle.h"
 #include "lz4.h"
+#include "utils.h"
 
 #include <sys/file.h>
 #include <stdio.h>
@@ -49,8 +50,6 @@ void _deserialize_time(struct tm *fillout, char *buf) {
     fillout->tm_year -= 1900;
     fillout->tm_mon -= 1;
 }
-
-#define intlen(value) (value == 0 ? 1 : (int)(floor(log10(value)))+1)
 
 int ol_aol_sync(const ol_database *db) {
     /* Force the OS to flush write to hardware */

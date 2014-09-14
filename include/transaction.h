@@ -1,20 +1,25 @@
 #pragma once
 #include "oleg.h"
 
-typedef const char* transaction_id;
+#define transaction_id uint64_t
+
 typedef struct ol_transaction {
-    transaction_id tx_id;
-    const ol_database *db;
+    const transaction_id tx_id;
+    ol_database *parent_db;
+    ol_database *transaction_db;
 } ol_transaction;
+
+/* Incrementing counter of transaction IDs. Restarts with the program. */
+transaction_id global_transaction_id = 0;
 
 /* Begins a new transaction. Fails if one is in progress. Returns the new transaction ID on success, NULL on failure. */
 transaction_id olt_begin(ol_database *db);
 
 /* Commits and finishes the transaction that matches the tx_id given. Returns 0 on success. */
-int olt_commit(ol_database *db, transaction_id tx_id);
+int olt_commit(ol_database *db, const transaction_id tx_id);
 
 /* Aborts the current database transaction. Returns 0 on success. */
-int olt_abort(ol_database *db, transaction_id tx_id);
+int olt_abort(ol_database *db, const transaction_id tx_id);
 
 /* ACTUAL COMMANDS */
 /* --------------- */
