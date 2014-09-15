@@ -23,6 +23,8 @@ char *tx_to_str(const transaction_id tx_id) {
     check_mem(_key);
     snprintf(_key, KEY_SIZE, "%" PRIu64, tx_id);
 
+    return _key;
+
 error:
     return NULL;
 }
@@ -62,7 +64,6 @@ ol_transaction *olt_begin(ol_database *db) {
     ol_feature_flags flags = OL_F_APPENDONLY | OL_F_SPLAYTREE | OL_F_LZ4 | OL_F_DISABLE_TX;
     stack_tx.transaction_db = ol_open(new_path, name, flags);
     check(stack_tx.transaction_db != NULL, "Could not open transaction database.");
-    free(name);
 
     /* Copy the stack thing into the heap thing. */
     new_transaction = malloc(sizeof(ol_transaction));
