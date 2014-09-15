@@ -110,6 +110,11 @@ ol_database *ol_open(const char *path, const char *name, int features){
         ol_aol_init(new_db);
         check(ol_aol_restore(new_db) == 0, "Error restoring from AOL file");
     }
+
+    if (!new_db->is_enabled(OL_F_DISABLE_TX, &new_db->feature_set)) {
+        ols_init(&(new_db->cur_transactions));
+        check(new_db->cur_transactions != NULL, "Could not init transaction tree.");
+    }
     new_db->state = OL_S_AOKAY;
 
     return new_db;
@@ -123,6 +128,12 @@ error:
 
 int ol_close(ol_database *db){
     debug("Closing \"%s\" database.", db->name);
+
+    /* TODO: Commit/abort transactions here. */
+    /*
+    if (!new_db->is_enabled(OL_F_DISABLE_TX, &new_db->feature_set)) {
+    }
+    */
 
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
     int rcrd_cnt = db->rcrd_cnt;
