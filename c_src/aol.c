@@ -147,7 +147,7 @@ error:
     return NULL;
 }
 
-int ol_aol_restore(ol_database *db) {
+int ol_aol_restore_from_file(ol_database *target_db, const char filename[AOL_FILENAME_ALLOC]) {
     ol_string *command = NULL,
               *key = NULL,
               *value = NULL,
@@ -155,7 +155,7 @@ int ol_aol_restore(ol_database *db) {
               *read_data_size = NULL,
               *read_org_size = NULL;
 
-    FILE *fd = fopen(db->aol_file, "r");
+    FILE *fd = fopen(filename, "r");
     check(fd, "Error opening file");
     while (!feof(fd)) {
         command = _ol_read_data(fd);
@@ -190,7 +190,7 @@ int ol_aol_restore(ol_database *db) {
 
             /* Pointer in the values file to where the data for this command 
              * should be. */
-            unsigned char *data_ptr = db->values + data_offset;
+            unsigned char *data_ptr = target_db->values + data_offset;
 
             /* Short circuit check to see if the memory in the location is all
              * null. */
@@ -218,12 +218,12 @@ int ol_aol_restore(ol_database *db) {
                 int processed = LZ4_decompress_fast((const char*)data_ptr, (char *)tmp_data, original_size);
 
                 if (processed == compressed_size) {
-                    ol_jar(db, key->data, key->dlen, (unsigned char*)tmp_data, original_size);
+                    ol_jar(target_db, key->data, key->dlen, (unsigned char*)tmp_data, original_size);
                 } else {
                     if (original_size != compressed_size)
                         ol_log_msg(LOG_WARN, "Could not decompress data that is probably compressed. Data may have been deleted.");
                     /* Now that we've tried to decompress and failed, send off the raw data instead. */
-                    ol_jar(db, key->data, key->dlen, data_ptr, compressed_size);
+                    ol_jar(target_db, key->data, key->dlen, data_ptr, compressed_size);
                 }
             }
 #ifdef DEBUG
@@ -238,7 +238,7 @@ int ol_aol_restore(ol_database *db) {
              * We need to do this because compaction/squishing will leave holes
              * in the data that we need to account for during replay.
              */
-            db->val_size = compressed_size + data_offset;
+            target_db->val_size = compressed_size + data_offset;
             /* TODO: What happens here if a bucket is reallocated? We don't
              * actually expand the extents, so in that case would we have a
              * bug?
@@ -249,7 +249,7 @@ int ol_aol_restore(ol_database *db) {
             ol_string_free(&ct);
             ol_string_free(&value);
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {
-            ol_scoop(db, key->data, key->dlen);
+            ol_scoop(target_db, key->data, key->dlen);
         } else if (strncmp(command->data, "SPOIL", 5) == 0) {
             ol_string *spoil = _ol_read_data(fd);
             check(spoil != NULL, "Could not read the rest of SPOIL command for AOL.");
@@ -258,7 +258,7 @@ int ol_aol_restore(ol_database *db) {
             _deserialize_time(&time, spoil->data);
 
             check(spoil, "Error reading");
-            ol_spoil(db, key->data, key->dlen, &time);
+            ol_spoil(target_db, key->data, key->dlen, &time);
             ol_string_free(&spoil);
         }
 
@@ -288,4 +288,8 @@ error:
     }
 
     return -1;
+}
+
+int ol_aol_restore(ol_database *db) {
+    return ol_aol_restore_from_file(db, db->aol_file);
 }

@@ -7,6 +7,10 @@
 
 int ol_aol_init(ol_database *db);
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bucket);
+/* Restore this database's AOL file. */
 int ol_aol_restore(ol_database *db);
+/* fsync the AOL file. */
 int ol_aol_sync(const ol_database *db);
-void _deserialize_time(struct tm *fillout, char *buf);
+
+/* Restore from a specific aol file to a specific database. */
+int ol_aol_restore_from_file(ol_database *target_db, const char filename[AOL_FILENAME_ALLOC]);

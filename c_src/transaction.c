@@ -86,6 +86,17 @@ error:
     return NULL;
 }
 
+static int _olt_cleanup(ol_database *db, char *values_filename, char *tx_aol_filename) {
+    /* Yeah, come at me. */
+    ol_log_msg(LOG_WARN, "Unlinking values file for transaction, %s", values_filename);
+    unlink(values_filename);
+
+    ol_log_msg(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
+    unlink(tx_aol_filename);
+
+    return ol_close(db);
+}
+
 int olt_commit(ol_transaction *tx) {
     /* So at this point we should have a series of operations stored up and
      * successful in our tx->transaction_db. At this point we need to replay
@@ -95,7 +106,7 @@ int olt_commit(ol_transaction *tx) {
     check(tx->parent_db->cur_transactions != NULL, "No transaction tree.");
 
     char tx_aol_filename[AOL_FILENAME_ALLOC] = {0};
-    strncpy(tx->transaction_db->aol_file, tx_aol_filename, AOL_FILENAME_ALLOC);
+    tx->transaction_db->get_db_file_name(tx->transaction_db, AOL_FILENAME, tx_aol_filename);
 
     /* Random question: Why do we have a function for returning the
      * the values filename but not the aol filename? fuckit.jpg
@@ -103,27 +114,16 @@ int olt_commit(ol_transaction *tx) {
     char values_filename[DB_NAME_SIZE] = {0};
     tx->transaction_db->get_db_file_name(tx->transaction_db, VALUES_FILENAME, values_filename);
 
-    /* Pre-commit clean-up: */
-    //check(ol_squish(tx->transaction_db), "Could not squish transaction db.");
-    //check(ol_
+    /* Don't squish or compact or anything here because it'll remove stuff
+     * that we don't want removed from the log file, like SCOOP commands.
+     */
 
-    if (tx->transaction_db->rcrd_cnt == 0) {
-        goto cleanup;
-    }
+    /* Make sure everything is written: */
+    ol_sync(tx->transaction_db);
 
-    return 1;
+    ol_aol_restore_from_file(tx->parent_db, tx_aol_filename);
 
-cleanup:
-    /* Yeah, come at me. */
-    ol_log_msg(LOG_WARN, "Unlinking values file for transaction, %s", values_filename);
-    unlink(values_filename);
-
-    ol_log_msg(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
-    unlink(tx_aol_filename);
-
-    ol_close(tx->transaction_db);
-
-    return 0;
+    return _olt_cleanup(tx->transaction_db, values_filename, tx_aol_filename);
 
 error:
     return 1;
