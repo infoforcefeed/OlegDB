@@ -69,7 +69,7 @@ ol_database *ol_open(const char *path, const char *name, int features){
     new_db->cur_transactions = NULL;
 
     /* Null every pointer before initialization in case something goes wrong */
-    new_db->aol_file = NULL;
+    memset(new_db->aol_file, '\0', AOL_FILENAME_ALLOC);
     new_db->aolfd = 0;
 
     /* Function pointers for feature flags */
@@ -101,8 +101,6 @@ ol_database *ol_open(const char *path, const char *name, int features){
     /* We figure out the filename now incase someone flips the aol_init bit
      * later.
      */
-    new_db->aol_file = calloc(1, AOL_FILENAME_ALLOC);
-    check_mem(new_db->aol_file);
     new_db->get_db_file_name(new_db, AOL_FILENAME, new_db->aol_file);
 
     /* Lets use an append-only log file */
@@ -121,7 +119,6 @@ ol_database *ol_open(const char *path, const char *name, int features){
 
 error:
     /* Make sure we free the database first */
-    free(new_db->aol_file);
     free(new_db);
     return NULL;
 }
@@ -173,7 +170,6 @@ int ol_close(ol_database *db){
         msync(db->values, db->val_size, MS_SYNC);
         _ol_close_values(db);
     }
-    free(db->aol_file);
     free(db->meta);
     free(db->hashes);
     free(db);
