@@ -239,6 +239,10 @@ int ol_aol_restore(ol_database *db) {
              * in the data that we need to account for during replay.
              */
             db->val_size = compressed_size + data_offset;
+            /* TODO: What happens here if a bucket is reallocated? We don't
+             * actually expand the extents, so in that case would we have a
+             * bug?
+             */
 
             ol_string_free(&read_org_size);
             ol_string_free(&read_data_size);
