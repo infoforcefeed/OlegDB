@@ -108,9 +108,6 @@ int olt_commit(ol_transaction *tx) {
     char tx_aol_filename[AOL_FILENAME_ALLOC] = {0};
     tx->transaction_db->get_db_file_name(tx->transaction_db, AOL_FILENAME, tx_aol_filename);
 
-    /* Random question: Why do we have a function for returning the
-     * the values filename but not the aol filename? fuckit.jpg
-     */
     char values_filename[DB_NAME_SIZE] = {0};
     tx->transaction_db->get_db_file_name(tx->transaction_db, VALUES_FILENAME, values_filename);
 
@@ -119,6 +116,7 @@ int olt_commit(ol_transaction *tx) {
      */
 
     /* Make sure everything is written: */
+    fflush(tx->transaction_db->aolfd);
     ol_sync(tx->transaction_db);
 
     ol_aol_restore_from_file(tx->parent_db, tx_aol_filename);

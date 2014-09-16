@@ -13,4 +13,4 @@ int ol_aol_restore(ol_database *db);
 int ol_aol_sync(const ol_database *db);
 
 /* Restore from a specific aol file to a specific database. */
-int ol_aol_restore_from_file(ol_database *target_db, const char filename[AOL_FILENAME_ALLOC]);
+int ol_aol_restore_from_file(ol_database *target_db, const char aol_filename[AOL_FILENAME_ALLOC]);
