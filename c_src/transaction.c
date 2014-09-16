@@ -1,6 +1,7 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "oleg.h"
 #include "logging.h"
@@ -86,10 +87,43 @@ error:
 }
 
 int olt_commit(ol_transaction *tx) {
+    /* So at this point we should have a series of operations stored up and
+     * successful in our tx->transaction_db. At this point we need to replay
+     * them all back onto the parent_db.
+     */
     check(tx->parent_db != NULL, "No parent database.");
     check(tx->parent_db->cur_transactions != NULL, "No transaction tree.");
 
+    char tx_aol_filename[AOL_FILENAME_ALLOC] = {0};
+    strncpy(tx->transaction_db->aol_file, tx_aol_filename, AOL_FILENAME_ALLOC);
+
+    /* Random question: Why do we have a function for returning the
+     * the values filename but not the aol filename? fuckit.jpg
+     */
+    char values_filename[DB_NAME_SIZE] = {0};
+    tx->transaction_db->get_db_file_name(tx->transaction_db, VALUES_FILENAME, values_filename);
+
+    /* Pre-commit clean-up: */
+    //check(ol_squish(tx->transaction_db), "Could not squish transaction db.");
+    //check(ol_
+
+    if (tx->transaction_db->rcrd_cnt == 0) {
+        goto cleanup;
+    }
+
     return 1;
+
+cleanup:
+    /* Yeah, come at me. */
+    ol_log_msg(LOG_WARN, "Unlinking values file for transaction, %s", values_filename);
+    unlink(values_filename);
+
+    ol_log_msg(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
+    unlink(tx_aol_filename);
+
+    ol_close(tx->transaction_db);
+
+    return 0;
 
 error:
     return 1;
