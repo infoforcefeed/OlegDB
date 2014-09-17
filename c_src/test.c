@@ -22,7 +22,7 @@ ol_database *_test_db_open(const ol_feature_flags features) {
         ol_log_msg(LOG_ERR, "Can't create unique directory");
         return NULL;
     }
-    chmod(DB_PATH, 755);
+    chmod(DB_PATH, 0755);
     ol_database *db = ol_open(DB_PATH, DB_NAME, features);
     if (db != NULL) {
         ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
