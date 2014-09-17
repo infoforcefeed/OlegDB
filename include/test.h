@@ -4,7 +4,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#define DB_PATH "/tmp/oleg_is_king" /* TODO: Change this */
 #define DB_NAME "testdb"
 #define RECORD_COUNT 100000
 
@@ -15,7 +14,7 @@
     if (test_return_val != 0 || errno != 0) {\
         tests_failed++;\
         ol_log_msg(LOG_ERR, "%c[%dmFailed.%c[%dm", 0x1B, 31, 0x1B, 0);\
-        ol_log_msg(LOG_ERR, "ERRORNO: %s\n", clean_errno());\
+        ol_log_msg(LOG_ERR, "ERRNO: %s\n", clean_errno());\
         goto error;\
     } else {\
         tests_run++;\

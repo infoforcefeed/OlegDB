@@ -17,6 +17,7 @@
  * in a million places when we modify it.
  */
 ol_database *_test_db_open(const ol_feature_flags features) {
+    const char *DB_PATH = tempnam("/tmp/", "oleg-");
     ol_database *db = ol_open(DB_PATH, DB_NAME, features);
     if (db != NULL) {
         ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
@@ -37,6 +38,9 @@ static int _test_db_close(ol_database *db) {
     strncpy(aol_filename, db->aol_file, DB_NAME_SIZE);
     int should_delete_aol = db->is_enabled(OL_F_APPENDONLY, &db->feature_set);
 
+    char DB_PATH[DB_NAME_SIZE] = {0};
+    strncpy(DB_PATH, db->path, DB_NAME_SIZE);
+
     int ret = ol_close(db);
 
     ol_log_msg(LOG_INFO, "Unlinking %s", values_filename);
@@ -46,6 +50,8 @@ static int _test_db_close(ol_database *db) {
         ol_log_msg(LOG_INFO, "Unlinking %s", aol_filename);
         unlink(aol_filename);
     }
+
+    rmdir(DB_PATH);
 
     return ret;
 }
@@ -573,16 +579,16 @@ static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
 int test_feature_flags(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
 
-    db->enable(OL_F_APPENDONLY, &db->feature_set);
-    if (!db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+    db->enable(OL_F_SPLAYTREE, &db->feature_set);
+    if (!db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
         ol_log_msg(LOG_ERR, "Feature did not enable correctly.");
         _test_db_close(db);
         return 1;
     }
     ol_log_msg(LOG_INFO, "Feature was enabled.");
 
-    db->disable(OL_F_APPENDONLY, &db->feature_set);
-    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+    db->disable(OL_F_SPLAYTREE, &db->feature_set);
+    if(db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
         ol_log_msg(LOG_ERR, "Feature did not disable correctly.");
         _test_db_close(db);
         return 2;
@@ -636,6 +642,9 @@ int _test_aol(const ol_feature_flags features, ol_database *db) {
         return 4;
     }
 
+    char DB_PATH[DB_NAME_SIZE] = {0};
+    strncpy(DB_PATH, db->path, DB_NAME_SIZE);
+
     /* We don't want to use test_db_close here because we want to retrieve
      * values again. */
     ol_close(db);
@@ -676,6 +685,10 @@ int test_aol_and_compaction(const ol_feature_flags features) {
 
     ol_log_msg(LOG_INFO, "Squishing database.");
     ol_squish(db);
+
+    char DB_PATH[DB_NAME_SIZE] = {0};
+    strncpy(DB_PATH, db->path, DB_NAME_SIZE);
+
     ol_close(db);
 
     db = ol_open(DB_PATH, DB_NAME, DB_DEFAULT_FEATURES | OL_F_APPENDONLY);
