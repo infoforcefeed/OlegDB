@@ -16,8 +16,8 @@
  * in a million places when we modify it.
  */
 ol_database *_test_db_open(const ol_feature_flags features) {
-    char DB_PATH[] = "/tmp/oleg-XXXXXX";
-    mkdtemp(DB_PATH);
+    char template[] = "/tmp/oleg-XXXXXX";
+    char *DB_PATH = mkdtemp(template);
     if (DB_PATH == NULL) {
         ol_log_msg(LOG_ERR, "Can't create unique directory");
         return NULL;
