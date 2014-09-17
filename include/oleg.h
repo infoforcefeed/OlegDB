@@ -176,7 +176,7 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
  * xXx *value=The value to insert. xXx
  * xXx vsize=The size of the value in bytes. xXx
  */
-int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value, size_t vsize);
+int ol_jar(ol_database *db, const char *key, size_t klen, const unsigned char *value, size_t vsize);
 
 /* xXx FUNCTION=ol_expiration xXx
  * xXx DESCRIPTION=Retrieves the expiration time for a given key from the database. xXx

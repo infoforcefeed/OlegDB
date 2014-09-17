@@ -21,7 +21,7 @@ const int _ol_compute_padded_size(const int size);
 
 /* Reallocates a bucket. I think. I forget. Don't use this for anything. */
 int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
-                          unsigned char *value, size_t vsize);
+                          const unsigned char *value, size_t vsize);
 
 /* Sets a bucket and does some other useful things. I don't remember what they */
 /* are at the moment. */

@@ -60,9 +60,10 @@ ol_transaction *olt_begin(ol_database *db) {
     char *name = tx_to_str(stack_tx.tx_id);
     check(name != NULL, "Could not convert tx_id to str.");
 
-    /* Make sure implciti transactions is turned OFF, because otherwise we'll
+    /* Make sure implicit transactions is turned OFF, because otherwise we'll
      * get endless recursion. Wooo! */
-    ol_feature_flags flags = OL_F_APPENDONLY | OL_F_SPLAYTREE | OL_F_LZ4 | OL_F_DISABLE_TX;
+    ol_feature_flags flags = OL_F_APPENDONLY | OL_F_SPLAYTREE |
+        OL_F_AOL_FFLUSH | OL_F_LZ4 | OL_F_DISABLE_TX;
     stack_tx.transaction_db = ol_open(new_path, name, flags);
     check(stack_tx.transaction_db != NULL, "Could not open transaction database.");
 
@@ -118,7 +119,7 @@ int olt_commit(ol_transaction *tx) {
     /* Make sure everything is written: */
     ol_sync(tx->transaction_db);
 
-    ol_aol_restore_from_file(tx->parent_db, tx_aol_filename);
+    ol_aol_restore_from_file(tx->parent_db, tx_aol_filename, tx->transaction_db->values);
 
     return _olt_cleanup(tx->transaction_db, values_filename, tx_aol_filename);
 
@@ -136,7 +137,7 @@ error:
     return 1;
 }
 
-int olt_jar(ol_transaction *tx, const char *key, size_t klen, unsigned char *value, size_t vsize) {
+int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned char *value, size_t vsize) {
     int ret;
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;

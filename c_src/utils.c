@@ -38,7 +38,7 @@ const int _ol_compute_padded_size(const int size) {
 }
 
 int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
-                          unsigned char *value, size_t vsize) {
+                          const unsigned char *value, size_t vsize) {
     debug("Reallocating bucket.");
 
     unsigned char *old_data_ptr = db->values + bucket->data_offset;

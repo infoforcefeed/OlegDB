@@ -33,7 +33,7 @@ ol_splay_tree_node *ols_find_tx_id(ol_splay_tree *tree, const transaction_id key
 int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **data);
 int olt_unjar_ds(ol_transaction *tx, const char *key, size_t klen, unsigned char **data, size_t *dsize);
 
-int olt_jar(ol_transaction *tx, const char *key, size_t klen, unsigned char *value, size_t vsize);
+int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned char *value, size_t vsize);
 
 struct tm *olt_expiration_time(ol_transaction *tx, const char *key, size_t klen);
 int olt_scoop(ol_transaction *tx, const char *key, size_t klen);

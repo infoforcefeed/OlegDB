@@ -303,7 +303,7 @@ error:
 }
 
 int ol_jar(ol_database *db, const char *key, size_t klen,
-           unsigned char *value, size_t vsize) {
+           const unsigned char *value, size_t vsize) {
 
     /* Is disabled_tx enabled? lksjdlkfpfpfllfplflpf */
     if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set)) {

@@ -147,7 +147,9 @@ error:
     return NULL;
 }
 
-int ol_aol_restore_from_file(ol_database *target_db, const char filename[AOL_FILENAME_ALLOC]) {
+int ol_aol_restore_from_file(ol_database *target_db,
+        const char aol_fname[AOL_FILENAME_ALLOC],
+        const unsigned char *values_data) {
     ol_string *command = NULL,
               *key = NULL,
               *value = NULL,
@@ -155,7 +157,7 @@ int ol_aol_restore_from_file(ol_database *target_db, const char filename[AOL_FIL
               *read_data_size = NULL,
               *read_org_size = NULL;
 
-    FILE *fd = fopen(filename, "r");
+    FILE *fd = fopen(aol_fname, "r");
     check(fd, "Error opening file");
     while (!feof(fd)) {
         command = _ol_read_data(fd);
@@ -190,7 +192,7 @@ int ol_aol_restore_from_file(ol_database *target_db, const char filename[AOL_FIL
 
             /* Pointer in the values file to where the data for this command 
              * should be. */
-            unsigned char *data_ptr = target_db->values + data_offset;
+           const unsigned char *data_ptr = values_data + data_offset;
 
             /* Short circuit check to see if the memory in the location is all
              * null. */
@@ -291,5 +293,5 @@ error:
 }
 
 int ol_aol_restore(ol_database *db) {
-    return ol_aol_restore_from_file(db, db->aol_file);
+    return ol_aol_restore_from_file(db, db->aol_file, db->values);
 }
