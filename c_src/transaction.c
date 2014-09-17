@@ -116,7 +116,6 @@ int olt_commit(ol_transaction *tx) {
      */
 
     /* Make sure everything is written: */
-    fflush(tx->transaction_db->aolfd);
     ol_sync(tx->transaction_db);
 
     ol_aol_restore_from_file(tx->parent_db, tx_aol_filename);
