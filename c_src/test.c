@@ -19,6 +19,7 @@
 ol_database *_test_db_open(const ol_feature_flags features) {
     char template[] = "/tmp/oleg-XXXXXX";
     char *DB_PATH = mkdtemp(template);
+    ol_log_msg(LOG_INFO, "Opening %s", DB_PATH);
     if (DB_PATH == NULL) {
         ol_log_msg(LOG_ERR, "Can't create unique directory");
         return NULL;

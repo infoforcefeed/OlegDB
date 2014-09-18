@@ -95,6 +95,8 @@ static int _olt_cleanup(ol_database *db, char *values_filename, char *tx_aol_fil
     debug(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
     unlink(tx_aol_filename);
 
+    global_transaction_id++;
+
     return ol_close(db);
 }
 

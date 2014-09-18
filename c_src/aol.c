@@ -56,7 +56,8 @@ int ol_aol_sync(const ol_database *db) {
     if (db->is_enabled(OL_F_AOL_FFLUSH, &db->feature_set))
         check(fflush(db->aolfd) == 0, "Could not fflush.");
     /* AOL should always fsync at least. */
-    check(fsync(fileno(db->aolfd)) == 0, "Could not fsync");
+    const int aol_fd = fileno(db->aolfd);
+    check(fsync(aol_fd) == 0, "Could not fsync");
     return 0;
 
 error:

@@ -19,7 +19,7 @@ If the ticket is just really vague but seems important, it's probably a
 discussion thing.
 
 Of course, contributions should not be limited to the ticketing system. If you
-want to add support for something, go ahead. The worst we can do is belittle 
+want to add support for something, go ahead. The worst we can do is belittle
 you and your code (we probably won't, though).
 
 General Guidelines
