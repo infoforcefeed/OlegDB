@@ -57,6 +57,14 @@ static int _test_db_close(ol_database *db) {
         unlink(aol_filename);
     }
 
+    char tx_dir_path[PATH_LENGTH] = {0};
+    snprintf(tx_dir_path, PATH_LENGTH, "%s/%s", db->path, "tx");
+
+    struct stat st = {0};
+    /* Check to see if the DB exists */
+    if (_ol_get_stat(tx_dir_path, &st) || S_ISDIR(st.st_mode)) {
+        rmdir(tx_dir_path);
+    }
     rmdir(DB_PATH);
 
     return ret;

@@ -63,7 +63,7 @@ ol_transaction *olt_begin(ol_database *db) {
     /* Make sure implicit transactions is turned OFF, because otherwise we'll
      * get endless recursion. Wooo! */
     ol_feature_flags flags = OL_F_APPENDONLY | OL_F_SPLAYTREE |
-        OL_F_AOL_FFLUSH | OL_F_LZ4 | OL_F_DISABLE_TX;
+                             OL_F_AOL_FFLUSH | OL_F_LZ4 | OL_F_DISABLE_TX;
     stack_tx.transaction_db = ol_open(new_path, name, flags);
     check(stack_tx.transaction_db != NULL, "Could not open transaction database.");
 
