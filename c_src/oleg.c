@@ -175,7 +175,7 @@ int ol_close(ol_database *db){
     free(db);
 
     check(freed == rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
-    ol_log_msg(LOG_INFO, "Database closed. Remember to drink your coffee.");
+    debug("Database closed. Remember to drink your coffee.");
     return 0;
 
 error:
@@ -306,7 +306,7 @@ int ol_jar(ol_database *db, const char *key, size_t klen,
            const unsigned char *value, size_t vsize) {
 
     /* Is disabled_tx enabled? lksjdlkfpfpfllfplflpf */
-    if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set)) {
+    if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) || db->state == OL_S_COMMITTING) {
         /* Fake a transaction: */
         ol_transaction stack_tx = {
             .tx_id = 0,

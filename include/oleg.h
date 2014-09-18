@@ -39,10 +39,12 @@ typedef enum {
 * xXx DESCRIPTION=State flags tell the database what it should be doing. xXx
 * xXx OL_S_STARTUP=Startup state. The DB is starting, duh. xXx
 * xXx OL_S_AOKAY=The normal operating state, the database is a-okay xXx
+* xXx OL_S_COMMITTING=The database is committing a transaction. It doesn't want to do anything else. xXx
 */
 typedef enum {
     OL_S_STARTUP        = 0,
-    OL_S_AOKAY          = 1
+    OL_S_AOKAY          = 1,
+    OL_S_COMMITTING     = 2
 } ol_state_flags;
 
 /* xXx TYPEDEF=ol_val_array xXx

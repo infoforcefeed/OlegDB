@@ -236,7 +236,7 @@ static inline void _ols_free_node(ol_splay_tree_node *node) {
     spush(&stack, (void *)node);
 
     int iters = 0;
-    ol_log_msg(LOG_INFO, "Clearing tree.");
+    debug("Clearing tree.");
     while (stack->next != NULL) {
         iters++;
         ol_splay_tree_node *cur_node = (ol_splay_tree_node *)spop(&stack);
@@ -249,7 +249,7 @@ static inline void _ols_free_node(ol_splay_tree_node *node) {
         }
         free(cur_node);
     }
-    ol_log_msg(LOG_INFO, "Tree cleared. Iterations: %i", iters);
+    debug("Tree cleared. Iterations: %i", iters);
     free(stack);
 
 error:

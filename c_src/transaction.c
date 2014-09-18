@@ -89,10 +89,10 @@ error:
 
 static int _olt_cleanup(ol_database *db, char *values_filename, char *tx_aol_filename) {
     /* Yeah, come at me. */
-    ol_log_msg(LOG_WARN, "Unlinking values file for transaction, %s", values_filename);
+    debug("Unlinking values file for transaction, %s", values_filename);
     unlink(values_filename);
 
-    ol_log_msg(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
+    debug(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
     unlink(tx_aol_filename);
 
     return ol_close(db);
@@ -118,8 +118,11 @@ int olt_commit(ol_transaction *tx) {
 
     /* Make sure everything is written: */
     ol_sync(tx->transaction_db);
+    tx->parent_db->state = OL_S_COMMITTING;
 
     ol_aol_restore_from_file(tx->parent_db, tx_aol_filename, tx->transaction_db->values);
+
+    tx->parent_db->state = OL_S_AOKAY;
 
     return _olt_cleanup(tx->transaction_db, values_filename, tx_aol_filename);
 
