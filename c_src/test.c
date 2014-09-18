@@ -1072,6 +1072,7 @@ void run_tests(int results[2]) {
     /* These tests are special and depend on certain features being enabled
      * or disabled. */
     const ol_feature_flags feature_set = DB_DEFAULT_FEATURES;
+    ol_run_test(test_basic_transaction);
     ol_run_test(test_unjar_msgpack);
     ol_run_test(test_aol_and_compaction);
     ol_run_test(test_aol);
@@ -1085,23 +1086,23 @@ void run_tests(int results[2]) {
     /* Permute all features enabled for these tests, so that we get all of our
      * code paths tested. */
     int i = 0;
-    const int FEATURE_NUM = 4;
+    const int FEATURE_NUM = 5;
     for(; i <= FEATURE_NUM; i++) {
         const ol_feature_flags feature_set = i;
         /* Fucking macros man */
+        ol_run_test(test_jar);
+        ol_run_test(test_unjar_ds);
+        ol_run_test(test_cas);
+        ol_run_test(test_unjar);
         ol_run_test(test_sync);
         ol_run_test(test_compaction);
         ol_run_test(test_open_close);
         ol_run_test(test_bucket_max);
         ol_run_test(test_zero_length_keys);
-        ol_run_test(test_jar);
-        ol_run_test(test_cas);
-        ol_run_test(test_unjar);
         ol_run_test(test_scoop);
         ol_run_test(test_expiration);
         ol_run_test(test_update);
         ol_run_test(test_lots_of_deletes);
-        ol_run_test(test_unjar_ds);
         ol_run_test(test_feature_flags);
     }
 
