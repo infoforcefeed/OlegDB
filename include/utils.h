@@ -26,3 +26,6 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 /* Sets a bucket and does some other useful things. I don't remember what they */
 /* are at the moment. */
 int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash);
+
+/* Self-explanatory. Hopefully. */
+int _has_bucket_expired(const ol_bucket *bucket);

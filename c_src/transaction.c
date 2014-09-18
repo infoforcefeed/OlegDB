@@ -1,4 +1,5 @@
 #define __STDC_FORMAT_MACROS
+#include <fcntl.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -40,6 +41,10 @@ ol_splay_tree_node *ols_find_tx_id(ol_splay_tree *tree, const transaction_id key
     return node;
 }
 
+static void _tx_directory(char *new_path, ol_database *db) {
+    snprintf(new_path, PATH_LENGTH, "%s/%s", db->path, "tx");
+}
+
 ol_transaction *olt_begin(ol_database *db) {
     ol_transaction *new_transaction = NULL;
     check(db->cur_transactions != NULL, "No transaction tree.");
@@ -54,7 +59,7 @@ ol_transaction *olt_begin(ol_database *db) {
 
     /* Setup a ".../tx/" directory for our transaction databases. */
     char new_path[PATH_LENGTH] = {0};
-    snprintf(new_path, PATH_LENGTH, "%s/%s", db->path, "tx");
+    _tx_directory(new_path, db);
 
     /* Convert our integer tx_id into a string */
     char *name = tx_to_str(stack_tx.tx_id);
@@ -79,6 +84,8 @@ ol_transaction *olt_begin(ol_database *db) {
         new_transaction
     );
 
+    global_transaction_id++;
+
     return new_transaction;
 
 error:
@@ -94,8 +101,6 @@ static int _olt_cleanup(ol_database *db, char *values_filename, char *tx_aol_fil
 
     debug(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
     unlink(tx_aol_filename);
-
-    global_transaction_id++;
 
     return ol_close(db);
 }
@@ -120,10 +125,9 @@ int olt_commit(ol_transaction *tx) {
 
     /* Make sure everything is written: */
     ol_sync(tx->transaction_db);
+
     tx->parent_db->state = OL_S_COMMITTING;
-
     ol_aol_restore_from_file(tx->parent_db, tx_aol_filename, tx->transaction_db->values);
-
     tx->parent_db->state = OL_S_AOKAY;
 
     return _olt_cleanup(tx->transaction_db, values_filename, tx_aol_filename);
@@ -136,10 +140,83 @@ int olt_abort(ol_transaction *tx) {
     check(tx->parent_db != NULL, "No parent database.");
     check(tx->parent_db->cur_transactions != NULL, "No transaction tree.");
 
+    /* TODO */
+
     return 1;
 
 error:
     return 1;
+}
+
+int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **data) {
+    return olt_unjar_ds(tx, key, klen, data, NULL);
+}
+
+int olt_unjar_ds(ol_transaction *tx, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
+    char _key[KEY_SIZE] = {'\0'};
+    size_t _klen = 0;
+    ol_database *operating_db = NULL;
+    ol_bucket *bucket = ol_get_bucket(tx->transaction_db, key, klen, &_key, &_klen);
+    check_warn(_klen > 0, "Key length of zero not allowed.");
+
+    /* Fall through to the parent db: */
+    if (bucket == NULL) {
+        bucket = ol_get_bucket(tx->parent_db, key, klen, &_key, &_klen);
+        /* This is getting messy... */
+        if (bucket != NULL)
+            operating_db = tx->parent_db;
+    } else {
+        operating_db = tx->transaction_db;
+    }
+
+    if (bucket != NULL) {
+        if (!_has_bucket_expired(bucket)) {
+            /* We don't need to fill out the data so just return 'we found the key'. */
+            if (data == NULL)
+                return 0;
+
+            /* Allocate memory to store memcpy'd data into. */
+            *data = calloc(1, bucket->original_size);
+            check(*data != NULL, "Could not allocate memory for compressed data.");
+
+            if (dsize != NULL) {
+                /* "strncpy never fails!" */
+                size_t *ret = memcpy(dsize, &bucket->original_size, sizeof(size_t));
+                check(ret == dsize, "Could not copy data size into input data_size param.");
+            }
+
+            unsigned char *data_ptr = operating_db->values + bucket->data_offset;
+            /* Decomperss with LZ4 if enabled */
+            if (operating_db->is_enabled(OL_F_LZ4, &operating_db->feature_set)) {
+                int processed = 0;
+                processed = LZ4_decompress_fast((char *)data_ptr,
+                                                (char *)*data,
+                                                bucket->original_size);
+                check(processed == bucket->data_size, "Could not decompress data.");
+            } else {
+                /* We know data isn't NULL by this point. */
+                unsigned char *ret = memcpy(*data, data_ptr, bucket->original_size);
+                check(ret == *data, "Could not copy data into output data param.");
+            }
+
+            /* Key found, tell somebody. */
+            return 0;
+        } else {
+            /* It's dead, get rid of it. */
+            /* NOTE: We explicitly say the transaction_db here because ITS A
+             * FUCKING TRANSACTION. ACID, bro. */
+            check(ol_scoop(tx->transaction_db, key, klen) == 0, "Scoop failed");
+        }
+    }
+
+    return 1;
+
+error:
+    return 2;
+}
+
+int olt_exists(ol_transaction *tx, const char *key, size_t klen) {
+    return olt_unjar_ds(tx, key, klen, NULL, NULL);
 }
 
 int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned char *value, size_t vsize) {

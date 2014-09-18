@@ -20,6 +20,29 @@ ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket) {
     return tmp_bucket;
 }
 
+int _has_bucket_expired(const ol_bucket *bucket) {
+    struct tm utctime;
+    time_t current;
+    time_t made;
+
+    /* So dumb */
+    time(&current);
+    gmtime_r(&current, &utctime);
+    current = timegm(&utctime);
+    if (bucket->expiration != NULL) {
+        made = mktime(bucket->expiration);
+        debug("Made Expiration: %lu", (long)made);
+    } else {
+        return 0;
+    }
+
+    /* For some reason you can't compare 0 to a time_t. */
+    if (current < made) {
+        return 0;
+    }
+    return 1;
+}
+
 void _ol_free_bucket(ol_bucket **ptr) {
     free((*ptr)->expiration);
     free((*ptr));

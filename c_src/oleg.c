@@ -197,29 +197,6 @@ int ol_exists(ol_database *db, const char *key, size_t klen) {
     return ol_unjar_ds(db, key, klen, NULL, NULL);
 }
 
-static inline int _has_bucket_expired(const ol_bucket *bucket) {
-    struct tm utctime;
-    time_t current;
-    time_t made;
-
-    /* So dumb */
-    time(&current);
-    gmtime_r(&current, &utctime);
-    current = timegm(&utctime);
-    if (bucket->expiration != NULL) {
-        made = mktime(bucket->expiration);
-        debug("Made Expiration: %lu", (long)made);
-    } else {
-        return 0;
-    }
-
-    /* For some reason you can't compare 0 to a time_t. */
-    if (current < made) {
-        return 0;
-    }
-    return 1;
-}
-
 ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t klen, char (*_key)[KEY_SIZE], size_t *_klen) {
     uint32_t hash;
     _ol_trunc(key, klen, *_key);
@@ -253,53 +230,32 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
 }
 
 int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
-    char _key[KEY_SIZE] = {'\0'};
-    size_t _klen = 0;
-    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
-
-    if (bucket != NULL) {
-        if (!_has_bucket_expired(bucket)) {
-            /* We don't need to fill out the data so just return 'we found the key'. */
-            if (data == NULL)
-                return 0;
-
-            /* Allocate memory to store memcpy'd data into. */
-            *data = calloc(1, bucket->original_size);
-            check(*data != NULL, "Could not allocate memory for compressed data.");
-
-            if (dsize != NULL) {
-                /* "strncpy never fails!" */
-                size_t *ret = memcpy(dsize, &bucket->original_size, sizeof(size_t));
-                check(ret == dsize, "Could not copy data size into input data_size param.");
-            }
-
-            unsigned char *data_ptr = db->values + bucket->data_offset;
-            /* Decomperss with LZ4 if enabled */
-            if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-                int processed = 0;
-                processed = LZ4_decompress_fast((char *)data_ptr,
-                                                (char *)*data,
-                                                bucket->original_size);
-                check(processed == bucket->data_size, "Could not decompress data.");
-            } else {
-                /* We know data isn't NULL by this point. */
-                unsigned char *ret = memcpy(*data, data_ptr, bucket->original_size);
-                check(ret == *data, "Could not copy data into output data param.");
-            }
-
-            /* Key found, tell somebody. */
-            return 0;
-        } else {
-            /* It's dead, get rid of it. */
-            check(ol_scoop(db, key, klen) == 0, "Scoop failed");
-        }
+    if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) || db->state == OL_S_COMMITTING) {
+        /* Fake a transaction: */
+        ol_transaction stack_tx = {
+            .tx_id = 0,
+            .parent_db = NULL,
+            .transaction_db = db
+        };
+        return olt_unjar_ds(&stack_tx, key, klen, data, dsize);
     }
 
-    return 1;
+    ol_transaction *tx = olt_begin(db);
+    int unjar_ret = 10;
+    check(tx != NULL, "Could not begin transaction.");
+
+    unjar_ret = olt_unjar_ds(tx, key, klen, data, dsize);
+    check(unjar_ret == 0, "Could not unjar.");
+
+    check(olt_commit(tx) == 0, "Could not commit transaction.");
+
+    return unjar_ret;
 
 error:
-    return 2;
+    if (tx != NULL && unjar_ret != 10)
+        olt_abort(tx);
+
+    return unjar_ret;
 }
 
 int ol_jar(ol_database *db, const char *key, size_t klen,
