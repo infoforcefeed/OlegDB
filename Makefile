@@ -43,14 +43,16 @@ $(LIB_DIR)liboleg.so: murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o t
 	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so $^ -fpic -shared $(MATH_LINKER)
 
 uninstall:
-	rm -rf $(INSTALL_LIB)/liboleg*
-	rm -rf $(INSTALL_BIN)/olegdb
+	rm -rf $(INSTALL_LIB)liboleg*
+	rm -rf $(INSTALL_BIN)olegdb
 
-server:
+server: liboleg
+	go build -o $(BIN_DIR)olegdb ./frontend
 
 install: goinstall
 
-goinstall: libinstall
+goinstall: server libinstall
+	cp $(BIN_DIR)olegdb $(INSTALL_BIN)olegdb
 
 libinstall: liboleg
 	@mkdir -p $(INSTALL_LIB)

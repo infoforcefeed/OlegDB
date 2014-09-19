@@ -1,0 +1,7 @@
+{
+    "Listen" : "localhost:8080",
+    "DataDir" : "data",
+    "UseHTTPS" : false,
+    "CertFile" : "",
+    "PkeyFile" : ""
+}
