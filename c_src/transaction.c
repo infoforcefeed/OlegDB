@@ -94,7 +94,7 @@ error:
     return NULL;
 }
 
-static int _olt_cleanup(ol_database *db, char *values_filename, char *tx_aol_filename) {
+static int _olt_cleanup(ol_transaction *tx, char *values_filename, char *tx_aol_filename) {
     /* Yeah, come at me. */
     debug("Unlinking values file for transaction, %s", values_filename);
     unlink(values_filename);
@@ -102,7 +102,10 @@ static int _olt_cleanup(ol_database *db, char *values_filename, char *tx_aol_fil
     debug(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
     unlink(tx_aol_filename);
 
-    return ol_close(db);
+    const int ret = ol_close(tx->transaction_db);
+    free(tx);
+
+    return ret;
 }
 
 int olt_commit(ol_transaction *tx) {
@@ -130,7 +133,7 @@ int olt_commit(ol_transaction *tx) {
     ol_aol_restore_from_file(tx->parent_db, tx_aol_filename, tx->transaction_db->values);
     tx->parent_db->state = OL_S_AOKAY;
 
-    return _olt_cleanup(tx->transaction_db, values_filename, tx_aol_filename);
+    return _olt_cleanup(tx, values_filename, tx_aol_filename);
 
 error:
     return 1;
@@ -140,9 +143,13 @@ int olt_abort(ol_transaction *tx) {
     check(tx->parent_db != NULL, "No parent database.");
     check(tx->parent_db->cur_transactions != NULL, "No transaction tree.");
 
-    /* TODO */
+    char tx_aol_filename[AOL_FILENAME_ALLOC] = {0};
+    tx->transaction_db->get_db_file_name(tx->transaction_db, AOL_FILENAME, tx_aol_filename);
 
-    return 1;
+    char values_filename[DB_NAME_SIZE] = {0};
+    tx->transaction_db->get_db_file_name(tx->transaction_db, VALUES_FILENAME, values_filename);
+
+    return _olt_cleanup(tx, values_filename, tx_aol_filename);
 
 error:
     return 1;
