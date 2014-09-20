@@ -21,7 +21,7 @@ Dependencies
 ============
 
 * A healthy fear of the end
-* Erlang
+* Go (>= 1.1)
 
 Installation
 ============
@@ -35,7 +35,7 @@ Currently builds are tested against gcc and clang.
 ```bash
 # Building everything:
 make
-# Just the erlang beam files:
+# Just the golang frontend:
 make server
 # Just the C library:
 make liboleg
@@ -52,16 +52,11 @@ To run tests:
 To run the erlang server:
 
 ```bash
-olegdb <db_location>
+olegdb [-conf olegdb.conf] [-bind localhost:8080] [-dir data]
 ```
+For an explaination of the command line parameters, do `olegdb -h`
 
-You can optionally specify a port, host or both. But not just a host.
-
-```bash
-olegdb <db_location> [[host] port]
-```
-
-curl2sudo® install script coming soon.
+curl2sudo&copy; install script coming soon.
 
 Documentation
 =============
