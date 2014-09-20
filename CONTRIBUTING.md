@@ -44,20 +44,23 @@ with this one.
 ol_bucket *c, *v, *u, *zx;
 ````
 We're probably not going to accept that pull request.
+* No tabs, just spaces
+* All the above applies for the C code, for the Go frontend we use `gofmt` rules (default settings)
 
 Architecture Decisions
 ----------------------
 
 Communication is key. If you're making a rather big architecture decision,
 discuss it with others. A second pair of eyes often does wonders to reveal weird
-or bad ideas.
+or bad ideas.  
+If you don't feel like making an issue or want quick feedback on it, hit us on [IRC](https://olegdb.org/community.html#irc), we do most of our discussions in there.
 
 Code Review
 -----------
 
 All code should be code-reviewed by at least one other person before being
 merged into master. Master is considered stable and should always pass tests.
-Ping @qpfiffer for quick commentary.
+Ping [@qpfiffer](github.com/qpfiffer) for quick commentary.
 
 Documentation
 -------------

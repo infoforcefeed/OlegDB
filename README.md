@@ -56,7 +56,7 @@ olegdb [-conf olegdb.conf] [-bind localhost:8080] [-dir data]
 ```
 For an explaination of the command line parameters, do `olegdb -h`
 
-curl2sudo&copy; install script coming soon.
+curl2sudo&trade; install script coming soon.
 
 Documentation
 =============
