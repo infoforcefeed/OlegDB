@@ -103,15 +103,15 @@ ol_database *ol_open(const char *path, const char *name, int features){
      */
     new_db->get_db_file_name(new_db, AOL_FILENAME, new_db->aol_file);
 
+    if (!new_db->is_enabled(OL_F_DISABLE_TX, &new_db->feature_set)) {
+        ols_init(&(new_db->cur_transactions));
+        check(new_db->cur_transactions != NULL, "Could not init transaction tree.");
+    }
+
     /* Lets use an append-only log file */
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
         ol_aol_init(new_db);
         check(ol_aol_restore(new_db) == 0, "Error restoring from AOL file");
-    }
-
-    if (!new_db->is_enabled(OL_F_DISABLE_TX, &new_db->feature_set)) {
-        ols_init(&(new_db->cur_transactions));
-        check(new_db->cur_transactions != NULL, "Could not init transaction tree.");
     }
     new_db->state = OL_S_AOKAY;
 
@@ -230,7 +230,8 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
 }
 
 int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
-    if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) || db->state == OL_S_COMMITTING) {
+    if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
+            db->state == (OL_S_COMMITTING | OL_S_STARTUP)) {
         /* Fake a transaction: */
         ol_transaction stack_tx = {
             .tx_id = 0,
@@ -262,7 +263,8 @@ int ol_jar(ol_database *db, const char *key, size_t klen,
            const unsigned char *value, size_t vsize) {
 
     /* Is disabled_tx enabled? lksjdlkfpfpfllfplflpf */
-    if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) || db->state == OL_S_COMMITTING) {
+    if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
+        db->state != (OL_S_COMMITTING | OL_S_STARTUP)) {
         /* Fake a transaction: */
         ol_transaction stack_tx = {
             .tx_id = 0,
