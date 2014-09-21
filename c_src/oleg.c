@@ -731,10 +731,10 @@ int ol_squish(ol_database *db) {
         db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
     }
 
-    return 1;
+    return 0;
 
 error:
-    return 0;
+    return 1;
 }
 
 struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
