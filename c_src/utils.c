@@ -150,3 +150,10 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash) {
 
     return 0;
 }
+
+inline void _ol_trunc(const char *key, size_t klen, char *out) {
+    /* Silently truncate because #yolo */
+    size_t real_key_len = klen > KEY_SIZE ? KEY_SIZE : klen;
+    strncpy(out, key, real_key_len);
+    out[real_key_len] = '\0';
+}

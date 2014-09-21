@@ -154,11 +154,7 @@ error:
     return 1;
 }
 
-int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **data) {
-    return olt_unjar_ds(tx, key, klen, data, NULL);
-}
-
-int olt_unjar_ds(ol_transaction *tx, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
+int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
     ol_database *operating_db = NULL;
@@ -222,7 +218,7 @@ error:
 }
 
 int olt_exists(ol_transaction *tx, const char *key, size_t klen) {
-    return olt_unjar_ds(tx, key, klen, NULL, NULL);
+    return olt_unjar(tx, key, klen, NULL, NULL);
 }
 
 int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned char *value, size_t vsize) {

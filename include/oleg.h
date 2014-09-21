@@ -149,17 +149,7 @@ ol_database *ol_open(const char *path, const char *name, int features);
 int ol_close(ol_database *database);
 
 /* xXx FUNCTION=ol_unjar xXx
- * xXx DESCRIPTION=This is OlegDB's canonical 'get' function. Unjar a value from the mayo (database). <strong>data must be freed after calling this function!</strong> Calls <a href="#ol_unjar_ds">ol_unjar_ds</a> with a dsize of NULL. xXx
- * xXx RETURNS=0 on success, 1 on failure or if the key was not found.
- * xXx *db=Database to retrieve value from. xXx
- * xXx *key=The key to use. xXx
- * xXx klen=The length of the key. xXx
- * xXx data=This parameter will be filled out with the data found in the DB. Passing NULL will check if a key exists. xXx
- */
-int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data);
-
-/* xXx FUNCTION=ol_unjar_ds xXx
- * xXx DESCRIPTION=This function retrieves a value from the database. <strong>data must be freed after calling this function!</strong> It also writes the size of the data to <code>dsize</code>. xXx
+ * xXx DESCRIPTION=This function retrieves a value from the database. <strong>data must be freed after calling this function!</strong> It also writes the size of the data to <code>dsize</code>. Pass dsize as NULL if you don't care. xXx
  * xXx RETURNS=0 on success, 1 on failure or if the key was not found.
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
@@ -167,7 +157,7 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
  * xXx data=This parameter will be filled out with the data found in the DB. Passing NULL will check if a key exists. xXx
  * xXx *dsize=Optional parameter that will be filled out with the size of the data, if NULL is not passed in. xXx
  */
-int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize);
+int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize);
 
 /* xXx FUNCTION=ol_jar xXx
  * xXx DESCRIPTION=This is OlegDB's canonical 'set' function. Put a value into the mayo (the database). It's easy to piss in a bucket, it's not easy to piss in 19 jars. xXx

@@ -182,19 +182,8 @@ error:
     return 1;
 }
 
-static inline void _ol_trunc(const char *key, size_t klen, char *out) {
-    /* Silently truncate because #yolo */
-    size_t real_key_len = klen > KEY_SIZE ? KEY_SIZE : klen;
-    strncpy(out, key, real_key_len);
-    out[real_key_len] = '\0';
-}
-
-int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data) {
-    return ol_unjar_ds(db, key, klen, data, NULL);
-}
-
 int ol_exists(ol_database *db, const char *key, size_t klen) {
-    return ol_unjar_ds(db, key, klen, NULL, NULL);
+    return ol_unjar(db, key, klen, NULL, NULL);
 }
 
 ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t klen, char (*_key)[KEY_SIZE], size_t *_klen) {
@@ -229,7 +218,7 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
     return NULL;
 }
 
-int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
+int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
     if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
             db->state == (OL_S_COMMITTING | OL_S_STARTUP)) {
         /* Fake a transaction: */
@@ -238,14 +227,14 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
             .parent_db = NULL,
             .transaction_db = db
         };
-        return olt_unjar_ds(&stack_tx, key, klen, data, dsize);
+        return olt_unjar(&stack_tx, key, klen, data, dsize);
     }
 
     ol_transaction *tx = olt_begin(db);
     int unjar_ret = 10;
     check(tx != NULL, "Could not begin transaction.");
 
-    unjar_ret = olt_unjar_ds(tx, key, klen, data, dsize);
+    unjar_ret = olt_unjar(tx, key, klen, data, dsize);
     check(unjar_ret == 0, "Could not unjar.");
 
     check(olt_commit(tx) == 0, "Could not commit transaction.");
