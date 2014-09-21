@@ -6,7 +6,7 @@ script:
   - make liboleg oleg_test
   - export LD_LIBRARY_PATH=./build/lib:$LD_LIBRARY_PATH
   - ./build/bin/oleg_test
-  - cd frontend && go test ./...
+  - go test ./...
 before_install:
   - sudo apt-get update
   - sudo apt-get install golang
