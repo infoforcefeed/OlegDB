@@ -52,3 +52,11 @@ func (d Database) Spoil(key string, expiration time.Time) int {
 func (d Database) Exists(key string) bool {
 	return CExists(d.db, key, uintptr(len(key))) == 0
 }
+
+func (d Database) Squish() bool {
+	return CSquish(d.db) == 1
+}
+
+func (d Database) PrefixMatch(prefix string) []string {
+	return CPrefixMatch(d.db, prefix, uintptr(len(prefix)))
+}

@@ -8,6 +8,7 @@ package goleg
 import "C"
 import "unsafe"
 import "time"
+import "reflect"
 
 const F_APPENDONLY = C.OL_F_APPENDONLY
 const F_LZ4 = C.OL_F_LZ4
@@ -162,4 +163,49 @@ func CExists(db *C.ol_database, key string, klen uintptr) int {
 	cklen := (C.size_t)(klen)
 
 	return int(C.ol_exists(db, ckey, cklen))
+}
+
+func CSquish(db *C.ol_database) int {
+	return int(C.ol_squish(db))
+}
+
+func CCas(db *C.ol_database, key string, klen uintptr, value []byte, vsize uintptr, ovalue []byte, ovsize uintptr) int {
+	// Turn parameters into their C counterparts
+	ckey := C.CString(key)
+	defer C.free(unsafe.Pointer(ckey))
+
+	cklen := (C.size_t)(klen)
+	cvsize := (C.size_t)(vsize)
+	covsize := (C.size_t)(ovsize)
+
+	cvalue := (*C.uchar)(unsafe.Pointer(&value[0]))
+	covalue := (*C.uchar)(unsafe.Pointer(&ovalue[0]))
+
+	// Pass them to ol_jar
+	return int(C.ol_cas(db, ckey, cklen, cvalue, cvsize, covalue, covsize))
+}
+
+func CPrefixMatch(db *C.ol_database, prefix string, plen uintptr) []string {
+	// Turn parameters into their C counterparts
+	cprefix := C.CString(prefix)
+	defer C.free(unsafe.Pointer(cprefix))
+
+	cplen := (C.size_t)(plen)
+
+	var ptr *C.ol_val_array
+	length := int(C.ol_prefix_match(db, cprefix, cplen, ptr))
+
+	hdr := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(ptr)),
+		Len:  length,
+		Cap:  length,
+	}
+	strSlice := *(*[]*C.char)(unsafe.Pointer(&hdr))
+	out := make([]string, 0)
+	for i := range strSlice {
+		out = append(out, C.GoString(strSlice[i]))
+		C.free(unsafe.Pointer(strSlice[i]))
+	}
+	C.free(unsafe.Pointer(ptr))
+	return out
 }
