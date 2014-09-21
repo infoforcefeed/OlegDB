@@ -219,7 +219,7 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
 }
 
 int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
-    if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
+    if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
             db->state == (OL_S_COMMITTING | OL_S_STARTUP)) {
         /* Fake a transaction: */
         ol_transaction stack_tx = {
@@ -252,7 +252,7 @@ int ol_jar(ol_database *db, const char *key, size_t klen,
            const unsigned char *value, size_t vsize) {
 
     /* Is disabled_tx enabled? lksjdlkfpfpfllfplflpf */
-    if(db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
+    if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
         db->state != (OL_S_COMMITTING | OL_S_STARTUP)) {
         /* Fake a transaction: */
         ol_transaction stack_tx = {
@@ -305,7 +305,7 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
         current = timegm(&utctime);
         debug("Current time: %lu", (long)current);
 #endif
-        if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
+        if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
                 db->state != OL_S_STARTUP) {
             ol_aol_write_cmd(db, "SPOIL", bucket);
         }
@@ -319,73 +319,33 @@ error:
 }
 
 int ol_scoop(ol_database *db, const char *key, size_t klen) {
-    /* you know... like scoop some data from the jar and eat it? All gone. */
-    uint32_t hash;
-    char _key[KEY_SIZE] = {'\0'};
-    _ol_trunc(key, klen, _key);
-    size_t _klen = strnlen(_key, KEY_SIZE);
-    check_warn(_klen > 0, "Key length cannot be zero.");
-
-
-    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
-    int index = _ol_calc_idx(db->cur_ht_size, hash);
-
-    if (index < 0) {
-        return 1;
+    if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
+        db->state != (OL_S_COMMITTING | OL_S_STARTUP)) {
+        /* Fake a transaction: */
+        ol_transaction stack_tx = {
+            .tx_id = 0,
+            .parent_db = NULL,
+            .transaction_db = db
+        };
+        return olt_scoop(&stack_tx, key, klen);
     }
 
-    ol_bucket *to_free = NULL;
-    int return_level = 2;
-    if (db->hashes[index] != NULL) {
-        size_t larger_key = 0;
-        ol_bucket *bucket = db->hashes[index];
-        larger_key = bucket->klen > _klen ? bucket->klen : _klen;
-        if (strncmp(bucket->key, _key, larger_key) == 0) {
-            if (bucket->next != NULL) {
-                db->hashes[index] = bucket->next;
-            } else {
-                db->hashes[index] = NULL;
-            }
-            if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
-                    db->state != OL_S_STARTUP) {
-                ol_aol_write_cmd(db, "SCOOP", bucket);
-            }
+    ol_transaction *tx = olt_begin(db);
+    int scoop_ret = 10;
+    check(tx != NULL, "Could not begin implicit transaction.");
 
-            to_free = bucket;
-            return_level = 0;
-        } else { /* Keys weren't the same, traverse the bucket LL */
-            do {
-                ol_bucket *last = bucket;
-                bucket = bucket->next;
-                larger_key = bucket->klen > klen ? bucket->klen : klen;
-                if (strncmp(bucket->key, _key, larger_key) == 0) {
-                    if (bucket->next != NULL)
-                        last->next = bucket->next;
-                    else
-                        last->next = NULL;
-                    to_free = bucket;
-                    return_level = 0;
-                    break;
-                }
-            } while (bucket->next != NULL);
-        }
-    }
+    scoop_ret = olt_scoop(tx, key, klen);
+    check(scoop_ret == 0, "Could not scoop value. Aborting.");
 
-    if (to_free != NULL) {
-        if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
-            ols_delete(db->tree, to_free->node);
-            to_free->node = NULL;
-        }
-        unsigned char *data_ptr = db->values + to_free->data_offset;
-        const size_t data_size = to_free->data_size;
-        if (data_size != 0)
-            memset(data_ptr, '\0', data_size);
-        _ol_free_bucket(&to_free);
-        db->rcrd_cnt -= 1;
-    }
-    return return_level;
+    check(olt_commit(tx) == 0, "Could not commit transaction.");
+
+    return scoop_ret;
+
 error:
-    return 1;
+    if (tx != NULL && scoop_ret != 10)
+        olt_abort(tx);
+
+    return scoop_ret;
 }
 
 int ol_cas(ol_database *db, const char *key, const size_t klen,
@@ -431,7 +391,7 @@ error:
 
 int ol_squish(ol_database *db) {
     int fflush_turned_off = 0;
-    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+    if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         /* Turn off fflush for the time being. We'll do it once at the end. */
         if (db->is_enabled(OL_F_AOL_FFLUSH, &db->feature_set)) {
             db->disable(OL_F_AOL_FFLUSH, &db->feature_set);
@@ -463,7 +423,7 @@ int ol_squish(ol_database *db) {
             for (ptr = db->hashes[i]; NULL != ptr; ptr = next) {
                 if (!_has_bucket_expired(ptr)) {
                     /* Bucket hasn't been deleted or expired. */
-                    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+                    if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
                         /* AOL is enabled. Write it to the new AOL file. */
                         ol_aol_write_cmd(db, "JAR", ptr);
 
@@ -479,7 +439,7 @@ int ol_squish(ol_database *db) {
         }
     }
 
-    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+    if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         /* Turn off fflush for the time being. We'll do it once at the end. */
         if (fflush_turned_off) {
             db->enable(OL_F_AOL_FFLUSH, &db->feature_set);

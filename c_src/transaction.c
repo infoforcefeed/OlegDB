@@ -207,7 +207,7 @@ int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **
             /* It's dead, get rid of it. */
             /* NOTE: We explicitly say the transaction_db here because ITS A
              * FUCKING TRANSACTION. ACID, bro. */
-            check(ol_scoop(tx->transaction_db, key, klen) == 0, "Scoop failed");
+            check(olt_scoop(tx, key, klen) == 0, "Scoop failed");
         }
     }
 
@@ -339,6 +339,79 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
 
     return 0;
 
+error:
+    return 1;
+}
+
+int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
+    /* you know... like scoop some data from the jar and eat it? All gone. */
+    uint32_t hash;
+    char _key[KEY_SIZE] = {'\0'};
+    _ol_trunc(key, klen, _key);
+    size_t _klen = strnlen(_key, KEY_SIZE);
+    check_warn(_klen > 0, "Key length cannot be zero.");
+
+    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
+    int index = _ol_calc_idx(tx->transaction_db->cur_ht_size, hash);
+    if (tx->transaction_db->hashes[index] == NULL &&
+            tx->parent_db != NULL) {
+        index = _ol_calc_idx(tx->parent_db->cur_ht_size, hash);
+    }
+
+    if (index < 0 || tx) {
+        return 1;
+    }
+
+    ol_bucket *to_free = NULL;
+    int return_level = 2;
+
+    size_t larger_key = 0;
+    ol_bucket *bucket = db->hashes[index];
+    larger_key = bucket->klen > _klen ? bucket->klen : _klen;
+    if (strncmp(bucket->key, _key, larger_key) == 0) {
+        if (bucket->next != NULL) {
+            db->hashes[index] = bucket->next;
+        } else {
+            db->hashes[index] = NULL;
+        }
+        if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
+                db->state != OL_S_STARTUP) {
+            ol_aol_write_cmd(db, "SCOOP", bucket);
+        }
+
+        to_free = bucket;
+        return_level = 0;
+    } else { /* Keys weren't the same, traverse the bucket LL */
+        do {
+            ol_bucket *last = bucket;
+            bucket = bucket->next;
+            larger_key = bucket->klen > klen ? bucket->klen : klen;
+            if (strncmp(bucket->key, _key, larger_key) == 0) {
+                if (bucket->next != NULL)
+                    last->next = bucket->next;
+                else
+                    last->next = NULL;
+                to_free = bucket;
+                return_level = 0;
+                break;
+            }
+        } while (bucket->next != NULL);
+    }
+
+    if (to_free != NULL) {
+        if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
+            ols_delete(db->tree, to_free->node);
+            to_free->node = NULL;
+        }
+        unsigned char *data_ptr = db->values + to_free->data_offset;
+        const size_t data_size = to_free->data_size;
+        if (data_size != 0)
+            memset(data_ptr, '\0', data_size);
+        _ol_free_bucket(&to_free);
+        db->rcrd_cnt -= 1;
+    }
+
+    return return_level;
 error:
     return 1;
 }
