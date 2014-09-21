@@ -30,7 +30,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if database, ok = databases[dbname]; !ok {
 		databases[dbname] = goleg.Open(config.DataDir, dbname, goleg.F_APPENDONLY|goleg.F_AOL_FFLUSH|goleg.F_LZ4|goleg.F_SPLAYTREE)
 		database = databases[dbname]
-		//TODO Find a way to close unused databases
 	}
 
 	operation := Operation{

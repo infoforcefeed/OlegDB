@@ -52,10 +52,17 @@ func main() {
 	}
 
 	http.HandleFunc("/", handler)
+	defer unload()
 	fmt.Println("Listening on " + config.Listen)
 	if config.UseHTTPS {
 		http.ListenAndServeTLS(config.Listen, config.CertFile, config.PkeyFile, nil)
 	} else {
 		http.ListenAndServe(config.Listen, nil)
+	}
+}
+
+func unload() {
+	for v := range databases {
+		databases[v].Close()
 	}
 }
