@@ -255,7 +255,7 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
 
 /* xXx FUNCTION=ol_squish xXx
  * xXx DESCRIPTION=Compacts both the aol file (if enabled) and the values file. This is a blocking operation. xXx
- * xXx RETURNS=1 if successful, 0 if otherwise. xXx
+ * xXx RETURNS=0 if successful, 1 if otherwise. xXx
  * xXx *db=The database to compact. xXx
  */
 int ol_squish(ol_database *db);
