@@ -6,10 +6,12 @@ package goleg
 #include <stdlib.h>
 #include <oleg.h>
 */
-import "C"
-import "unsafe"
-import "time"
-import "reflect"
+import (
+	"C"
+	"unsafe"
+	"time"
+	"reflect"
+)
 
 const F_APPENDONLY = C.OL_F_APPENDONLY
 const F_LZ4 = C.OL_F_LZ4

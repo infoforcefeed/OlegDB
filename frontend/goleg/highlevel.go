@@ -5,8 +5,10 @@ package goleg
 #cgo LDFLAGS: -L../build/lib/ -loleg
 #include <oleg.h>
 */
-import "C"
-import "time"
+import (
+	"C"
+	"time"
+)
 
 type Database struct {
 	db          *C.ol_database
