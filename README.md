@@ -15,7 +15,7 @@ olegdb: No.
 OlegDB is a ~~single-threaded, non-concurrent~~, transactionless NoSQL database
 written by bitter SQL-lovers in a futile attempt to hop on the schemaless trend
 before everyone realizes it was a bad move. It is primarily a C library with an
-Erlang frontend for communication.
+Go frontend for communication.
 
 Dependencies
 ============
@@ -26,7 +26,7 @@ Dependencies
 Installation
 ============
 
-OlegDB consists of a server written in Erlang and a C library for all of the
+OlegDB consists of a server written in Go and a C library for all of the
 heavy lifting. Binaries are in `build/bin/` and the library is in `build/lib/`.
 Beam files are also thrown in `build/bin/`.
 
