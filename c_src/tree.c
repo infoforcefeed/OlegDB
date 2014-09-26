@@ -320,8 +320,17 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_key_arr
     to_return = malloc(total_size);
     check_mem(to_return);
 
-    int i =0;
-    for (; i < imatches; i++) {
+    /* Q: Why are we iterating backwards here, Quinlan? */
+    /* A: Well, you see, while we iterate through the splay tree, we push
+     * matches onto a stack. I don't know how much CS you know, but stacks
+     * are a FILO structure meaning when I pop something off, it was the
+     * most recently added match. Which is backwards. So instead of doing
+     * something like step backwards through the tree, build a queue structure
+     * or add the ability to pop the bottom off of the stack (QUACK QUACK) we
+     * just iterate through the matches backwards. Works great. A+, 10/10
+     */
+    int i = (imatches - 1);
+    for (; i >= 0; i--) {
         ol_splay_tree_node *cur_node = (ol_splay_tree_node *)spop(&matches);
         ol_bucket *deref = (ol_bucket *)cur_node->ref_obj;
 
