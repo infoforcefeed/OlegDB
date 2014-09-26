@@ -1014,7 +1014,7 @@ int test_can_match_prefixes(const ol_feature_flags features) {
         return 1;
     }
 
-    ol_val_array matches_list = NULL;
+    ol_key_array matches_list = NULL;
     ret = ol_prefix_match(db, "crazy hash", strlen("crazy hash"), &matches_list);
     if (ret != next_records + 1) {
         ol_log_msg(LOG_ERR, "Found the wrong number of matches. Error code: %d\n", ret);
@@ -1022,6 +1022,7 @@ int test_can_match_prefixes(const ol_feature_flags features) {
     }
 
     for (i = 0; i < ret; i++) {
+        ol_log_msg(LOG_INFO, "Found key: %s", matches_list[i]);
         free(matches_list[i]);
     }
     free(matches_list);

@@ -43,10 +43,10 @@ typedef enum {
     OL_S_AOKAY          = 1
 } ol_state_flags;
 
-/* xXx TYPEDEF=ol_val_array xXx
-* xXx DESCRIPTION=This is shorthand for a pointer to an array of values, the same kind of values stored in an <a href="#ol_bucket">ol_bucket</a>'s data_offset. xXx
+/* xXx TYPEDEF=ol_key_array xXx
+* xXx DESCRIPTION=This is shorthand for a pointer to an array of keys, the same kind of key stored in an <a href="#ol_bucket">ol_bucket</a>'s <code>key[KEY_SIZE]</code>. xXx
 */
-typedef char ** ol_val_array;
+typedef char **ol_key_array;
 
 /* xXx STRUCT=ol_bucket xXx
 * xXx DESCRIPTION=This is the object stored in the database's hashtable. Contains references to value, key, etc. xXx
@@ -218,9 +218,9 @@ int ol_ht_bucket_max(size_t ht_size);
  * xXx *db=Database to retrieve values from. xXx
  * xXx *prefix=The prefix to attempt matches on. xXx
  * xXx plen=The length of the prefix. xXx
- * xXx *data=A pointer to an <code>ol_val_array</code> object where the list of values will be stored. <strong>Both the list and it's items must be freed after use.</strong> xXx
+ * xXx *data=A pointer to an <code>ol_key_array</code> object where the list of matching keys will be stored. <strong>Both the list and it's items must be freed after use.</strong> xXx
  */
-int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_array *data);
+int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_key_array *data);
 
 /* xXx FUNCTION=ol_exists xXx
  * xXx DESCRIPTION=Returns whether the given key exists on the database xXx
