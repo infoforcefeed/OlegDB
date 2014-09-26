@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -17,7 +18,7 @@ const (
 	OpCursorLast  = "_last"
 	OpCursorNext  = "._next"
 	OpCursorPrev  = "._prev"
-	OpPrefixMatch = "_match"
+	OpPrefixMatch = "._match"
 )
 
 func httpGet(w http.ResponseWriter, op Operation) *HTTPError {
@@ -95,5 +96,18 @@ func httpDelete(w http.ResponseWriter, op Operation) *HTTPError {
 	}
 
 	fmt.Fprintf(w, "Key deleted successfully!")
+	return nil
+}
+
+func httpMatch(w http.ResponseWriter, op Operation) *HTTPError {
+	has, res := op.Database.PrefixMatch(op.Key)
+	if !has {
+		return &HTTPError{Code: 500, Message: "Something went horribly wrong..."}
+	}
+	if len(res) == 0 {
+		return &HTTPError{Code: 404, Message: "No matches found"}
+	}
+
+	fmt.Fprintf(w, strings.Join(res, "\n"))
 	return nil
 }

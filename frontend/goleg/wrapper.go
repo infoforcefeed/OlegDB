@@ -188,27 +188,34 @@ func CCas(db *C.ol_database, key string, klen uintptr, value []byte, vsize uintp
 	return int(C.ol_cas(db, ckey, cklen, cvalue, cvsize, covalue, covsize))
 }
 
-func CPrefixMatch(db *C.ol_database, prefix string, plen uintptr) []string {
+func CPrefixMatch(db *C.ol_database, prefix string, plen uintptr) (int, []string) {
 	// Turn parameters into their C counterparts
 	cprefix := C.CString(prefix)
 	defer C.free(unsafe.Pointer(cprefix))
 
 	cplen := (C.size_t)(plen)
 
-	var ptr *C.ol_val_array
-	length := int(C.ol_prefix_match(db, cprefix, cplen, ptr))
+	// Call native function
+	var ptr C.ol_val_array
+	length := int(C.ol_prefix_match(db, cprefix, cplen, &ptr))
+	if length < 0 {
+		return length, nil
+	}
 
+	// Set array structure
 	hdr := reflect.SliceHeader{
 		Data: uintptr(unsafe.Pointer(ptr)),
 		Len:  length,
 		Cap:  length,
 	}
 	strSlice := *(*[]*C.char)(unsafe.Pointer(&hdr))
+	// Create GoString array
 	out := make([]string, 0)
 	for i := range strSlice {
 		out = append(out, C.GoString(strSlice[i]))
 		C.free(unsafe.Pointer(strSlice[i]))
 	}
+	// Free structure
 	C.free(unsafe.Pointer(ptr))
-	return out
+	return length, out
 }

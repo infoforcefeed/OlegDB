@@ -59,6 +59,7 @@ func (d Database) Squish() bool {
 	return CSquish(d.db) == 1
 }
 
-func (d Database) PrefixMatch(prefix string) []string {
-	return CPrefixMatch(d.db, prefix, uintptr(len(prefix)))
+func (d Database) PrefixMatch(prefix string) (bool, []string) {
+	len, out := CPrefixMatch(d.db, prefix, uintptr(len(prefix)))
+	return len >= 0, out
 }

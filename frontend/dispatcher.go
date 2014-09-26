@@ -47,6 +47,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		err = httpInfo(w, operation)
 	case OpDelete:
 		err = httpDelete(w, operation)
+	case OpPrefixMatch:
+		err = httpMatch(w, operation)
 	default:
 		err = &HTTPError{Message: "I don't get what you're trying to do", Code: 400}
 	}
