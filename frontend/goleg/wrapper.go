@@ -1,10 +1,10 @@
 package goleg
 
 /*
-#cgo CFLAGS: -I../include/
-#cgo LDFLAGS: -L../build/lib/ -loleg
+#cgo CFLAGS: -I../../include
+#cgo LDFLAGS: -L../../build/lib -loleg
 #include <stdlib.h>
-#include <oleg.h>
+#include "oleg.h"
 */
 import (
 	"C"
@@ -125,7 +125,7 @@ func CExpirationTime(db *C.ol_database, key string, klen uintptr) (time.Time, bo
 		return time.Now(), false
 	}
 
-	// turn ctime into a Go datatype
+	// Turn ctime into a Go datatype
 	gotime := time.Date(int(ctime.tm_year)+1900,
 		time.Month(int(ctime.tm_mon)+1),
 		int(ctime.tm_mday),
@@ -196,7 +196,7 @@ func CPrefixMatch(db *C.ol_database, prefix string, plen uintptr) (int, []string
 	cplen := (C.size_t)(plen)
 
 	// Call native function
-	var ptr C.ol_val_array
+	var ptr C.ol_key_array
 	length := int(C.ol_prefix_match(db, cprefix, cplen, &ptr))
 	if length < 0 {
 		return length, nil

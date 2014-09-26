@@ -1,9 +1,9 @@
 package goleg
 
 /*
-#cgo CFLAGS: -I../include/
-#cgo LDFLAGS: -L../build/lib/ -loleg
-#include <oleg.h>
+#cgo CFLAGS: -I../../include
+#cgo LDFLAGS: -L../../build/lib -loleg
+#include "oleg.h"
 */
 import (
 	"C"
