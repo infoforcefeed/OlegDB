@@ -9,6 +9,7 @@
 typedef struct ol_cursor {
     ol_splay_tree_node *maximum, *minimum;
     ol_splay_tree_node *current_node;
+    ol_database *db;
 } ol_cursor;
 
 /* --------------------------------------- */
@@ -33,10 +34,12 @@ int olc_step_back(ol_cursor *cursor);
 int olc_get_key(const ol_cursor *c, char *key[KEY_SIZE]);
 
 /* Fills out the val passed in with the value the cursor is currently on.
+ * ***val MUST BE FREED ***
  * Returns 0 on success, 1 on failure. */
-int olc_get_val(const ol_cursor *c, unsigned char *val, size_t *vsize);
+int olc_get_val(const ol_cursor *c, unsigned char **val, size_t *vsize);
 
 /* Basically olc_get_key and olc_get_val all in one.
+ * ***val MUST BE FREED ***
  * Returns 0 on success, 1 on failure. */
 int olc_get(const ol_cursor *c, char *key[KEY_SIZE],
             unsigned char **val, size_t *vsize);

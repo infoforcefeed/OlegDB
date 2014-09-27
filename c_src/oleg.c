@@ -277,8 +277,8 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
             if (data == NULL)
                 return 0;
 
-            *data = _ol_get_value_from_bucket(db, bucket, dsize);
-            check(*data != NULL, "Could not retrieve value from bucket.");
+            const int ret = _ol_get_value_from_bucket(db, bucket, data, dsize);
+            check(ret == 0, "Could not retrieve value from bucket.");
 
             /* Key found, tell somebody. */
             return 0;

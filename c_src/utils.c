@@ -35,12 +35,12 @@ const int _ol_compute_padded_size(const int size) {
     return (size + 4095) & ~4095;
 }
 
-unsigned char *_ol_get_value_from_bucket(const ol_database *db, const ol_bucket *bucket, size_t *dsize) {
+int _ol_get_value_from_bucket(const ol_database *db, const ol_bucket *bucket,
+        unsigned char **data, size_t *dsize) {
     check(bucket != NULL, "Cannot retrieve value from NULL bucket.");
-    unsigned char *data = NULL;
     /* Allocate memory to store memcpy'd data into. */
-    data = calloc(1, bucket->original_size);
-    check(data != NULL, "Could not allocate memory for compressed data.");
+    *data = calloc(1, bucket->original_size);
+    check(*data != NULL, "Could not allocate memory for compressed data.");
 
     if (dsize != NULL) {
         /* "memcpy never fails!" */
@@ -53,17 +53,17 @@ unsigned char *_ol_get_value_from_bucket(const ol_database *db, const ol_bucket 
     if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         int processed = 0;
         processed = LZ4_decompress_fast((char *)data_ptr,
-                                        (char *)data,
+                                        (char *)*data,
                                         bucket->original_size);
         check(processed == bucket->data_size, "Could not decompress data.");
     } else {
         /* We know data isn't NULL by this point. */
-        unsigned char *ret = memcpy(data, data_ptr, bucket->original_size);
-        check(ret == data, "Could not copy data into output data param.");
+        unsigned char *ret = memcpy(*data, data_ptr, bucket->original_size);
+        check(ret == *data, "Could not copy data into output data param.");
     }
 
-    return data;
+    return 0;
 
 error:
-    return NULL;
+    return 1;
 }
