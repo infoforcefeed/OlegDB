@@ -20,11 +20,11 @@ int olc_init(ol_database *db, ol_cursor *cursor) {
     return olc_generic_init(db->tree, cursor);
 }
 
-ol_splay_tree_node *_olc_get_node(ol_cursor *cursor) {
+const ol_splay_tree_node *_olc_get_node(const ol_cursor *cursor) {
     return cursor->current_node;
 }
 
-ol_bucket *olc_get(ol_cursor *cursor) {
+const ol_bucket *_olc_get_bucket(const ol_cursor *cursor) {
     ol_bucket *bucket = (ol_bucket *)cursor->current_node->ref_obj;
     return bucket;
 }

@@ -11,6 +11,9 @@ typedef struct ol_cursor {
     ol_splay_tree_node *current_node;
 } ol_cursor;
 
+/* --------------------------------------- */
+/* CURSOR API */
+
 /* Generic init for stepping through a tree. */
 int olc_generic_init(ol_splay_tree *tree, ol_cursor *cursor);
 
@@ -24,6 +27,24 @@ int olc_step(ol_cursor *cursor);
 /* Steps a cursor backward in the tree. */
 int olc_step_back(ol_cursor *cursor);
 
+/* Fills out the passed in key array with the key of the bucket the cursor is
+ * currently on.
+ * Returns 0 on success, 1 on failure. */
+int olc_get_key(const ol_cursor *c, char *key[KEY_SIZE]);
+
+/* Fills out the val passed in with the value the cursor is currently on.
+ * Returns 0 on success, 1 on failure. */
+int olc_get_val(const ol_cursor *c, unsigned char *val, size_t *vsize);
+
+/* Basically olc_get_key and olc_get_val all in one.
+ * Returns 0 on success, 1 on failure. */
+int olc_get(const ol_cursor *c, char *key[KEY_SIZE],
+            unsigned char **val, size_t *vsize);
+
+/* --------------------------------------- */
+/* INTERNAL FUNCTIONS */
+/* These are more internal functions. Use them if you want to. */
+
 /* Gets the in-order successor of a node. Use with caution. */
 int _olc_next(ol_splay_tree_node **node, ol_splay_tree_node *maximum);
 
@@ -31,6 +52,10 @@ int _olc_next(ol_splay_tree_node **node, ol_splay_tree_node *maximum);
 int _olc_prev(ol_splay_tree_node **node, ol_splay_tree_node *minimum);
 
 /* Returns a bucket object from a cursor. */
-ol_bucket *_olc_get_bucket(ol_cursor *cursor);
+const ol_bucket *_olc_get_bucket(const ol_cursor *cursor);
+
 /* Returns a splay tree node from a cursor. */
-ol_splay_tree_node *_olc_get_node(ol_cursor *cursor);
+const ol_splay_tree_node *_olc_get_node(const ol_cursor *cursor);
+
+/* Returns a bucket deref'd from the current cursor's node */
+const ol_bucket *_olc_get_bucket(const ol_cursor *cursor);

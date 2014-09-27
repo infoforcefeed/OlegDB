@@ -6,7 +6,7 @@
  * it.
  * Oh, how I pine for better recursion.
  */
-inline void spush(ol_stack **stack, void *data) {
+inline void spush(ol_stack **stack, const void *data) {
     check(stack != NULL, "Stack is null.");
     check(data != NULL, "Data is null.");
 
@@ -23,12 +23,12 @@ error:
     return;
 }
 
-inline void *spop(ol_stack **stack) {
+inline const void *spop(ol_stack **stack) {
     check(stack != NULL, "Stack is null.");
 
     ol_stack *top = *stack;
     *stack = top->next;
-    void *data = top->data;
+    const void *data = top->data;
 
     free(top);
     return data;
