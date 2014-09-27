@@ -36,3 +36,34 @@ inline const void *spop(ol_stack **stack) {
 error:
     return NULL;
 }
+
+void mspush(ol_mstack **stack, void *data) {
+    check(stack != NULL, "Stack is null.");
+    check(data != NULL, "Data is null.");
+
+    ol_mstack *to_push = NULL;
+    to_push = malloc(sizeof(ol_mstack));
+    check_mem(to_push);
+
+    to_push->data = data;
+    to_push->next = *stack;
+
+    *stack = to_push;
+
+error:
+    return;
+}
+
+void *mspop(ol_mstack **stack) {
+    check(stack != NULL, "Stack is null.");
+
+    ol_mstack *top = *stack;
+    *stack = top->next;
+    void *data = top->data;
+
+    free(top);
+    return data;
+
+error:
+    return NULL;
+}
