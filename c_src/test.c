@@ -175,6 +175,7 @@ int test_jar(const ol_feature_flags features) {
 int test_can_jump_cursor(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     int max_records = 10;
+    unsigned char *r_val = NULL;
     unsigned char to_insert[] = "roadkill";
     int i;
     for (i = 0; i < max_records; i++) {
@@ -212,7 +213,6 @@ int test_can_jump_cursor(const ol_feature_flags features) {
     check(node != NULL, "Could not retrieve node.");
 
     /* Prep some variables so we can check them */
-    unsigned char *r_val = NULL;
     char r_key[KEY_SIZE] = {'0'};
     size_t r_vsize;
 
