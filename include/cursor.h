@@ -28,6 +28,10 @@ int olc_step(ol_cursor *cursor);
 /* Steps a cursor backward in the tree. */
 int olc_step_back(ol_cursor *cursor);
 
+/* Jumps the cursor to the specified key */
+/* Returns 0 on success, 1 on failure */
+int olc_jump(ol_cursor *cursor, const char *key, const size_t klen);
+
 /* Fills out the passed in key array with the key of the bucket the cursor is
  * currently on.
  * Returns 0 on success, 1 on failure. */

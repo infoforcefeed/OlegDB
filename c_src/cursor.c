@@ -74,6 +74,25 @@ int olc_step(ol_cursor *cursor) {
     return _olc_next(&(cursor->current_node), max);
 }
 
+int olc_jump(ol_cursor *cursor, const char *key, const size_t klen) {
+    check(key != NULL, "NULL key.");
+    check(klen > 0, "Zero-length keys not allowed.");
+
+    char _key[KEY_SIZE] = {'\0'};
+    size_t _klen = 0;
+
+    ol_bucket *bucket = NULL;
+    bucket = ol_get_bucket(cursor->db, key, klen, &_key, &_klen);
+    if (bucket != NULL)
+        cursor->current_node = bucket->node;
+    else
+        return 1;
+    return 0;
+
+error:
+    return 1;
+}
+
 int olc_step_back(ol_cursor *cursor) {
     ol_splay_tree_node *min = cursor->minimum;
 

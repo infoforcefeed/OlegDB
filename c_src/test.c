@@ -172,6 +172,67 @@ int test_jar(const ol_feature_flags features) {
     return 0;
 }
 
+int test_can_jump_cursor(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+    int max_records = 10;
+    unsigned char to_insert[] = "roadkill";
+    int i;
+    for (i = 0; i < max_records; i++) {
+        char key[64] = "mmmmmars";
+        char append[10] = "";
+
+        sprintf(append, "%i", i);
+        strcat(key, append);
+
+        size_t len = strlen((char *)to_insert);
+        size_t klen = strlen(key);
+        int insert_result = ol_jar(db, key, klen, to_insert, len);
+
+        if (insert_result > 0) {
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
+            _test_db_close(db);
+            return 2;
+        }
+
+        if (db->rcrd_cnt != i+1) {
+            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
+            _test_db_close(db);
+            return 3;
+        }
+    }
+
+    /* Create and jump the cursor to a random hash. */
+    const char key[] = "mmmmmars6";
+    ol_cursor cursor;
+    check(olc_init(db, &cursor), "Could not init cursor.");
+    check(olc_jump(&cursor, key, strlen(key)) == 0, "Could not jump cursor.");
+
+    /* Get the node from the cursors now jumped position */
+    const ol_splay_tree_node *node = _olc_get_node(&cursor);
+    check(node != NULL, "Could not retrieve node.");
+
+    /* Prep some variables so we can check them */
+    unsigned char *r_val = NULL;
+    char r_key[KEY_SIZE] = {'0'};
+    size_t r_vsize;
+
+    const int ret = olc_get(&cursor, &r_key, &r_val, &r_vsize);
+    check(ret == 0, "Could not retrieve key and value from cursor.");
+    free(r_val);
+
+    check(strncmp(r_key, key, KEY_SIZE) == 0, "Returned key is not the same.");
+
+    check(_test_db_close(db) == 0, "Could not close database.");
+
+    return 0;
+
+error:
+    if (r_val != NULL)
+        free(r_val);
+    return 1;
+
+}
+
 int test_can_find_all_nodes(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
 
@@ -694,6 +755,9 @@ int test_aol_and_compaction(const ol_feature_flags features) {
     free(item);
     _test_db_close(db);
     return to_return;
+
+error:
+    return 8;
 }
 
 int test_expiration(const ol_feature_flags features) {
