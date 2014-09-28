@@ -15,18 +15,18 @@ olegdb: No.
 OlegDB is a ~~single-threaded, non-concurrent~~, transactionless NoSQL database
 written by bitter SQL-lovers in a futile attempt to hop on the schemaless trend
 before everyone realizes it was a bad move. It is primarily a C library with an
-Erlang frontend for communication.
+Go frontend for communication.
 
 Dependencies
 ============
 
 * A healthy fear of the end
-* Erlang
+* Go (>= 1.1)
 
 Installation
 ============
 
-OlegDB consists of a server written in Erlang and a C library for all of the
+OlegDB consists of a server written in Go and a C library for all of the
 heavy lifting. Binaries are in `build/bin/` and the library is in `build/lib/`.
 Beam files are also thrown in `build/bin/`.
 
@@ -35,7 +35,7 @@ Currently builds are tested against gcc and clang.
 ```bash
 # Building everything:
 make
-# Just the erlang beam files:
+# Just the golang frontend:
 make server
 # Just the C library:
 make liboleg
@@ -52,16 +52,11 @@ To run tests:
 To run the erlang server:
 
 ```bash
-olegdb <db_location>
+olegdb [-conf olegdb.conf] [-bind localhost:8080] [-dir data]
 ```
+For an explaination of the command line parameters, do `olegdb -h`
 
-You can optionally specify a port, host or both. But not just a host.
-
-```bash
-olegdb <db_location> [[host] port]
-```
-
-curl2sudo® install script coming soon.
+curl2sudo&reg; install script coming soon.
 
 Documentation
 =============
