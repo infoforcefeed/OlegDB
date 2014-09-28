@@ -1,8 +1,6 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 export LD_LIBRARY_PATH=./build/lib:$LD_LIBRARY_PATH
-
-rm -rf /tmp/oleg_is_king
 
 if [ "$1" == "valgrind" ]
     then
