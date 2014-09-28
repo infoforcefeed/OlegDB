@@ -102,12 +102,9 @@ func httpDelete(w http.ResponseWriter, op Operation) *HTTPError {
 func httpMatch(w http.ResponseWriter, op Operation) *HTTPError {
 	has, res := op.Database.PrefixMatch(op.Key)
 	if !has {
-		return &HTTPError{Code: 500, Message: "Something went horribly wrong..."}
-	}
-	if len(res) == 0 {
 		return &HTTPError{Code: 404, Message: "No matches found"}
 	}
-
+	w.Header().Add("X-Olegdb-Num-Matches", strconv.Itoa(len(res)))
 	fmt.Fprintf(w, strings.Join(res, "\n"))
 	return nil
 }
