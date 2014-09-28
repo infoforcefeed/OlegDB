@@ -11,7 +11,7 @@ BIN_DIR=$(BUILD_DIR)bin/
 PREFIX?=/usr/local
 INSTALL_LIB=$(PREFIX)/lib/
 INSTALL_BIN=$(PREFIX)/bin/
-INSTALL_INCLUDE=$(PREFIX)/include/
+INSTALL_INCLUDE=$(PREFIX)/include/olegdb/
 
 ERL_LIB_LOOKFOR=-DLIBLOCATION=\"./build/lib/\"
 ERLFLAGS=-smp -W1 -Werror -b beam -I./include -o $(BIN_DIR) $(ERL_LIB_LOOKFOR)
