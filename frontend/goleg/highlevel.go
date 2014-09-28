@@ -7,6 +7,7 @@ package goleg
 */
 import "C"
 import (
+	"errors"
 	"time"
 )
 
@@ -15,11 +16,14 @@ type Database struct {
 	RecordCount *C.int
 }
 
-func Open(path, name string, features int) Database {
+func Open(path, name string, features int) (Database, error) {
 	var database Database
 	database.db = COpen(path, name, features)
+	if database.db == nil {
+		return Database{}, errors.New("Can't open database (NULL returned)")
+	}
 	database.RecordCount = &database.db.rcrd_cnt
-	return database
+	return database, nil
 }
 
 func (d Database) Close() int {
