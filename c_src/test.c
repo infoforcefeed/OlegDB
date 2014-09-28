@@ -863,7 +863,7 @@ int test_can_get_next_in_tree(const ol_feature_flags features) {
         char r_key[KEY_SIZE] = {'0'};
         size_t r_vsize;
 
-        const int ret = olc_get(&cursor, (char **)&r_key, &r_val, &r_vsize);
+        const int ret = olc_get(&cursor, &r_key, &r_val, &r_vsize);
         check(ret == 0, "Could not retrieve key and value from cursor.");
 
         found++;

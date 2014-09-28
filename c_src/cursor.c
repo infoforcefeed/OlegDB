@@ -36,7 +36,7 @@ const ol_bucket *_olc_get_bucket(const ol_cursor *cursor) {
     return bucket;
 }
 
-int olc_get(const ol_cursor *c, char *k[KEY_SIZE],
+int olc_get(const ol_cursor *c, char (*k)[KEY_SIZE],
             unsigned char **val, size_t *vsize) {
     olc_get_key(c, k);
     check(k != NULL, "Could not get key.");
@@ -59,7 +59,7 @@ error:
     return 1;
 }
 
-int olc_get_key(const ol_cursor *c, char *key[KEY_SIZE]) {
+int olc_get_key(const ol_cursor *c, char (*key)[KEY_SIZE]) {
     const ol_bucket *bucket = _olc_get_bucket(c);
     check(strncpy(*key, bucket->key, KEY_SIZE) == *key, "Could not copy key.");
     return 0;
