@@ -73,6 +73,7 @@ ol_database *ol_open(const char *path, const char *name, int features){
     new_db->enable = &_ol_enable;
     new_db->disable = &_ol_disable;
     new_db->is_enabled = &_ol_is_enabled;
+    new_db->feature_set = 0;
 
     /* Function pointer building file paths based on db name */
     new_db->get_db_file_name = &_ol_get_file_name;
@@ -158,10 +159,13 @@ int ol_close(ol_database *db){
         msync(db->values, db->val_size, MS_SYNC);
         munmap(db->values, db->val_size);
     }
+    db->feature_set = 0;
     free(db->aol_file);
     free(db->meta);
     free(db->hashes);
+    memset(db, '\0', sizeof(ol_database));
     free(db);
+    db = NULL;
 
     check(freed == rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
     ol_log_msg(LOG_INFO, "Database closed. Remember to drink your coffee.");
@@ -641,8 +645,10 @@ error:
 }
 
 int ol_squish(ol_database *db) {
+    check(db != NULL, "Cannot squish null database.");
     int fflush_turned_off = 0;
-    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+    const int flags = db->feature_set;
+    if(db->is_enabled(OL_F_APPENDONLY, &flags)) {
         /* Turn off fflush for the time being. We'll do it once at the end. */
         if (db->is_enabled(OL_F_AOL_FFLUSH, &db->feature_set)) {
             db->disable(OL_F_AOL_FFLUSH, &db->feature_set);

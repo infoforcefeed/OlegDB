@@ -725,8 +725,10 @@ int test_aol(const ol_feature_flags features) {
 int test_aol_and_compaction(const ol_feature_flags features) {
     ol_log_msg(LOG_INFO, "Writing database.");
     ol_database *db = _test_db_open(features);
+    check(db != NULL, "db is null.");
 
     int to_return = _test_aol(features, db);
+    check(to_return == 0, "Could not test aol subfeatures.");
 
     ol_log_msg(LOG_INFO, "Squishing database.");
     ol_squish(db);
@@ -1112,6 +1114,7 @@ void run_tests(int results[2]) {
     /* These tests are special and depend on certain features being enabled
      * or disabled. */
     const ol_feature_flags feature_set = DB_DEFAULT_FEATURES;
+    ol_run_test(test_can_jump_cursor);
     ol_run_test(test_unjar_msgpack);
     ol_run_test(test_aol_and_compaction);
     ol_run_test(test_aol);
