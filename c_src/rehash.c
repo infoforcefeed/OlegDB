@@ -9,7 +9,9 @@
 #include "murmur3.h"
 
 static inline void _ol_rehash_insert_bucket(
-        ol_bucket **tmp_hashes, const size_t to_alloc, ol_bucket *bucket) {
+        ol_bucket **tmp_hashes,
+        const size_t to_alloc,
+        ol_bucket *bucket) {
     int new_index;
 
     uint32_t hash;
@@ -36,7 +38,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     tmp_hashes = calloc(1, to_alloc);
     check_mem(tmp_hashes);
 
-    ol_stack *orphans = NULL;
+    ol_mstack *orphans = NULL;
     orphans = malloc(sizeof(ol_stack));
     check_mem(orphans);
     orphans->next = NULL;
@@ -50,7 +52,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
             if (bucket->next != NULL) {
                 ol_bucket *tmp_bucket = bucket;
                 do {
-                    spush(&orphans, tmp_bucket->next);
+                    mspush(&orphans, tmp_bucket->next);
 
                     ol_bucket *next = tmp_bucket->next;
                     tmp_bucket->next = NULL;
@@ -67,7 +69,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     /* Take care of our orphans */
     ol_log_msg(LOG_INFO, "Have %i orphans to take care of.", orphans_found);
     do {
-        ol_bucket *rebucket = spop(&orphans);
+        ol_bucket *rebucket = mspop(&orphans);
         _ol_rehash_insert_bucket(tmp_hashes, to_alloc, rebucket);
 
         orphans_found--;

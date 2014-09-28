@@ -855,9 +855,17 @@ int test_can_get_next_in_tree(const ol_feature_flags features) {
     if (cursor.current_node != NULL)
         found++;
     while(olc_step(&cursor)) {
-        ol_splay_tree_node *node = _olc_get_node(&cursor);
+        const ol_splay_tree_node *node = _olc_get_node(&cursor);
         check(node != NULL, "Could not retrieve a node.");
         ol_log_msg(LOG_INFO, "Node found: %s", node->key);
+
+        unsigned char *r_val = NULL;
+        char r_key[KEY_SIZE] = {'0'};
+        size_t r_vsize;
+
+        const int ret = olc_get(&cursor, &r_key, &r_val, &r_vsize);
+        check(ret == 0, "Could not retrieve key and value from cursor.");
+
         found++;
     }
 
@@ -892,7 +900,7 @@ int test_can_get_prev_in_tree(const ol_feature_flags features) {
     while(olc_step(&cursor)) { }
     /* Now we start stepping backwards */
     while(olc_step_back(&cursor)) {
-        ol_splay_tree_node *node = _olc_get_node(&cursor);
+        const ol_splay_tree_node *node = _olc_get_node(&cursor);
         check(node != NULL, "Could not retrieve a node.");
         ol_log_msg(LOG_INFO, "Node found: %s", node->key);
         found++;
@@ -948,7 +956,7 @@ int test_compaction(const ol_feature_flags features) {
         check(ol_spoil(db, key, strnlen(key, 64), now) == 0, "Could not spoil record %s.", key)
     }
 
-    check(ol_squish(db), "Could not compact database.");
+    check(ol_squish(db) == 0, "Could not compact database.");
 
     _test_db_close(db);
     return 0;
@@ -1014,7 +1022,7 @@ int test_can_match_prefixes(const ol_feature_flags features) {
         return 1;
     }
 
-    ol_val_array matches_list = NULL;
+    ol_key_array matches_list = NULL;
     ret = ol_prefix_match(db, "crazy hash", strlen("crazy hash"), &matches_list);
     if (ret != next_records + 1) {
         ol_log_msg(LOG_ERR, "Found the wrong number of matches. Error code: %d\n", ret);
@@ -1022,6 +1030,7 @@ int test_can_match_prefixes(const ol_feature_flags features) {
     }
 
     for (i = 0; i < ret; i++) {
+        ol_log_msg(LOG_INFO, "Found key: %s", matches_list[i]);
         free(matches_list[i]);
     }
     free(matches_list);
