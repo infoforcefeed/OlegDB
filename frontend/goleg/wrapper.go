@@ -2,7 +2,7 @@ package goleg
 
 /*
 #cgo CFLAGS: -I../../include
-#cgo LDFLAGS: -L../../build/lib -loleg
+#cgo LDFLAGS: -loleg
 #include <stdlib.h>
 #include "oleg.h"
 #include "cursor.h"

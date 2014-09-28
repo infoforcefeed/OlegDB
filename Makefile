@@ -5,13 +5,15 @@ ifndef CC
 endif
 VERSION=0.1.5
 SOVERSION=0
-BUILD_DIR=$(shell pwd)/build/
+CUR_DIR=$(shell pwd)
+BUILD_DIR=$(CUR_DIR)/build/
 LIB_DIR=$(BUILD_DIR)lib/
 BIN_DIR=$(BUILD_DIR)bin/
 PREFIX?=/usr/local
 INSTALL_LIB=$(PREFIX)/lib/
 INSTALL_BIN=$(PREFIX)/bin/
 INSTALL_INCLUDE=$(PREFIX)/include/olegdb/
+export CGO_LDFLAGS=-L$(BUILD_DIR)lib
 
 INCLUDES=-I./include
 
