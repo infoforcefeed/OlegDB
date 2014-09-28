@@ -5,12 +5,13 @@ package goleg
 #cgo LDFLAGS: -L../../build/lib -loleg
 #include <stdlib.h>
 #include "oleg.h"
+#include "cursor.h"
 */
+import "C"
 import (
-	"C"
-	"unsafe"
-	"time"
 	"reflect"
+	"time"
+	"unsafe"
 )
 
 const F_APPENDONLY = C.OL_F_APPENDONLY
@@ -172,17 +173,17 @@ func CSquish(db *C.ol_database) int {
 	return int(C.ol_squish(db))
 }
 
-func CCas(db *C.ol_database, key string, klen uintptr, value []byte, vsize uintptr, ovalue []byte, ovsize uintptr) int {
+func CCas(db *C.ol_database, key string, klen uintptr, value []byte, vsize uintptr, ovalue *[]byte, ovsize *uintptr) int {
 	// Turn parameters into their C counterparts
 	ckey := C.CString(key)
 	defer C.free(unsafe.Pointer(ckey))
 
 	cklen := (C.size_t)(klen)
 	cvsize := (C.size_t)(vsize)
-	covsize := (C.size_t)(ovsize)
+	covsize := (C.size_t)(*ovsize)
 
 	cvalue := (*C.uchar)(unsafe.Pointer(&value[0]))
-	covalue := (*C.uchar)(unsafe.Pointer(&ovalue[0]))
+	covalue := (*C.uchar)(unsafe.Pointer(ovalue))
 
 	// Pass them to ol_jar
 	return int(C.ol_cas(db, ckey, cklen, cvalue, cvsize, covalue, covsize))
@@ -218,4 +219,73 @@ func CPrefixMatch(db *C.ol_database, prefix string, plen uintptr) (int, []string
 	// Free structure
 	C.free(unsafe.Pointer(ptr))
 	return length, out
+}
+
+func CGetBucket(db *C.ol_database, key string, klen uintptr, _key *string, _klen *uintptr) *C.ol_bucket {
+	// Turn parameters into their C counterparts
+	ckey := C.CString(key)
+	defer C.free(unsafe.Pointer(ckey))
+
+	var c_key [C.KEY_SIZE]C.char
+
+	cklen := (C.size_t)(klen)
+	c_klen := (*C.size_t)(unsafe.Pointer(_klen))
+
+	bucket := C.ol_get_bucket(db, ckey, cklen, &c_key, c_klen)
+
+	*_key = C.GoStringN((*C.char)(unsafe.Pointer(&c_key)), C.int(*c_klen))
+
+	return bucket
+}
+
+func CCurFirst(db *C.ol_database) *C.ol_cursor {
+	minimum := C.ols_subtree_minimum(db.tree.root)
+	return minimum
+}
+
+func CCurLast(db *C.ol_database) *C.ol_cursor {
+	maximum := C.ols_subtree_maximum(db.tree.root)
+	return maximum
+}
+
+func CCurNext(db *C.ol_database, key string, klen uintptr) *C.ol_cursor {
+	var _key string
+	var _klen uintptr
+	bucket := CGetBucket(db, key, klen, &_key, &_klen)
+
+	if bucket == nil {
+		return bucket
+	}
+
+	node := bucket.node
+	maximum := C.ols_subtree_maximum(db.tree.root)
+	ret := int(C._olc_next(&node, maximum))
+	if ret != 0 {
+		return nil
+	}
+
+	return node
+}
+
+func CCurPrev(db *C.ol_database, key string, klen uintptr) *C.ol_cursor {
+	var _key string
+	var _klen uintptr
+	bucket := CGetBucket(db, key, klen, &_key, &_klen)
+
+	if bucket == nil {
+		return bucket
+	}
+
+	node := bucket.node
+	minimum := C.ols_subtree_minimum(db.tree.root)
+	ret := int(C._olc_next(&node, minimum))
+	if ret != 0 {
+		return nil
+	}
+
+	return node
+}
+
+func CCurGet(cursor *C.ol_cursor) (string, []byte) {
+
 }

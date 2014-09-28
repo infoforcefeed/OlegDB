@@ -5,8 +5,8 @@ package goleg
 #cgo LDFLAGS: -L../../build/lib -loleg
 #include "oleg.h"
 */
+import "C"
 import (
-	"C"
 	"time"
 )
 
@@ -62,4 +62,24 @@ func (d Database) Squish() bool {
 func (d Database) PrefixMatch(prefix string) (bool, []string) {
 	len, out := CPrefixMatch(d.db, prefix, uintptr(len(prefix)))
 	return len >= 0, out
+}
+
+func (d Database) First() (string, []byte) {
+	cursor := CCurFirst(d.db)
+	return CCurGet(cursor)
+}
+
+func (d Database) Last() (string, []byte) {
+	cursor := CCurLast(d.db)
+	return CCurGet(cursor)
+}
+
+func (d Database) Next(key string) (string, []byte) {
+	cursor := CCurNext(d.db, key, uintptr(len(key)))
+	return CCurGet(cursor)
+}
+
+func (d Database) Prev() (string, []byte) {
+	cursor := CCurPrev(d.db, key, uintptr(len(key)))
+	return CCurGet(cursor)
 }
