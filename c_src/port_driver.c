@@ -51,7 +51,7 @@ static void oleg_stop(ErlDrvData data) {
     ol_cursor cursor;
     check(olc_generic_init(tree, &cursor), "Could not init cursor.");
     while(olc_step(&cursor)) {
-        ol_splay_tree_node *node = _olc_get_node(&cursor);
+        const ol_splay_tree_node *node = _olc_get_node(&cursor);
         check(node != NULL, "Could not retrieve a node.");
         ol_database *db = (ol_database *)node->ref_obj;
 
@@ -391,7 +391,7 @@ static void port_driver_cursor_last(oleg_data *d, ol_database *db, ol_record *ob
 }
 
 static void port_driver_prefix_match(oleg_data *d, ol_database *db, ol_record *obj) {
-    ol_val_array matches_list = NULL;
+    ol_key_array matches_list = NULL;
     int match_num = ol_prefix_match(db, obj->key, obj->klen, &matches_list);
     if (match_num > 0) {
         ei_x_buff to_send;
@@ -465,7 +465,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
         int ret = 1;
         while(olc_step(&cursor)) {
-            ol_splay_tree_node *node = _olc_get_node(&cursor);
+            const ol_splay_tree_node *node = _olc_get_node(&cursor);
             ol_database *db = (ol_database *)node->ref_obj;
 
             if (db != NULL)
@@ -493,7 +493,7 @@ static void oleg_output(ErlDrvData data, char *cmd, ErlDrvSizeT clen) {
 
         int ret = 0;
         while(olc_step(&cursor)) {
-            ol_splay_tree_node *node = _olc_get_node(&cursor);
+            const ol_splay_tree_node *node = _olc_get_node(&cursor);
             ol_database *db = (ol_database *)node->ref_obj;
 
             if (db != NULL)

@@ -277,29 +277,8 @@ int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **d
             if (data == NULL)
                 return 0;
 
-            /* Allocate memory to store memcpy'd data into. */
-            *data = calloc(1, bucket->original_size);
-            check(*data != NULL, "Could not allocate memory for compressed data.");
-
-            if (dsize != NULL) {
-                /* "strncpy never fails!" */
-                size_t *ret = memcpy(dsize, &bucket->original_size, sizeof(size_t));
-                check(ret == dsize, "Could not copy data size into input data_size param.");
-            }
-
-            unsigned char *data_ptr = db->values + bucket->data_offset;
-            /* Decomperss with LZ4 if enabled */
-            if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-                int processed = 0;
-                processed = LZ4_decompress_fast((char *)data_ptr,
-                                                (char *)*data,
-                                                bucket->original_size);
-                check(processed == bucket->data_size, "Could not decompress data.");
-            } else {
-                /* We know data isn't NULL by this point. */
-                unsigned char *ret = memcpy(*data, data_ptr, bucket->original_size);
-                check(ret == *data, "Could not copy data into output data param.");
-            }
+            const int ret = _ol_get_value_from_bucket(db, bucket, data, dsize);
+            check(ret == 0, "Could not retrieve value from bucket.");
 
             /* Key found, tell somebody. */
             return 0;

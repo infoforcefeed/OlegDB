@@ -855,9 +855,17 @@ int test_can_get_next_in_tree(const ol_feature_flags features) {
     if (cursor.current_node != NULL)
         found++;
     while(olc_step(&cursor)) {
-        ol_splay_tree_node *node = _olc_get_node(&cursor);
+        const ol_splay_tree_node *node = _olc_get_node(&cursor);
         check(node != NULL, "Could not retrieve a node.");
         ol_log_msg(LOG_INFO, "Node found: %s", node->key);
+
+        unsigned char *r_val = NULL;
+        char r_key[KEY_SIZE] = {'0'};
+        size_t r_vsize;
+
+        const int ret = olc_get(&cursor, &r_key, &r_val, &r_vsize);
+        check(ret == 0, "Could not retrieve key and value from cursor.");
+
         found++;
     }
 
@@ -892,7 +900,7 @@ int test_can_get_prev_in_tree(const ol_feature_flags features) {
     while(olc_step(&cursor)) { }
     /* Now we start stepping backwards */
     while(olc_step_back(&cursor)) {
-        ol_splay_tree_node *node = _olc_get_node(&cursor);
+        const ol_splay_tree_node *node = _olc_get_node(&cursor);
         check(node != NULL, "Could not retrieve a node.");
         ol_log_msg(LOG_INFO, "Node found: %s", node->key);
         found++;
