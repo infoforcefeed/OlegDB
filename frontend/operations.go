@@ -29,7 +29,7 @@ func httpGet(w http.ResponseWriter, op Operation) *HTTPError {
 	}
 
 	// Send value
-	fmt.Fprintf(w, string(value))
+	w.Write(value)
 	return nil
 }
 
@@ -109,5 +109,45 @@ func httpMatch(w http.ResponseWriter, op Operation) *HTTPError {
 	}
 
 	fmt.Fprintf(w, strings.Join(res, "\n"))
+	return nil
+}
+
+func httpCurFirst(w http.ResponseWriter, op Operation) *HTTPError {
+	has, key, data := op.Database.First()
+	if !has {
+		return &HTTPError{Code: 404, Message: "No record found"}
+	}
+	w.Header().Add("X-Olegdb-Key", key)
+	w.Write(data)
+	return nil
+}
+
+func httpCurLast(w http.ResponseWriter, op Operation) *HTTPError {
+	has, key, data := op.Database.Last()
+	if !has {
+		return &HTTPError{Code: 404, Message: "No record found"}
+	}
+	w.Header().Add("X-Olegdb-Key", key)
+	w.Write(data)
+	return nil
+}
+
+func httpCurNext(w http.ResponseWriter, op Operation) *HTTPError {
+	has, key, data := op.Database.Next(op.Key)
+	if !has {
+		return &HTTPError{Code: 404, Message: "No record found"}
+	}
+	w.Header().Add("X-Olegdb-Key", key)
+	w.Write(data)
+	return nil
+}
+
+func httpCurPrev(w http.ResponseWriter, op Operation) *HTTPError {
+	has, key, data := op.Database.Prev(op.Key)
+	if !has {
+		return &HTTPError{Code: 404, Message: "No record found"}
+	}
+	w.Header().Add("X-Olegdb-Key", key)
+	w.Write(data)
 	return nil
 }

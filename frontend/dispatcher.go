@@ -49,6 +49,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		err = httpDelete(w, operation)
 	case OpPrefixMatch:
 		err = httpMatch(w, operation)
+	case OpCursorFirst:
+		err = httpCurFirst(w, operation)
+	case OpCursorLast:
+		err = httpCurLast(w, operation)
+	case OpCursorNext:
+		err = httpCurNext(w, operation)
+	case OpCursorPrev:
+		err = httpCurPrev(w, operation)
 	default:
 		err = &HTTPError{Message: "I don't get what you're trying to do", Code: 400}
 	}

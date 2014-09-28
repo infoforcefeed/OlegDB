@@ -37,29 +37,7 @@ func CClose(database *C.ol_database) int {
 	return int(C.ol_close(database))
 }
 
-func CUnjar(db *C.ol_database, key string, klen uintptr, dsize uintptr) []byte {
-	// Turn parameters into their C counterparts
-	ckey := C.CString(key)
-	defer C.free(unsafe.Pointer(ckey))
-
-	cklen := (C.size_t)(klen)
-
-	// Pass them to ol_unjar
-	var ptr *C.uchar
-	res := C.ol_unjar(db, ckey, cklen, &ptr)
-	if res == 1 {
-		return nil
-	}
-	// Retrieve data in Go []bytes
-	data := C.GoBytes(unsafe.Pointer(ptr), C.int(dsize))
-
-	// Free C pointer
-	C.free(unsafe.Pointer(ptr))
-
-	return data
-}
-
-func CUnjarDs(db *C.ol_database, key string, klen uintptr, dsize *uintptr) []byte {
+func CUnjar(db *C.ol_database, key string, klen uintptr, dsize *uintptr) []byte {
 	// Turn parameters into their C counterparts
 	ckey := C.CString(key)
 	defer C.free(unsafe.Pointer(ckey))
@@ -238,54 +216,67 @@ func CGetBucket(db *C.ol_database, key string, klen uintptr, _key *string, _klen
 	return bucket
 }
 
-func CCurFirst(db *C.ol_database) *C.ol_cursor {
+func CNodeFirst(db *C.ol_database) *C.ol_splay_tree_node {
 	minimum := C.ols_subtree_minimum(db.tree.root)
 	return minimum
 }
 
-func CCurLast(db *C.ol_database) *C.ol_cursor {
+func CNodeLast(db *C.ol_database) *C.ol_splay_tree_node {
 	maximum := C.ols_subtree_maximum(db.tree.root)
 	return maximum
 }
 
-func CCurNext(db *C.ol_database, key string, klen uintptr) *C.ol_cursor {
+func CNodeNext(db *C.ol_database, key string, klen uintptr) *C.ol_splay_tree_node {
 	var _key string
 	var _klen uintptr
 	bucket := CGetBucket(db, key, klen, &_key, &_klen)
 
 	if bucket == nil {
-		return bucket
+		return nil
 	}
 
 	node := bucket.node
 	maximum := C.ols_subtree_maximum(db.tree.root)
 	ret := int(C._olc_next(&node, maximum))
-	if ret != 0 {
+	if ret == 0 || node == bucket.node {
 		return nil
 	}
 
 	return node
 }
 
-func CCurPrev(db *C.ol_database, key string, klen uintptr) *C.ol_cursor {
+func CNodePrev(db *C.ol_database, key string, klen uintptr) *C.ol_splay_tree_node {
 	var _key string
 	var _klen uintptr
 	bucket := CGetBucket(db, key, klen, &_key, &_klen)
 
 	if bucket == nil {
-		return bucket
+		return nil
 	}
 
 	node := bucket.node
 	minimum := C.ols_subtree_minimum(db.tree.root)
-	ret := int(C._olc_next(&node, minimum))
-	if ret != 0 {
+	ret := int(C._olc_prev(&node, minimum))
+	if ret == 0 || node == bucket.node {
 		return nil
 	}
 
 	return node
 }
 
-func CCurGet(cursor *C.ol_cursor) (string, []byte) {
+func CNodeGet(db *C.ol_database, node *C.ol_splay_tree_node) (bool, string, []byte) {
+	// Get associated bucket
+	bucket := (*C.ol_bucket)(node.ref_obj)
 
+	if bucket == nil {
+		return false, "", nil
+	}
+
+	// Get key and data
+	key := C.GoStringN((*C.char)(unsafe.Pointer(&bucket.key)), C.int(bucket.klen))
+
+	var dsize uintptr
+	data := CUnjar(db, key, uintptr(len(key)), &dsize)
+
+	return true, key, data
 }

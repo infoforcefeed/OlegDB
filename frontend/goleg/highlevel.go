@@ -28,7 +28,7 @@ func (d Database) Close() int {
 
 func (d Database) Unjar(key string) []byte {
 	var dsize uintptr
-	return CUnjarDs(d.db, key, uintptr(len(key)), &dsize)
+	return CUnjar(d.db, key, uintptr(len(key)), &dsize)
 }
 
 func (d Database) Jar(key string, value []byte) int {
@@ -64,22 +64,34 @@ func (d Database) PrefixMatch(prefix string) (bool, []string) {
 	return len >= 0, out
 }
 
-func (d Database) First() (string, []byte) {
-	cursor := CCurFirst(d.db)
-	return CCurGet(cursor)
+func (d Database) First() (bool, string, []byte) {
+	node := CNodeFirst(d.db)
+	if node == nil {
+		return false, "", nil
+	}
+	return CNodeGet(d.db, node)
 }
 
-func (d Database) Last() (string, []byte) {
-	cursor := CCurLast(d.db)
-	return CCurGet(cursor)
+func (d Database) Last() (bool, string, []byte) {
+	node := CNodeLast(d.db)
+	if node == nil {
+		return false, "", nil
+	}
+	return CNodeGet(d.db, node)
 }
 
-func (d Database) Next(key string) (string, []byte) {
-	cursor := CCurNext(d.db, key, uintptr(len(key)))
-	return CCurGet(cursor)
+func (d Database) Next(key string) (bool, string, []byte) {
+	node := CNodeNext(d.db, key, uintptr(len(key)))
+	if node == nil {
+		return false, "", nil
+	}
+	return CNodeGet(d.db, node)
 }
 
-func (d Database) Prev() (string, []byte) {
-	cursor := CCurPrev(d.db, key, uintptr(len(key)))
-	return CCurGet(cursor)
+func (d Database) Prev(key string) (bool, string, []byte) {
+	node := CNodePrev(d.db, key, uintptr(len(key)))
+	if node == nil {
+		return false, "", nil
+	}
+	return CNodeGet(d.db, node)
 }
