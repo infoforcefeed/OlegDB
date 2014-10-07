@@ -264,7 +264,7 @@ void ols_close(ol_splay_tree *tree) {
 }
 
 /* Defined in oleg.h */
-int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_array *data) {
+int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_key_array *data) {
     if (!db->is_enabled(OL_F_SPLAYTREE, &db->feature_set))
         return -1;
     if (!prefix)
@@ -273,7 +273,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
         return -1;
 
     ol_cursor cursor;
-    char **to_return = NULL;
+    ol_key_array to_return = NULL;
     char *dest = NULL;
     ol_stack *matches = NULL;
 
@@ -281,7 +281,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
     check(olc_init(db, &cursor), "Could not init cursor.");
 
     /* Get current node */
-    ol_splay_tree_node *current_node = _olc_get_node(&cursor);
+    const ol_splay_tree_node *current_node = _olc_get_node(&cursor);
     /* Build up our matches stack */
     matches = malloc(sizeof(ol_stack));
     matches->data = NULL;
@@ -321,26 +321,33 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_val_arr
     to_return = malloc(total_size);
     check_mem(to_return);
 
-    int i =0;
-    for (; i < imatches; i++) {
+    /* Q: Why are we iterating backwards here, Quinlan? */
+    /* A: Well, you see, while we iterate through the splay tree, we push
+     * matches onto a stack. I don't know how much CS you know, but stacks
+     * are a FILO structure meaning when I pop something off, it was the
+     * most recently added match. Which is backwards. So instead of doing
+     * something like step backwards through the tree, build a queue structure
+     * or add the ability to pop the bottom off of the stack (QUACK QUACK) we
+     * just iterate through the matches backwards. Works great. A+, 10/10
+     */
+    int i = (imatches - 1);
+    for (; i >= 0; i--) {
         ol_splay_tree_node *cur_node = (ol_splay_tree_node *)spop(&matches);
         ol_bucket *deref = (ol_bucket *)cur_node->ref_obj;
 
-        unsigned char *data_ptr = db->values + deref->data_offset;
+        /* Figure out how big of a buffer we need: */
         size_t data_len = 0;
-        data_len = deref->original_size;
+        data_len = strnlen(deref->key, KEY_SIZE);
 
+        /* Malloc that shit */
         dest = malloc(data_len + 1);
         check_mem(dest);
-        if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-            int processed = 0;
-            processed = LZ4_decompress_fast((char *)data_ptr, dest, data_len);
-            check(processed == deref->data_size, "Could not decompress data.");
-        } else {
-            unsigned char *to_check = memcpy(dest, data_ptr, data_len);
-            check(to_check == data_ptr, "Could not copy data to buffer.");
-        }
 
+        /* Copy the key into said new buffer: */
+        unsigned char *to_check = memcpy(dest, deref->key, data_len);
+        check(to_check == (unsigned char *)dest, "Could not copy data to buffer.");
+
+        /* Null terminate the madness: */
         dest[data_len] = '\0';
         to_return[i] = dest;
     }

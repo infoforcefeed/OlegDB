@@ -106,8 +106,7 @@ int test_zero_length_keys(const ol_feature_flags features) {
 
     check(ol_jar(db, key1, 0, value, strlen((char *)value)) != 0, "jar'd key when we shouldn't have.");
     check(ol_jar(db, key2, 0, value, strlen((char *)value)) != 0, "jar'd key when we shouldn't have.");
-    check(ol_unjar(db, key1, 0, NULL) != 0, "jar'd key when we shouldn't have.");
-    check(ol_unjar(db, key2, 0, NULL) != 0, "jar'd key when we shouldn't have.");
+    check(ol_unjar(db, key2, 0, NULL, NULL) != 0, "unjar'd key when we shouldn't have.");
     check(ol_spoil(db, key1, 0, NULL) != 0, "spoil'd key when we shouldn't have.");
     check(ol_spoil(db, key2, 0, NULL) != 0, "spoil'd key when we shouldn't have.");
     check(ol_scoop(db, key1, 0) != 0, "scoop'd key when we shouldn't have.");
@@ -199,6 +198,67 @@ int test_jar(const ol_feature_flags features) {
         return 1;
     }
     return 0;
+}
+
+int test_can_jump_cursor(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+    int max_records = 10;
+    unsigned char to_insert[] = "roadkill";
+    int i;
+    for (i = 0; i < max_records; i++) {
+        char key[64] = "mmmmmars";
+        char append[10] = "";
+
+        sprintf(append, "%i", i);
+        strcat(key, append);
+
+        size_t len = strlen((char *)to_insert);
+        size_t klen = strlen(key);
+        int insert_result = ol_jar(db, key, klen, to_insert, len);
+
+        if (insert_result > 0) {
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
+            _test_db_close(db);
+            return 2;
+        }
+
+        if (db->rcrd_cnt != i+1) {
+            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
+            _test_db_close(db);
+            return 3;
+        }
+    }
+
+    /* Create and jump the cursor to a random hash. */
+    const char key[] = "mmmmmars6";
+    ol_cursor cursor;
+    check(olc_init(db, &cursor), "Could not init cursor.");
+    check(olc_jump(&cursor, key, strlen(key)) == 0, "Could not jump cursor.");
+
+    /* Get the node from the cursors now jumped position */
+    const ol_splay_tree_node *node = _olc_get_node(&cursor);
+    check(node != NULL, "Could not retrieve node.");
+
+    /* Prep some variables so we can check them */
+    unsigned char *r_val = NULL;
+    char r_key[KEY_SIZE] = {'0'};
+    size_t r_vsize;
+
+    const int ret = olc_get(&cursor, &r_key, &r_val, &r_vsize);
+    check(ret == 0, "Could not retrieve key and value from cursor.");
+    free(r_val);
+
+    check(strncmp(r_key, key, KEY_SIZE) == 0, "Returned key is not the same.");
+
+    check(_test_db_close(db) == 0, "Could not close database.");
+
+    return 0;
+
+error:
+    if (r_val != NULL)
+        free(r_val);
+    return 1;
+
 }
 
 int test_can_find_all_nodes(const ol_feature_flags features) {
@@ -693,10 +753,10 @@ int test_aol(const ol_feature_flags features) {
 int test_aol_and_compaction(const ol_feature_flags features) {
     ol_log_msg(LOG_INFO, "Writing database.");
     ol_database *db = _test_db_open(features);
+    check(db != NULL, "db is null.");
 
     int to_return = _test_aol(features, db);
-    if (to_return != 0)
-        return to_return;
+    check(to_return == 0, "Could not test aol subfeatures.");
 
     ol_log_msg(LOG_INFO, "Squishing database.");
     ol_squish(db);
@@ -725,6 +785,9 @@ int test_aol_and_compaction(const ol_feature_flags features) {
     free(item);
     _test_db_close(db);
     return to_return;
+
+error:
+    return 8;
 }
 
 int test_expiration(const ol_feature_flags features) {
@@ -886,9 +949,17 @@ int test_can_get_next_in_tree(const ol_feature_flags features) {
     if (cursor.current_node != NULL)
         found++;
     while(olc_step(&cursor)) {
-        ol_splay_tree_node *node = _olc_get_node(&cursor);
+        const ol_splay_tree_node *node = _olc_get_node(&cursor);
         check(node != NULL, "Could not retrieve a node.");
         ol_log_msg(LOG_INFO, "Node found: %s", node->key);
+
+        unsigned char *r_val = NULL;
+        char r_key[KEY_SIZE] = {'0'};
+        size_t r_vsize;
+
+        const int ret = olc_get(&cursor, &r_key, &r_val, &r_vsize);
+        check(ret == 0, "Could not retrieve key and value from cursor.");
+
         found++;
     }
 
@@ -923,7 +994,7 @@ int test_can_get_prev_in_tree(const ol_feature_flags features) {
     while(olc_step(&cursor)) { }
     /* Now we start stepping backwards */
     while(olc_step_back(&cursor)) {
-        ol_splay_tree_node *node = _olc_get_node(&cursor);
+        const ol_splay_tree_node *node = _olc_get_node(&cursor);
         check(node != NULL, "Could not retrieve a node.");
         ol_log_msg(LOG_INFO, "Node found: %s", node->key);
         found++;
@@ -1045,7 +1116,7 @@ int test_can_match_prefixes(const ol_feature_flags features) {
         return 1;
     }
 
-    ol_val_array matches_list = NULL;
+    ol_key_array matches_list = NULL;
     ret = ol_prefix_match(db, "crazy hash", strlen("crazy hash"), &matches_list);
     if (ret != next_records + 1) {
         ol_log_msg(LOG_ERR, "Found the wrong number of matches. Error code: %d\n", ret);
@@ -1053,6 +1124,7 @@ int test_can_match_prefixes(const ol_feature_flags features) {
     }
 
     for (i = 0; i < ret; i++) {
+        ol_log_msg(LOG_INFO, "Found key: %s", matches_list[i]);
         free(matches_list[i]);
     }
     free(matches_list);
@@ -1073,6 +1145,7 @@ void run_tests(int results[2]) {
      * or disabled. */
     const ol_feature_flags feature_set = DB_DEFAULT_FEATURES;
     ol_run_test(test_basic_transaction);
+    ol_run_test(test_can_jump_cursor);
     ol_run_test(test_unjar_msgpack);
     ol_run_test(test_aol_and_compaction);
     ol_run_test(test_aol);

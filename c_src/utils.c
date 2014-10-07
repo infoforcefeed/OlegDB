@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "oleg.h"
 #include "utils.h"
+#include "errhandle.h"
 #include "logging.h"
 #include "errhandle.h"
 #include "lz4.h"
@@ -156,4 +157,37 @@ inline void _ol_trunc(const char *key, size_t klen, char *out) {
     size_t real_key_len = klen > KEY_SIZE ? KEY_SIZE : klen;
     strncpy(out, key, real_key_len);
     out[real_key_len] = '\0';
+}
+
+int _ol_get_value_from_bucket(const ol_database *db, const ol_bucket *bucket,
+        unsigned char **data, size_t *dsize) {
+    check(bucket != NULL, "Cannot retrieve value from NULL bucket.");
+    /* Allocate memory to store memcpy'd data into. */
+    *data = calloc(1, bucket->original_size);
+    check(*data != NULL, "Could not allocate memory for compressed data.");
+
+    if (dsize != NULL) {
+        /* "memcpy never fails!" */
+        size_t *ret = memcpy(dsize, &bucket->original_size, sizeof(size_t));
+        check(ret == dsize, "Could not copy data size into input data_size param.");
+    }
+
+    unsigned char *data_ptr = db->values + bucket->data_offset;
+    /* Decomperss with LZ4 if enabled */
+    if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
+        int processed = 0;
+        processed = LZ4_decompress_fast((char *)data_ptr,
+                                        (char *)*data,
+                                        bucket->original_size);
+        check(processed == bucket->data_size, "Could not decompress data.");
+    } else {
+        /* We know data isn't NULL by this point. */
+        unsigned char *ret = memcpy(*data, data_ptr, bucket->original_size);
+        check(ret == *data, "Could not copy data into output data param.");
+    }
+
+    return 0;
+
+error:
+    return 1;
 }

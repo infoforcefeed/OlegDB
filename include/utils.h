@@ -10,6 +10,10 @@
  * linked list of ol_bucket objects in a db slot. */
 ol_bucket *_ol_get_last_bucket_in_slot(ol_bucket *bucket);
 
+/* Internal function used to get the value from a bucket. */
+int _ol_get_value_from_bucket(const ol_database *db, const ol_bucket *bucket,
+        unsigned char **data, size_t *dsize);
+
 /* Internal function used to free a bucket's memory. */
 void _ol_free_bucket(ol_bucket **ptr);
 

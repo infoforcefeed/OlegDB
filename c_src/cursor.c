@@ -2,10 +2,12 @@
 #include "cursor.h"
 #include "errhandle.h"
 #include "tree.h"
+#include "utils.h"
 
 int olc_generic_init(ol_splay_tree *tree, ol_cursor *cursor) {
     /* Init the cursor */
     cursor->current_node = NULL;
+    cursor->db = NULL;
     cursor->maximum = ols_subtree_maximum(tree->root);
     cursor->minimum = ols_subtree_minimum(tree->root);
     cursor->current_node = ols_subtree_minimum(tree->root);
@@ -17,22 +19,78 @@ int olc_init(ol_database *db, ol_cursor *cursor) {
     if (!db->is_enabled(OL_F_SPLAYTREE, &db->feature_set))
         return 0;
 
-    return olc_generic_init(db->tree, cursor);
+    const int ret = olc_generic_init(db->tree, cursor);
+
+    /* The generic init sets db to NULL (good hygiene) so we need
+     * to set it to something useful. */
+    cursor->db = db;
+    return ret;
 }
 
-ol_splay_tree_node *_olc_get_node(ol_cursor *cursor) {
+const ol_splay_tree_node *_olc_get_node(const ol_cursor *cursor) {
     return cursor->current_node;
 }
 
-ol_bucket *olc_get(ol_cursor *cursor) {
+const ol_bucket *_olc_get_bucket(const ol_cursor *cursor) {
     ol_bucket *bucket = (ol_bucket *)cursor->current_node->ref_obj;
     return bucket;
+}
+
+int olc_get(const ol_cursor *c, char (*k)[KEY_SIZE],
+            unsigned char **val, size_t *vsize) {
+    olc_get_key(c, k);
+    check(k != NULL, "Could not get key.");
+
+    olc_get_val(c, val, vsize);
+    check(val != NULL, "Could not get val.");
+    return 0;
+
+error:
+    return 1;
+}
+
+int olc_get_val(const ol_cursor *c, unsigned char **val, size_t *vsize) {
+    const ol_bucket *bucket = _olc_get_bucket(c);
+    int ret = _ol_get_value_from_bucket(c->db, bucket, val, vsize);
+    check(ret == 0, "Could not get value from bucket.");
+    return 0;
+
+error:
+    return 1;
+}
+
+int olc_get_key(const ol_cursor *c, char (*key)[KEY_SIZE]) {
+    const ol_bucket *bucket = _olc_get_bucket(c);
+    check(strncpy(*key, bucket->key, KEY_SIZE) == *key, "Could not copy key.");
+    return 0;
+
+error:
+    return 1;
 }
 
 int olc_step(ol_cursor *cursor) {
     ol_splay_tree_node *max = cursor->maximum;
 
     return _olc_next(&(cursor->current_node), max);
+}
+
+int olc_jump(ol_cursor *cursor, const char *key, const size_t klen) {
+    check(key != NULL, "NULL key.");
+    check(klen > 0, "Zero-length keys not allowed.");
+
+    char _key[KEY_SIZE] = {'\0'};
+    size_t _klen = 0;
+
+    ol_bucket *bucket = NULL;
+    bucket = ol_get_bucket(cursor->db, key, klen, &_key, &_klen);
+    if (bucket != NULL)
+        cursor->current_node = bucket->node;
+    else
+        return 1;
+    return 0;
+
+error:
+    return 1;
 }
 
 int olc_step_back(ol_cursor *cursor) {
