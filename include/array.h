@@ -28,6 +28,20 @@ ola_array *ola_create(const size_t slots);
  */
 int ola_destroy(ola_array *array);
 
+/* xXx FUNCTION=ola_grow xXx
+ * xXx DESCRIPTION=Grows the array as slows come to MAX. xXx
+ * xXx RETURNS=0 on success. xXx
+ * xXx array=Pointer to ola_array type. xXx
+ */
+int ola_grow(ola_array *array);
+
+/* xXx FUNCTION=ola_shrink xXx
+ * xXx DESCRIPTION=Reindexes the array when things are deleted xXx
+ * xXx RETURNS=0 on success. xXx
+ * xXx array=Pointer to ola_array type. xXx
+ */
+int ola_reindex(ola_array *array);
+
 /* xXx FUNCTION=ola_push xXx
  * xXx DESCRIPTION=Push an element onto the array. xXx
  * xXx RETURNS=0 on success. xXx
