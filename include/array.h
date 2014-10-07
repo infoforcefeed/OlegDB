@@ -25,10 +25,10 @@ ola_array *ola_create(const size_t slots);
 
 /* xXx FUNCTION=ola_destroy xXx
  * xXx DESCRIPTION=Destroys the array and frees the memory. xXx
- * xXx RETURNS=0 on success. xXx
+ * xXx RETURNS=void. xXx
  * xXx array=Pointer to ola_array type. xXx
  */
-int ola_destroy(ola_array *array);
+void ola_destroy(ola_array *array);
 
 /* xXx FUNCTION=ola_grow xXx
  * xXx DESCRIPTION=Grows the array as slows come to MAX. xXx

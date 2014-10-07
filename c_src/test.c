@@ -1137,11 +1137,7 @@ int test_array_push_pop(const ol_feature_flags features) {
         return 1;
     }
 
-    ret = ola_destroy(array);
-    if (ret > 0) {
-        ol_log_msg(LOG_ERR, "Testing array destroy: Expecting 0 return code, got %d\n", ret);
-        return 1;
-    }
+    ola_destroy(array);
 }
 
 int test_array_set_get_del(const ol_feature_flags features) {
