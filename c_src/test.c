@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "aol.h"
+#include "array.h"
 #include "cursor.h"
 #include "errhandle.h"
 #include "file.h"
@@ -1103,6 +1104,37 @@ int test_can_match_prefixes(const ol_feature_flags features) {
     _test_db_close(db);
     return 0;
 
+}
+
+int test_array_actions(const ol_feature_flags features) {
+    ola_array *array;
+    int ret;
+    int length;
+
+    /* Testin push and pop */
+    array = ola_create(200);
+
+    ret = ola_push(array, "test\000");
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Testing array push: Expecting 0 return code, got %d\n", ret);
+        return 1;
+    }
+
+    length = ola_len(array);
+
+    if (length != 1) {
+        ol_log_msg(LOG_ERR, "Testing array length: Expecting 1, got %d\n", length);
+        return 1;
+    }
+
+    void *mything;
+
+    ola_pop(array, mything);
+
+    if (mything == NULL) {
+        ol_log_msg(LOG_ERR, "Testing array pop: got NULL value\n");
+        return 1;
+    }
 }
 
 void run_tests(int results[2]) {

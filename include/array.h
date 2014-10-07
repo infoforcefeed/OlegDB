@@ -68,3 +68,10 @@ int ola_set(ola_array *array, int index, void *item);
  * xXx index=Index of slot to act on. xXx
  */
 int ola_delete(ola_array *array, int index);
+
+/* xXx FUNCTION=ola_len xXx
+ * xXx DESCRIPTION=Get the length of an array. xXx
+ * xXx RETURNS=int as number of items in the array. xXx
+ * xXx array=Pointer to ola_array type. xXx
+ */
+int ola_len(ola_array *array);
