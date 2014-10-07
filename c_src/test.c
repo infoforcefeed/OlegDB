@@ -1,6 +1,7 @@
 /* Unit tests. */
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
 #include "aol.h"
 #include "array.h"
 #include "cursor.h"
@@ -1106,7 +1107,7 @@ int test_can_match_prefixes(const ol_feature_flags features) {
 
 }
 
-int test_array_actions(const ol_feature_flags features) {
+int test_array_push_pop(const ol_feature_flags features) {
     ola_array *array;
     int ret;
     int length;
@@ -1135,6 +1136,55 @@ int test_array_actions(const ol_feature_flags features) {
         ol_log_msg(LOG_ERR, "Testing array pop: got NULL value\n");
         return 1;
     }
+
+    ret = ola_destroy(array);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Testing array destroy: Expecting 0 return code, got %d\n", ret);
+        return 1;
+    }
+}
+
+int test_array_set_get_del(const ol_feature_flags features) {
+    ola_array *array;
+    int ret;
+    int length;
+    int i;
+    char buf[1];
+    void *value;
+
+    /* Testin set get del */
+    array = ola_create(200);
+
+    for (i = 0; i < 5; i++) {
+        sprintf(buf, "%d", i);
+        ret = ola_set(array, i, (void *)buf); /* set i at index i, so we can see that 0 index holds 0 value */
+    }
+
+    length = ola_len(array);
+    if (length != 5) {
+        ol_log_msg(LOG_ERR, "Testing array set: Expecting 5 length, got %d\n", length);
+        return 1;
+    }
+
+    for (i = 0; i < 5; i++) {
+        ola_get(array, i, value);
+        sprintf(buf, "%d", i);
+        if (strncmp((char *)value, buf, 1) != 0) {
+            ol_log_msg(LOG_ERR, "Testing array get: Expecting %s length, got %d\n", buf, value);
+            return 1;
+        }
+    }
+
+    ola_delete(array, 2);
+
+    length = ola_len(array);
+    if (length != 4) {
+        ol_log_msg(LOG_ERR, "Testing array set: Expecting 4 length, got %d\n", length);
+        return 1;
+    }
+
+    ola_destroy(array);
+
 }
 
 void run_tests(int results[2]) {
@@ -1156,6 +1206,8 @@ void run_tests(int results[2]) {
     ol_run_test(test_can_get_next_in_tree);
     ol_run_test(test_can_get_prev_in_tree);
     ol_run_test(test_can_match_prefixes);
+    ol_run_test(test_array_push_pop);
+    ol_run_test(test_array_set_get_del);
 
     /* Permute all features enabled for these tests, so that we get all of our
      * code paths tested. */

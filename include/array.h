@@ -50,7 +50,7 @@ void ola_pop(ola_array *array, void *item);
  * xXx array=Pointer to ola_array type. xXx
  * xXx index=Index of slot to act on. xXx
  */
-void *ola_get(ola_array *array, int index);
+void ola_get(ola_array *array, int index, void *item);
 
 /* xXx FUNCTION=ola_set xXx
  * xXx DESCRIPTION=Set an element at index. xXx
