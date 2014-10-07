@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+#define OLA_DEFAULT_GROWTH_RATE 2
+
 /* xXx STRUCT=ola_array xXx
  * xXx DESCRIPTION=This is a dynamicly growing array for use inside the hash table, both in storing hash table elements and element values. xXx
  * xXx last_slot=The last slot in the array that will be used to push elements on. xXx

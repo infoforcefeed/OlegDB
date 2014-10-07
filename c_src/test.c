@@ -1187,6 +1187,51 @@ int test_array_set_get_del(const ol_feature_flags features) {
 
 }
 
+int test_array_grow_and_reindex(const ol_feature_flags features) {
+    ola_array *array;
+    int ret;
+    int length;
+    int i;
+    char buf[3];
+    void *value;
+
+    /* Testin set get del */
+    array = ola_create(200);
+
+    if (array->max_slots != 200) {
+        ol_log_msg(LOG_ERR, "Create not setting max slots correctly, expected 200, got %d",
+                array->max_slots);
+        return 1;
+    }
+
+    int old_max = array->max_slots;
+
+    int expeceted_max = 200 * OLA_DEFAULT_GROWTH_RATE;
+
+    for (i = 0; i < 250; i++) {
+        sprintf(buf, "%d", i);
+        ret = ola_set(array, i, (void *)buf); /* set i at index i, so we can see that 0 index holds 0 value */
+    }
+
+    if ((old_max * OLA_DEFAULT_GROWTH_RATE) != expeceted_max) {
+        ol_log_msg(LOG_ERR, "Did not grow correctly. Expected %d, got %s",
+                expeceted_max,
+                array->max_slots);
+        return 1;
+    }
+
+    /* check reindexing */
+    ola_delete(array, 5);
+
+    ola_get(array, 5, value); /* value should now be 6 */
+
+    if (strncmp((char *)value, "6", 1) != 0) {
+        ol_log_msg(LOG_ERR, "Reindexing failed, expected 6, got %s", value);
+    }
+
+    ola_destroy(array);
+}
+
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
