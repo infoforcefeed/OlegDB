@@ -174,7 +174,7 @@ static void port_driver_unjar(oleg_data *d, ol_database *db, ol_record *obj) {
      * and data at the same time.
      */
     unsigned char *data = NULL;
-    int ret = ol_unjar_ds(db, obj->key, obj->klen, &data, &val_size);
+    int ret = ol_unjar(db, obj->key, obj->klen, &data, &val_size);
     ei_x_buff to_send;
     ei_x_new_with_version(&to_send);
     if (ret == 0) {
@@ -291,8 +291,8 @@ static void port_driver_cursor_next(oleg_data *d, ol_database *db, ol_record *ob
 
     ol_bucket *next_bucket = (ol_bucket *)node->ref_obj;
 
-    /* Let ol_unjar_ds handle decompression and whatever else for us: */
-    int ret = ol_unjar_ds(db, next_bucket->key, next_bucket->klen, &data, &val_size);
+    /* Let ol_unjar handle decompression and whatever else for us: */
+    int ret = ol_unjar(db, next_bucket->key, next_bucket->klen, &data, &val_size);
     if (ret == 0) {
         port_driver_cursor_response(d, next_bucket, data, val_size);
         return;
@@ -328,8 +328,8 @@ static void port_driver_cursor_prev(oleg_data *d, ol_database *db, ol_record *ob
 
     ol_bucket *prev_bucket = (ol_bucket *)node->ref_obj;
 
-    /* Let ol_unjar_ds handle decompression and whatever else for us: */
-    int ret = ol_unjar_ds(db, prev_bucket->key, prev_bucket->klen, &data, &val_size);
+    /* Let ol_unjar handle decompression and whatever else for us: */
+    int ret = ol_unjar(db, prev_bucket->key, prev_bucket->klen, &data, &val_size);
     if (ret == 0) {
         port_driver_cursor_response(d, prev_bucket, data, val_size);
         return;
@@ -353,8 +353,8 @@ static void port_driver_cursor_first(oleg_data *d, ol_database *db, ol_record *o
 
     ol_bucket *bucket = (ol_bucket *)minimum->ref_obj;
 
-    /* Let ol_unjar_ds handle decompression and whatever else for us: */
-    int ret = ol_unjar_ds(db, bucket->key, bucket->klen, &data, &val_size);
+    /* Let ol_unjar handle decompression and whatever else for us: */
+    int ret = ol_unjar(db, bucket->key, bucket->klen, &data, &val_size);
     if (ret == 0) {
         port_driver_cursor_response(d, bucket, data, val_size);
         return;
@@ -378,8 +378,8 @@ static void port_driver_cursor_last(oleg_data *d, ol_database *db, ol_record *ob
 
     ol_bucket *bucket = (ol_bucket *)maximum->ref_obj;
 
-    /* Let ol_unjar_ds handle decompression and whatever else for us: */
-    int ret = ol_unjar_ds(db, bucket->key, bucket->klen, &data, &val_size);
+    /* Let ol_unjar handle decompression and whatever else for us: */
+    int ret = ol_unjar(db, bucket->key, bucket->klen, &data, &val_size);
     if (ret == 0) {
         port_driver_cursor_response(d, bucket, data, val_size);
         return;

@@ -419,7 +419,7 @@ int test_unjar_ds(const ol_feature_flags features) {
 
     size_t to_test;
     unsigned char *item = NULL;
-    ol_unjar_ds(db, key, strlen(key), &item, &to_test);
+    ol_unjar(db, key, strlen(key), &item, &to_test);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
@@ -464,7 +464,7 @@ int test_unjar(const ol_feature_flags features) {
     }
 
     unsigned char *item = NULL;
-    ol_unjar(db, key, strlen(key), &item);
+    ol_unjar(db, key, strlen(key), &item, NULL);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
@@ -508,7 +508,7 @@ int test_unjar_msgpack(const ol_feature_flags features) {
     }
 
     unsigned char *item = NULL;
-    ol_unjar(db, key, strlen(key), &item);
+    ol_unjar(db, key, strlen(key), &item, NULL);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
@@ -574,7 +574,7 @@ int test_update(const ol_feature_flags features) {
     }
 
     unsigned char *item = NULL;
-    ol_unjar(db, key, strlen(key), &item);
+    ol_unjar(db, key, strlen(key), &item, NULL);
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         _test_db_close(db);
@@ -598,7 +598,7 @@ int test_update(const ol_feature_flags features) {
         return 1;
     }
 
-    ol_unjar(db, key, strlen(key), &item);
+    ol_unjar(db, key, strlen(key), &item, NULL);
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
         _test_db_close(db);
@@ -773,7 +773,7 @@ int test_aol_and_compaction(const ol_feature_flags features) {
     size_t to_test;
     const char key[] = "crazy hash1";
     unsigned char *item = NULL;
-    ol_unjar_ds(db, key, strlen(key), &item, &to_test);
+    ol_unjar(db, key, strlen(key), &item, &to_test);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
@@ -854,7 +854,7 @@ int test_lz4(const ol_feature_flags features) {
 
     size_t to_test;
     unsigned char *item = NULL;
-    ol_unjar_ds(db, key, strlen(key), &item, &to_test);
+    ol_unjar(db, key, strlen(key), &item, &to_test);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
@@ -904,7 +904,7 @@ int test_magic_string_compression(const ol_feature_flags features) {
 
     size_t to_test;
     unsigned char *item = NULL;
-    ol_unjar_ds(db, key, strlen(key), &item, &to_test);
+    ol_unjar(db, key, strlen(key), &item, &to_test);
     ol_log_msg(LOG_INFO, "Retrieved value.");
     if (item == NULL) {
         ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);

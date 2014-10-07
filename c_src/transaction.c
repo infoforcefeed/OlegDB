@@ -177,29 +177,8 @@ int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **
             if (data == NULL)
                 return 0;
 
-            /* Allocate memory to store memcpy'd data into. */
-            *data = calloc(1, bucket->original_size);
-            check(*data != NULL, "Could not allocate memory for compressed data.");
-
-            if (dsize != NULL) {
-                /* "strncpy never fails!" */
-                size_t *ret = memcpy(dsize, &bucket->original_size, sizeof(size_t));
-                check(ret == dsize, "Could not copy data size into input data_size param.");
-            }
-
-            unsigned char *data_ptr = operating_db->values + bucket->data_offset;
-            /* Decomperss with LZ4 if enabled */
-            if (operating_db->is_enabled(OL_F_LZ4, &operating_db->feature_set)) {
-                int processed = 0;
-                processed = LZ4_decompress_fast((char *)data_ptr,
-                                                (char *)*data,
-                                                bucket->original_size);
-                check(processed == bucket->data_size, "Could not decompress data.");
-            } else {
-                /* We know data isn't NULL by this point. */
-                unsigned char *ret = memcpy(*data, data_ptr, bucket->original_size);
-                check(ret == *data, "Could not copy data into output data param.");
-            }
+            const int ret = _ol_get_value_from_bucket(operating_db, bucket, data, dsize);
+            check(ret == 0, "Could not retrieve value from bucket.");
 
             /* Key found, tell somebody. */
             return 0;
@@ -352,31 +331,41 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
     check_warn(_klen > 0, "Key length cannot be zero.");
 
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
+    ol_database *operating_db = tx->transaction_db;
+    /* First attempt to calculate the index in the transaction_db */
     int index = _ol_calc_idx(tx->transaction_db->cur_ht_size, hash);
+    /* If we couldn't find it in the transaction_db, look for the value in the
+     * parent_db (the one we forked from) */
     if (tx->transaction_db->hashes[index] == NULL &&
             tx->parent_db != NULL) {
         index = _ol_calc_idx(tx->parent_db->cur_ht_size, hash);
+        operating_db = tx->parent_db;
     }
 
-    if (index < 0 || tx) {
+    if (index < 0 || operating_db->hashes[index] == NULL)
         return 1;
-    }
 
+    /* Now that we know what database we're operating on, continue
+     * as usual. */
     ol_bucket *to_free = NULL;
     int return_level = 2;
 
     size_t larger_key = 0;
-    ol_bucket *bucket = db->hashes[index];
+    ol_bucket *bucket = operating_db->hashes[index];
     larger_key = bucket->klen > _klen ? bucket->klen : _klen;
     if (strncmp(bucket->key, _key, larger_key) == 0) {
-        if (bucket->next != NULL) {
-            db->hashes[index] = bucket->next;
-        } else {
-            db->hashes[index] = NULL;
+        /* We only ACTUALLY want to delete something if we're operating on the transaction_db */
+        if (operating_db == tx->transaction_db) {
+            if (bucket->next != NULL) {
+                operating_db->hashes[index] = bucket->next;
+            } else {
+                operating_db->hashes[index] = NULL;
+            }
         }
-        if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
-                db->state != OL_S_STARTUP) {
-            ol_aol_write_cmd(db, "SCOOP", bucket);
+
+        /* Write the SCOOP command to the log, so we can replay it later. */
+        if (tx->transaction_db->state != OL_S_STARTUP) {
+            ol_aol_write_cmd(tx->transaction_db, "SCOOP", bucket);
         }
 
         to_free = bucket;
@@ -399,16 +388,24 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
     }
 
     if (to_free != NULL) {
-        if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
-            ols_delete(db->tree, to_free->node);
+        if (tx->transaction_db->is_enabled(OL_F_SPLAYTREE, &tx->transaction_db->feature_set)) {
+            ols_delete(tx->transaction_db->tree, to_free->node);
             to_free->node = NULL;
         }
-        unsigned char *data_ptr = db->values + to_free->data_offset;
-        const size_t data_size = to_free->data_size;
-        if (data_size != 0)
-            memset(data_ptr, '\0', data_size);
-        _ol_free_bucket(&to_free);
-        db->rcrd_cnt -= 1;
+
+        if (tx->transaction_db->state != OL_S_STARTUP) {
+            ol_aol_write_cmd(tx->transaction_db, "SCOOP", bucket);
+        }
+
+        /* Again, only delete the key from the transaction_db, not the parent. */
+        if (operating_db == tx->transaction_db) {
+            unsigned char *data_ptr = tx->transaction_db->values + to_free->data_offset;
+            const size_t data_size = to_free->data_size;
+            if (data_size != 0)
+                memset(data_ptr, '\0', data_size);
+            _ol_free_bucket(&to_free);
+            tx->transaction_db->rcrd_cnt -= 1;
+        }
     }
 
     return return_level;
