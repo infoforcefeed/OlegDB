@@ -230,6 +230,7 @@ int test_can_jump_cursor(const ol_feature_flags features) {
     }
 
     /* Create and jump the cursor to a random hash. */
+    unsigned char *r_val = NULL;
     const char key[] = "mmmmmars6";
     ol_cursor cursor;
     check(olc_init(db, &cursor), "Could not init cursor.");
@@ -240,7 +241,6 @@ int test_can_jump_cursor(const ol_feature_flags features) {
     check(node != NULL, "Could not retrieve node.");
 
     /* Prep some variables so we can check them */
-    unsigned char *r_val = NULL;
     char r_key[KEY_SIZE] = {'0'};
     size_t r_vsize;
 
@@ -1161,7 +1161,8 @@ void run_tests(int results[2]) {
     int i = 0;
     const int FEATURE_NUM = 5;
     for(; i <= FEATURE_NUM; i++) {
-        const ol_feature_flags feature_set = i;
+        /* OL_F_AOL_FFLUSH is slow as balls and we don't care about it */
+        const ol_feature_flags feature_set = i | OL_F_AOL_FFLUSH;
         /* Fucking macros man */
         ol_run_test(test_jar);
         ol_run_test(test_unjar_ds);
