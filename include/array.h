@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdlib.h>
+
 /* xXx STRUCT=ola_array xXx
  * xXx DESCRIPTION=This is a dynamicly growing array for use inside the hash table, both in storing hash table elements and element values. xXx
  * xXx last_slot=The last slot in the array that will be used to push elements on. xXx
@@ -58,3 +60,11 @@ void *ola_get(ola_array *array, int index);
  * xXx item=Pointer to a void type item to set at index. xXx
  */
 int ola_set(ola_array *array, int index, void *item);
+
+/* xXx FUNCTION=ola_delete xXx
+ * xXx DESCRIPTION=Delete an element at index. xXx
+ * xXx RETURNS=0 on success. xXx
+ * xXx array=Pointer to ola_array type. xXx
+ * xXx index=Index of slot to act on. xXx
+ */
+int ola_delete(ola_array *array, int index);
