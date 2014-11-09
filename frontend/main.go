@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"log"
+	"os"
 )
 
 type Config struct {
@@ -22,6 +24,24 @@ type Config struct {
 var config Config
 var databases map[string]goleg.Database
 
+const (
+Usage = `
+Usage: %s -config <config path> [options]
+	Config path:
+		Path to a configuration file. This is required.
+Options:
+	-bind
+		Override Listen directive in configuration.
+	-dir
+		Override db storage location in configuration.
+	-v
+		Version
+	-h
+		This help.
+`
+)
+
+
 func main() {
 	// Parse command line flags (if there are)
 	directory := flag.String("dir", "", "Directory where to store dumps and data")
@@ -30,10 +50,16 @@ func main() {
 
 	flag.Parse()
 
+	if configfile == nil {
+		text := fmt.Sprintf(Usage, os.Args[0])
+		log.Print("Config file is required")
+		log.Fatal(text)
+	}
+
 	// Parse config file
 	rawconf, err := ioutil.ReadFile(*configfile)
 	if err != nil {
-		panic(err.Error())
+		log.Fatal("Could not read configuration. Please see the documentation.")
 	}
 	err = json.Unmarshal(rawconf, &config)
 	if err != nil {
