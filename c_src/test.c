@@ -674,25 +674,25 @@ int test_feature_flags(const ol_feature_flags features) {
     return 0;
 }
 
-int _test_aol(const ol_feature_flags features, ol_database *db) {
+int _test_aol(const ol_feature_flags features, ol_database **db) {
     /* Anable AOL and INIT, no need to restore */
-    db->enable(OL_F_APPENDONLY, &db->feature_set);
-    ol_aol_init(db);
+    (*db)->enable(OL_F_APPENDONLY, &(*db)->feature_set);
+    ol_aol_init(*db);
 
     const int max_records = 3;
     ol_log_msg(LOG_INFO, "Inserting %i records.", max_records);
-    int ret = _insert_keys(db, max_records);
+    int ret = _insert_keys(*db, max_records);
     if (ret > 0) {
         ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
         return 1;
     }
 
     /* Delete a key */
-    if (ol_scoop(db, "crazy hash2", strlen("crazy hash2")) == 0) {
+    if (ol_scoop(*db, "crazy hash2", strlen("crazy hash2")) == 0) {
         ol_log_msg(LOG_INFO, "Deleted record.");
     } else {
         ol_log_msg(LOG_ERR, "Could not delete record.");
-        _test_db_close(db);
+        _test_db_close(*db);
         return 2;
     }
 
@@ -703,37 +703,37 @@ int _test_aol(const ol_feature_flags features, ol_database *db) {
 
     /* Expire a key */
     const char to_spoil[] = "crazy hash0";
-    if (ol_spoil(db, to_spoil, strlen(to_spoil), now) == 0) {
+    if (ol_spoil(*db, to_spoil, strlen(to_spoil), now) == 0) {
         ol_log_msg(LOG_INFO, "Spoiled record.");
     } else {
         ol_log_msg(LOG_ERR, "Could not spoil record.");
-        _test_db_close(db);
+        _test_db_close(*db);
         return 2;
     }
 
-    if (db->rcrd_cnt != max_records - 1) {
-        ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
-        _test_db_close(db);
+    if ((*db)->rcrd_cnt != max_records - 1) {
+        ol_log_msg(LOG_ERR, "Record count was off: %d", (*db)->rcrd_cnt);
+        _test_db_close(*db);
         return 4;
     }
 
     char DB_PATH[DB_NAME_SIZE] = {0};
-    strncpy(DB_PATH, db->path, DB_NAME_SIZE);
+    strncpy(DB_PATH, (*db)->path, DB_NAME_SIZE);
 
     /* We don't want to use test_db_close here because we want to retrieve
      * values again. */
-    ol_close(db);
+    ol_close(*db);
 
     ol_log_msg(LOG_INFO, "Restoring database.");
-    db = ol_open(DB_PATH, DB_NAME, DB_DEFAULT_FEATURES | OL_F_APPENDONLY);
-    if (db == NULL) {
+    *db = ol_open(DB_PATH, DB_NAME, DB_DEFAULT_FEATURES | OL_F_APPENDONLY);
+    if (*db == NULL) {
         ol_log_msg(LOG_ERR, "Could not open database");
         return 6;
     }
 
-    if (db->rcrd_cnt != max_records - 1) {
-        ol_log_msg(LOG_ERR, "Record count was off: %d", db->rcrd_cnt);
-        _test_db_close(db);
+    if ((*db)->rcrd_cnt != max_records - 1) {
+        ol_log_msg(LOG_ERR, "Record count was off: %d", (*db)->rcrd_cnt);
+        _test_db_close(*db);
         return 6;
     }
 
@@ -744,7 +744,7 @@ int test_aol(const ol_feature_flags features) {
     ol_log_msg(LOG_INFO, "Writing database.");
     ol_database *db = _test_db_open(features);
 
-    int to_return = _test_aol(features, db);
+    int to_return = _test_aol(features, &db);
 
     _test_db_close(db);
     return to_return;
@@ -755,7 +755,7 @@ int test_aol_and_compaction(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     check(db != NULL, "db is null.");
 
-    int to_return = _test_aol(features, db);
+    int to_return = _test_aol(features, &db);
     check(to_return == 0, "Could not test aol subfeatures.");
 
     ol_log_msg(LOG_INFO, "Squishing database.");
