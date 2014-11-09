@@ -259,6 +259,8 @@ error:
 
 int test_can_find_all_nodes(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
+    ol_transaction *tx = olt_begin(db);
+    check(tx != NULL, "Could not begin transaction.");
 
     int i;
     int max_records = RECORD_COUNT;
@@ -272,71 +274,30 @@ int test_can_find_all_nodes(const ol_feature_flags features) {
 
         size_t len = strlen((char *)to_insert);
         size_t klen = strlen(key);
-        int insert_result = ol_jar(db, key, klen, to_insert, len);
+        int insert_result = olt_jar(tx, key, klen, to_insert, len);
 
-        if (insert_result > 0) {
-            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
-            _test_db_close(db);
-            return 2;
-        }
+        check(insert_result == 0, "Coult not insert.");
+        check(tx->transaction_db->rcrd_cnt = i + 1, "Record count is not higher.");
 
-        if (db->rcrd_cnt != i+1) {
-            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
-            _test_db_close(db);
-            return 3;
-        }
-
-
-        ol_splay_tree_node *found = ols_find(db->tree, key, klen);
-        if (found == NULL) {
-            ol_log_msg(LOG_ERR, "Could not find key we just inserted!");
-            _test_db_close(db);
-            return 4;
-        }
-
-        if (found->klen != klen ||
-            strncmp(found->key, key, klen) != 0) {
-            ol_log_msg(LOG_ERR, "The bucket we got back isn't actuall what we asked for.");
-            _test_db_close(db);
-            return 5;
-        }
+        ol_splay_tree_node *found = ols_find(tx->transaction_db->tree, key, klen);
+        check(found != NULL, "Could not find key we just inserted.");
+        check(found->klen == klen, "key length for inserted key in wrong.");
+        check(strncmp(found->key, key, klen) == 0, "Incorrect key returned.");
 
     }
+    olt_commit(tx);
+
     ol_log_msg(LOG_INFO, "Records inserted: %i.", db->rcrd_cnt);
     ol_log_msg(LOG_INFO, "Saw %d collisions.", db->meta->key_collisions);
     ol_log_msg(LOG_INFO, "Now searching for all keys.");
 
-    /* This slows things down a lot but will do a thourough search. */
-    /*
-    for (i = 0; i < max_records; i++) {
-        char key[64] = "crazy hash";
-        char append[10] = "";
-
-        sprintf(append, "%i", i);
-        strcat(key, append);
-
-        size_t length = strlen(key);
-        ol_splay_tree_node *found = ols_find(db->tree, key, length);
-        if (found == NULL) {
-            ol_log_msg(LOG_ERR, "Could not find key: %s", key);
-            _test_db_close(db);
-            return 6;
-        }
-
-        if (found->klen != strlen(key) ||
-            strncmp(found->key, key, strlen(key)) != 0) {
-            ol_log_msg(LOG_ERR, "The bucket we got back isn't actuall what we asked for.");
-            _test_db_close(db);
-            return 7;
-        }
-    }
-    */
-
-    if (_test_db_close(db) != 0) {
-        ol_log_msg(LOG_ERR, "Couldn't free all memory.\n");
-        return 1;
-    }
+    check(_test_db_close(db) == 0, "Could not free all memory.");
     return 0;
+
+error:
+    olt_abort(tx);
+    _test_db_close(db);
+    return 1;
 }
 int test_lots_of_deletes(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
