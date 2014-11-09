@@ -412,3 +412,43 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
 error:
     return 1;
 }
+
+int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expiration_date) {
+    char _key[KEY_SIZE] = {'\0'};
+    size_t _klen = 0;
+
+    ol_database *operating_db = tx->transaction_db;
+
+    ol_bucket *bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
+    check_warn(_klen > 0, "Key length of zero not allowed.");
+
+    if (bucket != NULL) {
+        if (bucket->expiration == NULL)
+            bucket->expiration = malloc(sizeof(struct tm));
+        else
+            debug("Hmmm, bucket->expiration wasn't null.");
+        memcpy(bucket->expiration, expiration_date, sizeof(struct tm));
+        debug("New expiration time: %lu", (long)mktime(bucket->expiration));
+
+#ifdef DEBUG
+        struct tm utctime;
+        time_t current;
+
+        /* So dumb */
+        time(&current);
+        gmtime_r(&current, &utctime);
+        current = timegm(&utctime);
+        debug("Current time: %lu", (long)current);
+#endif
+        if (operating_db->is_enabled(OL_F_APPENDONLY, &operating_db->feature_set) &&
+                operating_db->state != OL_S_STARTUP) {
+            ol_aol_write_cmd(operating_db, "SPOIL", bucket);
+        }
+        return 0;
+    }
+
+    return 1;
+
+error:
+    return 1;
+}

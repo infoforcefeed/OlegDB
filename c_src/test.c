@@ -104,13 +104,16 @@ int test_zero_length_keys(const ol_feature_flags features) {
     char key2[] = "";
     unsigned char value[] = "lkjasldkjflakjsdf";
 
-    check(ol_jar(db, key1, 0, value, strlen((char *)value)) != 0, "jar'd key when we shouldn't have.");
-    check(ol_jar(db, key2, 0, value, strlen((char *)value)) != 0, "jar'd key when we shouldn't have.");
-    check(ol_unjar(db, key2, 0, NULL, NULL) != 0, "unjar'd key when we shouldn't have.");
-    check(ol_spoil(db, key1, 0, NULL) != 0, "spoil'd key when we shouldn't have.");
-    check(ol_spoil(db, key2, 0, NULL) != 0, "spoil'd key when we shouldn't have.");
-    check(ol_scoop(db, key1, 0) != 0, "scoop'd key when we shouldn't have.");
-    check(ol_scoop(db, key2, 0) != 0, "scoop'd key when we shouldn't have.");
+    ol_transaction *tx = olt_begin(db);
+    check(tx != NULL, "Could not begin transaction.");
+    check(olt_jar(tx, key1, 0, value, strlen((char *)value)) != 0, "jar'd key when we shouldn't have.");
+    check(olt_jar(tx, key2, 0, value, strlen((char *)value)) != 0, "jar'd key when we shouldn't have.");
+    check(olt_unjar(tx, key2, 0, NULL, NULL) != 0, "unjar'd key when we shouldn't have.");
+    check(olt_spoil(tx, key1, 0, NULL) != 0, "spoil'd key when we shouldn't have.");
+    check(olt_spoil(tx, key2, 0, NULL) != 0, "spoil'd key when we shouldn't have.");
+    check(olt_scoop(tx, key1, 0) != 0, "scoop'd key when we shouldn't have.");
+    check(olt_scoop(tx, key2, 0) != 0, "scoop'd key when we shouldn't have.");
+    check(olt_commit(tx) == 0, "Could not commit transaction.");
 
     _test_db_close(db);
     return 0;

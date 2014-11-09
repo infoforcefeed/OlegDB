@@ -288,40 +288,32 @@ error:
 }
 
 int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiration_date) {
-    char _key[KEY_SIZE] = {'\0'};
-    size_t _klen = 0;
-    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
-
-    if (bucket != NULL) {
-        if (bucket->expiration == NULL)
-            bucket->expiration = malloc(sizeof(struct tm));
-        else
-            debug("Hmmm, bucket->expiration wasn't null.");
-        memcpy(bucket->expiration, expiration_date, sizeof(struct tm));
-        debug("New expiration time: %lu", (long)mktime(bucket->expiration));
-
-#ifdef DEBUG
-        struct tm utctime;
-        time_t current;
-
-        /* So dumb */
-        time(&current);
-        gmtime_r(&current, &utctime);
-        current = timegm(&utctime);
-        debug("Current time: %lu", (long)current);
-#endif
-        if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
-                db->state != OL_S_STARTUP) {
-            ol_aol_write_cmd(db, "SPOIL", bucket);
-        }
-        return 0;
+    if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
+        db->state != (OL_S_COMMITTING | OL_S_STARTUP)) {
+        /* Fake a transaction: */
+        ol_transaction stack_tx = {
+            .tx_id = 0,
+            .parent_db = NULL,
+            .transaction_db = db
+        };
+        return olt_spoil(&stack_tx, key, klen, expiration_date);
     }
 
-    return 1;
+    ol_transaction *tx = olt_begin(db);
+    int spoil_ret = 10;
+    check(tx != NULL, "Could not begin implicit transaction.");
+
+    spoil_ret = olt_spoil(tx, key, klen, expiration_date);
+    check(spoil_ret == 0, "Could not spoil value. Aborting.");
+    check(olt_commit(tx) == 0, "Could not commit transaction.");
+
+    return spoil_ret;
 
 error:
-    return 1;
+    if (tx != NULL && spoil_ret != 10)
+        olt_abort(tx);
+
+    return spoil_ret;
 }
 
 int ol_scoop(ol_database *db, const char *key, size_t klen) {
