@@ -167,6 +167,8 @@ error:
 
 int test_jar(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
+    ol_transaction *tx = olt_begin(db);
+    check(tx != NULL, "Could not beign transaction.");
 
     int i;
     int max_records = RECORD_COUNT;
@@ -179,28 +181,22 @@ int test_jar(const ol_feature_flags features) {
         strcat(key, append);
 
         size_t len = strlen((char *)to_insert);
-        int insert_result = ol_jar(db, key, strlen(key), to_insert, len);
+        int insert_result = olt_jar(tx, key, strlen(key), to_insert, len);
 
-        if (insert_result > 0) {
-            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
-            _test_db_close(db);
-            return 2;
-        }
-
-        if (db->rcrd_cnt != i+1) {
-            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
-            _test_db_close(db);
-            return 3;
-        }
+        check(insert_result == 0, "Could not insert.");
+        check(tx->transaction_db->rcrd_cnt == i + 1, "Record count is not higher.");
     }
     ol_log_msg(LOG_INFO, "Records inserted: %i.", db->rcrd_cnt);
     ol_log_msg(LOG_INFO, "Saw %d collisions.", db->meta->key_collisions);
 
-    if (_test_db_close(db) != 0) {
-        ol_log_msg(LOG_ERR, "Couldn't free all memory.\n");
-        return 1;
-    }
+    olt_commit(tx);
+    check(_test_db_close(db) == 0, "Could not close DB.");
     return 0;
+
+error:
+    olt_abort(tx);
+    _test_db_close(db);
+    return 1;
 }
 
 int test_can_jump_cursor(const ol_feature_flags features) {
@@ -1165,7 +1161,7 @@ void run_tests(int results[2]) {
     const int FEATURE_NUM = 5;
     for(; i <= FEATURE_NUM; i++) {
         /* OL_F_AOL_FFLUSH is slow as balls and we don't care about it */
-        const ol_feature_flags feature_set = i | OL_F_AOL_FFLUSH;
+        const ol_feature_flags feature_set = (i | OL_F_AOL_FFLUSH) & OL_F_APPENDONLY;
         /* Fucking macros man */
         ol_run_test(test_jar);
         ol_run_test(test_unjar_ds);
