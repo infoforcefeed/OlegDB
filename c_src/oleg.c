@@ -104,12 +104,14 @@ ol_database *ol_open(const char *path, const char *name, int features){
      */
     new_db->get_db_file_name(new_db, AOL_FILENAME, new_db->aol_file);
 
+    /* Are we a TX database? Well, if not then we require AOL. Because we might
+     * transact and thats crazy. */
     if (!new_db->is_enabled(OL_F_DISABLE_TX, &new_db->feature_set)) {
+        new_db->enable(OL_F_APPENDONLY, &new_db->feature_set);
         ols_init(&(new_db->cur_transactions));
         check(new_db->cur_transactions != NULL, "Could not init transaction tree.");
     }
 
-    /* Lets use an append-only log file */
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
         ol_aol_init(new_db);
         check(ol_aol_restore(new_db) == 0, "Error restoring from AOL file");

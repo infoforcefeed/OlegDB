@@ -47,8 +47,8 @@ static void _tx_directory(char *new_path, ol_database *db) {
 
 ol_transaction *olt_begin(ol_database *db) {
     ol_transaction *new_transaction = NULL;
-    check(db->cur_transactions != NULL, "No transaction tree.");
     check(db != NULL, "No database specified in transaction begin.");
+    check(db->cur_transactions != NULL, "No transaction tree.");
 
     /* We initialize on the stack because tx_id is a const parameter. */
     ol_transaction stack_tx = {
