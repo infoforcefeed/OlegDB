@@ -201,6 +201,9 @@ error:
 
 int test_can_jump_cursor(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
+    ol_transaction *tx = olt_begin(db);
+    check(tx != NULL, "Could not begin transaction.");
+
     int max_records = 10;
     unsigned char to_insert[] = "roadkill";
     int i;
@@ -213,20 +216,12 @@ int test_can_jump_cursor(const ol_feature_flags features) {
 
         size_t len = strlen((char *)to_insert);
         size_t klen = strlen(key);
-        int insert_result = ol_jar(db, key, klen, to_insert, len);
+        int insert_result = olt_jar(tx, key, klen, to_insert, len);
 
-        if (insert_result > 0) {
-            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
-            _test_db_close(db);
-            return 2;
-        }
-
-        if (db->rcrd_cnt != i+1) {
-            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
-            _test_db_close(db);
-            return 3;
-        }
+        check(insert_result == 0, "Coult not insert.");
+        check(tx->transaction_db->rcrd_cnt = i + 1, "Record count is not higher.");
     }
+    olt_commit(tx);
 
     /* Create and jump the cursor to a random hash. */
     unsigned char *r_val = NULL;
@@ -254,6 +249,8 @@ int test_can_jump_cursor(const ol_feature_flags features) {
     return 0;
 
 error:
+    olt_abort(tx);
+    _test_db_close(db);
     if (r_val != NULL)
         free(r_val);
     return 1;
