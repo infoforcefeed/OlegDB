@@ -172,7 +172,6 @@ int ol_close(ol_database *db){
         _ol_close_values(db);
     }
     db->feature_set = 0;
-    free(db->aol_file);
     free(db->meta);
     free(db->hashes);
     memset(db, '\0', sizeof(ol_database));

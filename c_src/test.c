@@ -59,7 +59,7 @@ static int _test_db_close(ol_database *db) {
     }
 
     char tx_dir_path[PATH_LENGTH] = {0};
-    snprintf(tx_dir_path, PATH_LENGTH, "%s/%s", db->path, "tx");
+    snprintf(tx_dir_path, PATH_LENGTH, "%s/%s", DB_PATH, "tx");
 
     struct stat st = {0};
     /* Check to see if the DB exists */
