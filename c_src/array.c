@@ -41,3 +41,19 @@ int ola_grow(ola_array *array) {
 error:
     return 1;
 }
+
+int ola_reindex(ola_array *array) {
+    return 1;
+}
+
+int ola_push(ola_array *array, void *item) {
+    return 1;
+}
+
+void ola_pop(ola_array *array, void *item) {
+
+}
+
+void ola_get(ola_array *array, int index, void *item) {
+
+}
