@@ -49,7 +49,7 @@ To run tests:
 ./run_tests.sh
 ```
 
-To run the erlang server:
+To run the Go server:
 
 ```bash
 olegdb [-conf olegdb.conf] [-bind localhost:8080] [-dir data]
