@@ -336,7 +336,7 @@ int test_lots_of_deletes(const ol_feature_flags features) {
         int delete_result = olt_scoop(tx, key, strlen(key));
 
         check(delete_result == 0, "Could not delete.");
-        check(tx->transaction_db->rcrd_cnt = max_records - i - 1, "Record count is not lower.");
+        check(tx->transaction_db->rcrd_cnt == max_records - i - 1, "Record count is not lower.");
     }
 
     check(olt_commit(tx) == 0, "Could not commit transaction.");;
