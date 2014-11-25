@@ -126,12 +126,13 @@ error:
 
 int test_basic_transaction(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
+    ol_transaction *tx = NULL;
     char key[] = "rampant destruction";
     unsigned char value[] = "The Churning Black Waters";
     size_t vsize = strlen((char*)value);
 
     check(ol_jar(db, key, strnlen(key, KEY_SIZE), value, vsize) == 0, "Could not jar key.");
-    ol_transaction *tx = olt_begin(db);
+    tx = olt_begin(db);
 
     check(tx != NULL, "Could not begin transaction.");
     check(olt_commit(tx) == 0, "Could not commit transaction.");
@@ -476,63 +477,41 @@ error:
 int test_update(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     ol_transaction *tx = olt_begin(db);
+    unsigned char *item = NULL;
     check(tx != NULL, "Could not begin transaction.");
 
     char key[64] = "muh_hash_thoalk";
     unsigned char val[] = "{json: \"ain't real\", bowser: \"sucked\"}";
-    int inserted = olt_jar(db, key, strlen(key), val, strlen((char*)val));
+    int inserted = olt_jar(tx, key, strlen(key), val, strlen((char*)val));
+    check(db->rcrd_cnt == 0 && tx->transaction_db->rcrd_cnt == 1 && inserted == 0, "Could not insert.");
 
-    if (inserted > 0) {
-        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        _test_db_close(db);
-        return 1;
-    }
+    olt_unjar(tx, key, strlen(key), &item, NULL);
+    check(item != NULL, "Could not find key.");
 
-    unsigned char *item = NULL;
-    ol_unjar(db, key, strlen(key), &item, NULL);
-    if (item == NULL) {
-        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
-        _test_db_close(db);
-        free(item);
-        return 2;
-    }
-
-    if (memcmp(item, val, strlen((char*)val)) != 0) {
-        ol_log_msg(LOG_ERR, "Returned value was not the same.");
-        _test_db_close(db);
-        free(item);
-        return 3;
-    }
+    check(memcmp(item, val, strlen((char*)val)) == 0,
+            "Returned value was not the same.");
     free(item);
 
     unsigned char new_val[] = "WOW THAT WAS COOL, WASNT IT?";
-    inserted = ol_jar(db, key, strlen(key), new_val, strlen((char*)new_val));
-    if (inserted != 0) {
-        ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", inserted);
-        _test_db_close(db);
-        return 1;
-    }
+    inserted = olt_jar(tx, key, strlen(key), new_val, strlen((char*)new_val));
+    check(inserted == 0, "Could not insert.");
 
-    ol_unjar(db, key, strlen(key), &item, NULL);
-    if (item == NULL) {
-        ol_log_msg(LOG_ERR, "Could not find key: %s\n", key);
-        _test_db_close(db);
-        free(item);
-        return 2;
-    }
+    olt_unjar(tx, key, strlen(key), &item, NULL);
+    check(item != NULL, "Could not find key.");
 
-    if (memcmp(item, new_val, strlen((char*)new_val)) != 0) {
-        ol_log_msg(LOG_ERR, "Returned value was not the new value.\nVal: %s\n", item);
-        _test_db_close(db);
-        free(item);
-        return 3;
-    }
+    check(memcmp(item, new_val, strlen((char*)new_val)) == 0,
+            "Returned value was not the new value.");
     ol_log_msg(LOG_INFO, "New value returned successfully.");
 
     check(olt_commit(tx) == 0, "Could not commit transaction.");;
     _test_db_close(db);
     free(item);
     return 0;
+error:
+    olt_abort(tx);
+    _test_db_close(db);
+    free(item);
+    return 1;
 }
 
 static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
