@@ -195,9 +195,9 @@ int ol_aol_restore_from_file(ol_database *target_db,
             size_t compressed_size = (size_t)strtol(read_data_size->data, NULL, 10);
             size_t data_offset = (size_t)strtol(value->data, NULL, 10);
 
-            /* Pointer in the values file to where the data for this command 
+            /* Pointer in the values file to where the data for this command
              * should be. */
-           const unsigned char *data_ptr = values_data + data_offset;
+            const unsigned char *data_ptr = values_data + data_offset;
 
             /* Short circuit check to see if the memory in the location is all
              * null. */
@@ -236,7 +236,6 @@ int ol_aol_restore_from_file(ol_database *target_db,
 #ifdef DEBUG
             /* This happens a lot and isn't bad, so I'm commenting it out. */
             else {
-
                 ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Key has been deleted or updated.");
             }
 #endif
@@ -244,8 +243,12 @@ int ol_aol_restore_from_file(ol_database *target_db,
             /* Important: Set the new offset to compressed_size + data_offset.
              * We need to do this because compaction/squishing will leave holes
              * in the data that we need to account for during replay.
+             *
+             * ...except when we're commiting a transaction. Then we assume whatever
+             * is there is correct.
              */
-            target_db->val_size = compressed_size + data_offset;
+            if (target_db->state != OL_S_COMMITTING)
+                target_db->val_size = compressed_size + data_offset;
             /* TODO: What happens here if a bucket is reallocated? We don't
              * actually expand the extents, so in that case would we have a
              * bug?
