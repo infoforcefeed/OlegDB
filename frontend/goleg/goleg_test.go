@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"fmt"
+	"bytes"
 )
 
 func openRandomDB(features int) (Database, string, error) {
@@ -31,7 +33,7 @@ func TestOpen(t *testing.T) {
 		t.Skip("Skipping in short mode")
 	}
 
-	database, dir, err := openRandomDB()
+	database, dir, err := openRandomDB(F_APPENDONLY)
 	if err != nil {
 		t.Fatalf("Can't open database: %s", err.Error())
 	}
@@ -53,7 +55,7 @@ func TestJar(t *testing.T) {
 	}
 
 	for i := 0; i < JARN; i++ {
-		if !database.Jar("record"+strconv.Itoa(i), []byte("value"+strconv.Itoa(i))) {
+		if database.Jar("record"+strconv.Itoa(i), []byte("value"+strconv.Itoa(i))) != 0 {
 			t.Fatalf("Can't jar value #%d", i)
 		}
 	}
@@ -69,14 +71,15 @@ func TestUnjar(t *testing.T) {
 	}
 
 	for i := 0; i < JARN; i++ {
-		if !database.Jar("record"+strconv.Itoa(i), []byte("value"+strconv.Itoa(i))) {
+		if database.Jar("record"+strconv.Itoa(i), []byte("value"+strconv.Itoa(i))) != 0 {
 			t.Fatalf("Can't jar value #%d", i)
 		}
 	}
 
 	for i := 0; i < JARN; i++ {
 		val := database.Unjar("record" + strconv.Itoa(i))
-		if val != []byte("value"+strconv.Itoa(i)) {
+		fmt.Printf("%#v\n", val)
+		if bytes.Equal(val, []byte("value"+strconv.Itoa(i))) {
 			t.Errorf("Value #%d doesn't match", i)
 		}
 	}
