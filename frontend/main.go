@@ -13,12 +13,12 @@ import (
 
 type Config struct {
 	// Base settings (required)
-	Listen  string
-	DataDir string
+	Listen  string `json:"listen"`
+	DataDir string `json: "datadir"`
 	// HTTPS settings
-	UseHTTPS bool
-	CertFile string
-	PkeyFile string
+	UseHTTPS bool `json:"usehttps"`
+	CertFile string `json:"certfile"`
+	PkeyFile string `json:"pkeyfile"`
 }
 
 var config Config
