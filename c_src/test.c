@@ -459,7 +459,7 @@ int test_scoop(const ol_feature_flags features) {
     char key[64] = "muh_hash_tho";
     unsigned char val[] = "{json: \"ain't real\"}";
     int inserted = olt_jar(tx, key, strlen(key), val, strlen((char*)val));
-    check(db->rcrd_cnt == 1 && inserted == 0, "Could not insert.");
+    check(tx->transaction_db->rcrd_cnt == 1 && inserted == 0, "Could not insert.");
 
     check(olt_scoop(tx, key, strlen(key)) == 0, "Could not delete record.");
     check(db->rcrd_cnt == 0, "Could not delete record.");
