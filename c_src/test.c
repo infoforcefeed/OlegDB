@@ -209,7 +209,6 @@ int test_can_jump_cursor(const ol_feature_flags features) {
     check(tx != NULL, "Could not begin transaction.");
 
     int max_records = 10;
-    unsigned char *r_val = NULL;
     unsigned char to_insert[] = "roadkill";
     int i;
     for (i = 0; i < max_records; i++) {
