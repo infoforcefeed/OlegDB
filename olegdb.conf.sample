@@ -1,7 +1,7 @@
 {
-    "Listen" : "localhost:8080",
-    "DataDir" : "data",
-    "UseHTTPS" : false,
-    "CertFile" : "",
-    "PkeyFile" : ""
+    "Listen": "localhost:38080",
+    "DataDir": "data",
+    "UseHTTPS": false,
+    "CertFile": "",
+    "PkeyFile": ""
 }

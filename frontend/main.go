@@ -45,21 +45,23 @@ Options:
 func main() {
 	// Parse command line flags (if there are)
 	directory := flag.String("dir", "", "Directory where to store dumps and data")
-	configfile := flag.String("config", "olegdb.conf", "Config file to read settings from")
+	configfile := flag.String("config", "", "Config file to read settings from")
 	bindaddr := flag.String("bind", "", "Address and port to bind, host:port")
 
 	flag.Parse()
 
-	if configfile == nil {
-		text := fmt.Sprintf(Usage, os.Args[0])
-		log.Print("Config file is required")
-		log.Fatal(text)
+	if *configfile == "" {
+		fmt.Println("Config file is required")
+		fmt.Printf(Usage, os.Args[0])
+		os.Exit(1)
 	}
 
 	// Parse config file
 	rawconf, err := ioutil.ReadFile(*configfile)
 	if err != nil {
-		log.Fatal("Could not read configuration. Please see the documentation.")
+		fmt.Println("Could not read configuration. Please see the documentation.")
+		fmt.Printf(Usage, os.Args[0])
+		os.Exit(1)
 	}
 	err = json.Unmarshal(rawconf, &config)
 	if err != nil {
@@ -79,10 +81,12 @@ func main() {
 
 	http.HandleFunc("/", handler)
 	defer unload()
-	fmt.Println("Listening on " + config.Listen)
+	log.Println("Starting server...")
 	if config.UseHTTPS {
+		log.Println("Listening on https://" + config.Listen)
 		http.ListenAndServeTLS(config.Listen, config.CertFile, config.PkeyFile, nil)
 	} else {
+		log.Println("Listening on http://" + config.Listen)
 		http.ListenAndServe(config.Listen, nil)
 	}
 }
