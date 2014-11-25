@@ -19,7 +19,7 @@
 /* Where we start our transactions from. */
 transaction_id global_transaction_id = 1;
 
-char *tx_to_str(const transaction_id tx_id) {
+static inline char *tx_to_str(const transaction_id tx_id) {
     char *_key = NULL;
     _key = malloc(sizeof(char) * KEY_SIZE);
     check_mem(_key);
