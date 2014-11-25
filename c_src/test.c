@@ -205,6 +205,7 @@ error:
 int test_can_jump_cursor(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     ol_transaction *tx = olt_begin(db);
+    unsigned char *r_val = NULL;
     check(tx != NULL, "Could not begin transaction.");
 
     int max_records = 10;
@@ -222,12 +223,11 @@ int test_can_jump_cursor(const ol_feature_flags features) {
         int insert_result = olt_jar(tx, key, klen, to_insert, len);
 
         check(insert_result == 0, "Coult not insert.");
-        check(tx->transaction_db->rcrd_cnt = i + 1, "Record count is not higher.");
+        check(tx->transaction_db->rcrd_cnt == i + 1, "Record count is not higher.");
     }
     olt_commit(tx);
 
     /* Create and jump the cursor to a random hash. */
-    unsigned char *r_val = NULL;
     const char key[] = "mmmmmars6";
     ol_cursor cursor;
     check(olc_init(db, &cursor), "Could not init cursor.");
