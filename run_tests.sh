@@ -1,10 +1,18 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 export LD_LIBRARY_PATH=./build/lib:$LD_LIBRARY_PATH
 
-if [ "$1" == "valgrind" ]
-    then
-        valgrind --leak-check=full --track-origins=yes ./build/bin/oleg_test
+rm -rf /tmp/oleg_is_king
+
+CMD=./build/bin/oleg_test
+if [ $# -eq 0 ]; then
+    $CMD
+else
+    if [ $1 == "gdb" ]; then
+        gdb --args $CMD
+    elif [ $1 == "valgrind" ]; then
+        valgrind --leak-check=full $CMD
     else
-        ./build/bin/oleg_test
+        $CMD
+    fi
 fi

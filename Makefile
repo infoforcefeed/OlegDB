@@ -41,7 +41,7 @@ $(BIN_DIR)oleg_test: liboleg test.o main.o
 	$(CC) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
 liboleg: $(LIB_DIR)liboleg.so
-$(LIB_DIR)liboleg.so: murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o data.o
+$(LIB_DIR)liboleg.so: murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o data.o transaction.o
 	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so $^ -fpic -shared $(MATH_LINKER)
 
 uninstall:
@@ -64,7 +64,7 @@ libinstall: liboleg
 	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
 	install ./include/*.h $(INSTALL_INCLUDE)
 
-test: all
+test: liboleg oleg_test
 	./run_tests.sh
 
 clean:

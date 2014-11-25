@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/file.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -20,6 +21,7 @@
 #include "rehash.h"
 #include "utils.h"
 #include "lz4.h"
+#include "transaction.h"
 
 inline int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
@@ -64,9 +66,10 @@ ol_database *ol_open(const char *path, const char *name, int features){
     new_db->meta->key_collisions = 0;
     new_db->rcrd_cnt = 0;
     new_db->val_size = 0;
+    new_db->cur_transactions = NULL;
 
     /* Null every pointer before initialization in case something goes wrong */
-    new_db->aol_file = NULL;
+    memset(new_db->aol_file, '\0', AOL_FILENAME_ALLOC);
     new_db->aolfd = 0;
 
     /* Function pointers for feature flags */
@@ -99,11 +102,16 @@ ol_database *ol_open(const char *path, const char *name, int features){
     /* We figure out the filename now incase someone flips the aol_init bit
      * later.
      */
-    new_db->aol_file = calloc(1, AOL_FILENAME_ALLOC);
-    check_mem(new_db->aol_file);
     new_db->get_db_file_name(new_db, AOL_FILENAME, new_db->aol_file);
 
-    /* Lets use an append-only log file */
+    /* Are we a TX database? Well, if not then we require AOL. Because we might
+     * transact and thats crazy. */
+    if (!new_db->is_enabled(OL_F_DISABLE_TX, &new_db->feature_set)) {
+        new_db->enable(OL_F_APPENDONLY, &new_db->feature_set);
+        ols_init(&(new_db->cur_transactions));
+        check(new_db->cur_transactions != NULL, "Could not init transaction tree.");
+    }
+
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
         ol_aol_init(new_db);
         check(ol_aol_restore(new_db) == 0, "Error restoring from AOL file");
@@ -114,13 +122,18 @@ ol_database *ol_open(const char *path, const char *name, int features){
 
 error:
     /* Make sure we free the database first */
-    free(new_db->aol_file);
     free(new_db);
     return NULL;
 }
 
 int ol_close(ol_database *db){
     debug("Closing \"%s\" database.", db->name);
+
+    /* TODO: Commit/abort transactions here. */
+    /*
+    if (!new_db->is_enabled(OL_F_DISABLE_TX, &new_db->feature_set)) {
+    }
+    */
 
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
     int rcrd_cnt = db->rcrd_cnt;
@@ -139,6 +152,8 @@ int ol_close(ol_database *db){
             }
         }
     }
+    if (!db->is_enabled(OL_F_DISABLE_TX, &db->feature_set))
+        check(freed >= rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
 
     if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set) && db->tree != NULL) {
         debug("Destroying tree.");
@@ -150,6 +165,7 @@ int ol_close(ol_database *db){
     if (db->aolfd) {
         debug("Force flushing files");
         fflush(db->aolfd);
+        flock(fileno(db->aolfd), LOCK_UN);
         fclose(db->aolfd);
         debug("Files flushed to disk");
     }
@@ -157,84 +173,24 @@ int ol_close(ol_database *db){
     /* Sync and close values file. */
     if (db->val_size > 0) {
         msync(db->values, db->val_size, MS_SYNC);
-        munmap(db->values, db->val_size);
+        _ol_close_values(db);
     }
     db->feature_set = 0;
-    free(db->aol_file);
     free(db->meta);
     free(db->hashes);
     memset(db, '\0', sizeof(ol_database));
     free(db);
     db = NULL;
 
-    check(freed == rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
-    ol_log_msg(LOG_INFO, "Database closed. Remember to drink your coffee.");
+    debug("Database closed. Remember to drink your coffee.");
     return 0;
 
 error:
     return 1;
 }
 
-static inline void _ol_trunc(const char *key, size_t klen, char *out) {
-    /* Silently truncate because #yolo */
-    size_t real_key_len = klen > KEY_SIZE ? KEY_SIZE : klen;
-    strncpy(out, key, real_key_len);
-    out[real_key_len] = '\0';
-}
-
-int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash) {
-    /* TODO: error codes? */
-    int index = _ol_calc_idx(db->cur_ht_size, hash);
-    if (db->hashes[index] != NULL) {
-        db->meta->key_collisions++;
-        ol_bucket *tmp_bucket = db->hashes[index];
-        tmp_bucket = _ol_get_last_bucket_in_slot(tmp_bucket);
-        tmp_bucket->next = bucket;
-    } else {
-        db->hashes[index] = bucket;
-    }
-    db->rcrd_cnt++;
-
-    if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
-        /* Put the bucket into the tree */
-        ol_splay_tree_node *node = NULL;
-        node = ols_insert(db->tree, bucket->key, bucket->klen, bucket);
-        /* Make sure the bucket can reference the node. */
-        bucket->node = node;
-    }
-
-    return 0;
-}
-
-int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data) {
-    return ol_unjar_ds(db, key, klen, data, NULL);
-}
-
 int ol_exists(ol_database *db, const char *key, size_t klen) {
-    return ol_unjar_ds(db, key, klen, NULL, NULL);
-}
-
-static inline int _has_bucket_expired(const ol_bucket *bucket) {
-    struct tm utctime;
-    time_t current;
-    time_t made;
-
-    /* So dumb */
-    time(&current);
-    gmtime_r(&current, &utctime);
-    current = timegm(&utctime);
-    if (bucket->expiration != NULL) {
-        made = mktime(bucket->expiration);
-        debug("Made Expiration: %lu", (long)made);
-    } else {
-        return 0;
-    }
-
-    /* For some reason you can't compare 0 to a time_t. */
-    if (current < made) {
-        return 0;
-    }
-    return 1;
+    return ol_unjar(db, key, klen, NULL, NULL);
 }
 
 ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t klen, char (*_key)[KEY_SIZE], size_t *_klen) {
@@ -269,338 +225,126 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
     return NULL;
 }
 
-int ol_unjar_ds(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
-    char _key[KEY_SIZE] = {'\0'};
-    size_t _klen = 0;
-    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
-
-    if (bucket != NULL) {
-        if (!_has_bucket_expired(bucket)) {
-            /* We don't need to fill out the data so just return 'we found the key'. */
-            if (data == NULL)
-                return 0;
-
-            const int ret = _ol_get_value_from_bucket(db, bucket, data, dsize);
-            check(ret == 0, "Could not retrieve value from bucket.");
-
-            /* Key found, tell somebody. */
-            return 0;
-        } else {
-            /* It's dead, get rid of it. */
-            check(ol_scoop(db, key, klen) == 0, "Scoop failed");
-        }
+int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
+    if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
+        db->state == OL_S_COMMITTING || db->state == OL_S_STARTUP) {
+        /* Fake a transaction: */
+        ol_transaction stack_tx = {
+            .tx_id = 0,
+            .parent_db = NULL,
+            .transaction_db = db
+        };
+        return olt_unjar(&stack_tx, key, klen, data, dsize);
     }
 
-    return 1;
+    ol_transaction *tx = olt_begin(db);
+    int unjar_ret = 10;
+    check(tx != NULL, "Could not begin transaction.");
+
+    unjar_ret = olt_unjar(tx, key, klen, data, dsize);
+    check(unjar_ret == 0, "Could not unjar.");
+
+    check(olt_commit(tx) == 0, "Could not commit transaction.");
+
+    return unjar_ret;
 
 error:
-    return 2;
+    if (tx != NULL && unjar_ret != 10)
+        olt_abort(tx);
+
+    return unjar_ret;
 }
 
-static inline int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
-        unsigned char *value, size_t vsize, const char *ct, const size_t ctsize) {
-    debug("Reallocating bucket.");
+int ol_jar(ol_database *db, const char *key, size_t klen,
+           const unsigned char *value, size_t vsize) {
 
-    unsigned char *old_data_ptr = db->values + bucket->data_offset;
-    /* Clear out the old data in the file. */
-    if (bucket->data_size > 0)
-        memset(old_data_ptr, '\0', bucket->data_size);
-    /* Compute the new position of the data in the values file: */
-    size_t new_offset = db->val_size;
-    unsigned char *new_data_ptr = NULL;
-
-    /* Compress using LZ4 if enabled */
-    size_t cmsize = 0;
-    if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-        int maxoutsize = LZ4_compressBound(vsize);
-        if (maxoutsize <=  bucket->data_size) {
-            /* We don't need to put this value at the end of the file if the
-             * new value is small enough. */
-            new_data_ptr = old_data_ptr;
-            new_offset = bucket->data_offset;
-        } else {
-            _ol_ensure_values_file_size(db, maxoutsize);
-            new_data_ptr = db->values + db->val_size;
-        }
-
-        cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
-                                      (int)vsize);
-    } else {
-        if (vsize <= bucket->data_size) {
-            /* We don't need to put this value at the end of the file if the
-             * new value is small enough. */
-            new_data_ptr = old_data_ptr;
-            new_offset = bucket->data_offset;
-        } else {
-            _ol_ensure_values_file_size(db, vsize);
-            new_data_ptr = db->values + db->val_size;
-        }
-        if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
-            return 4;
+    /* Is disabled_tx enabled? lksjdlkfpfpfllfplflpf */
+    if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
+        db->state == OL_S_COMMITTING || db->state == OL_S_STARTUP) {
+        /* Fake a transaction: */
+        ol_transaction stack_tx = {
+            .tx_id = 0,
+            .parent_db = NULL,
+            .transaction_db = db
+        };
+        return olt_jar(&stack_tx, key, klen, value, vsize);
     }
 
-    if (bucket->expiration != NULL) {
-        free(bucket->expiration);
-        bucket->expiration = NULL;
-    }
+    ol_transaction *tx = olt_begin(db);
+    int jar_ret = 10;
+    check(tx != NULL, "Could not begin implicit transaction.");
 
-    /* Set original_size regardless of lz4 compression. This ensures we always
-     * have something to write to the AOL. */
-    bucket->original_size = vsize;
-    if(db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-        bucket->data_size = cmsize;
-    } else {
-        bucket->data_size = vsize;
-    }
-    bucket->data_offset = new_offset;
+    jar_ret = olt_jar(tx, key, klen, value, vsize);
+    check(jar_ret == 0, "Could not jar value. Aborting.");
 
-    /* Remember to increment the tracked data size of the DB. */
-    db->val_size += bucket->data_size;
+    check(olt_commit(tx) == 0, "Could not commit transaction.");
 
-    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) && db->state != OL_S_STARTUP) {
-        ol_aol_write_cmd(db, "JAR", bucket);
-    }
-
-    return 0;
-}
-
-int _ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
-        size_t vsize, const char *ct, const size_t ctsize) {
-    int ret;
-    char _key[KEY_SIZE] = {'\0'};
-    size_t _klen = 0;
-    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
-
-    /* Check to see if we have an existing entry with that key */
-    if (bucket != NULL) {
-        return _ol_reallocate_bucket(db, bucket, value, vsize, ct, ctsize);
-    }
-
-    /* Looks like we don't have an old hash */
-    ol_bucket *new_bucket = calloc(1, sizeof(ol_bucket));
-    if (new_bucket == NULL)
-        return 1;
-
-    /* copy _key into new bucket */
-    if (strncpy(new_bucket->key, _key, _klen) != new_bucket->key) {
-        free(new_bucket);
-        return 2;
-    }
-
-    new_bucket->klen = _klen;
-    new_bucket->original_size = vsize;
-
-    /* Compute the new position of the data in the values file: */
-    const size_t new_offset = db->val_size;
-
-    if (db->state != OL_S_STARTUP) {
-        unsigned char *new_data_ptr = NULL;
-
-        if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-            /* Compress using LZ4 if enabled */
-            int maxoutsize = LZ4_compressBound(vsize);
-            _ol_ensure_values_file_size(db, maxoutsize);
-            new_data_ptr = db->values + db->val_size;
-            memset(new_data_ptr, '\0', maxoutsize);
-
-            /* All these fucking casts */
-            size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
-                                                 (int)vsize);
-            if (cmsize == 0) {
-                /* Free allocated data */
-                free(new_bucket);
-                return 1;
-            }
-
-            new_bucket->data_size = cmsize;
-        } else {
-            new_bucket->data_size = vsize;
-            _ol_ensure_values_file_size(db, new_bucket->data_size);
-            new_data_ptr = db->values + db->val_size;
-            memset(new_data_ptr, '\0', new_bucket->data_size);
-
-            if (memcpy(new_data_ptr, value, vsize) != new_data_ptr) {
-                /* Free allocated memory since we're not going to use them */
-                free(new_bucket);
-                return 3;
-            }
-        }
-    } else {
-        /* We still need to set the data size, but not the actual data. */
-        if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
-            /* Since LZ4_compressBound only provides the worst case scenario
-             * and not what the data actually compressed to (we're replaying
-             * the AOL file, remember?) we have to compress it again and grab
-             * the amount of bytes processed.
-             * TODO: This is dumb. Make a function that just sets the bucket size.
-             * This new mythical function should also handle setting the data_offset
-             * of the bucket.
-             */
-            int maxoutsize = LZ4_compressBound(vsize);
-            char tmp_data[maxoutsize];
-            /* Don't need to memset tmp_data because I don't care about it. */
-
-            size_t cmsize = (size_t)LZ4_compress((char *)value, (char *)tmp_data,
-                                                 (int)vsize);
-            new_bucket->data_size = cmsize;
-        } else {
-            new_bucket->data_size = vsize;
-        }
-    }
-
-    /* Set the offset of the bucket before we increment it offset globally. */
-    new_bucket->data_offset = new_offset;
-    /* Remember to increment the tracked data size of the DB. */
-    db->val_size += new_bucket->data_size;
-
-    int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
-    /* TODO: rehash this shit at 80% */
-    if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
-        debug("Record count is now %i; growing hash table.", db->rcrd_cnt);
-        ret = _ol_grow_and_rehash_db(db);
-        if (ret > 0) {
-            ol_log_msg(LOG_ERR, "Problem rehashing DB. Error code: %i", ret);
-            free(new_bucket);
-            return 4;
-        }
-    }
-
-
-    uint32_t hash;
-    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
-    ret = _ol_set_bucket(db, new_bucket, hash);
-
-    if(ret > 0)
-        ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);
-
-    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
-            db->state != OL_S_STARTUP) {
-        ol_aol_write_cmd(db, "JAR", new_bucket);
-    }
-
-    return 0;
+    return jar_ret;
 
 error:
-    return 1;
-}
+    if (tx != NULL && jar_ret != 10)
+        olt_abort(tx);
 
-int ol_jar(ol_database *db, const char *key, size_t klen, unsigned char *value,
-        size_t vsize) {
-    return _ol_jar(db, key, klen, value, vsize, "application/octet-stream", 24);
-}
-
-int ol_jar_ct(ol_database *db, const char *key, size_t klen, unsigned char *value,
-        size_t vsize, const char *content_type, const size_t content_type_size) {
-    return _ol_jar(db, key, klen, value, vsize, content_type, content_type_size);
+    return jar_ret;
 }
 
 int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiration_date) {
-    char _key[KEY_SIZE] = {'\0'};
-    size_t _klen = 0;
-    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
-
-    if (bucket != NULL) {
-        if (bucket->expiration == NULL)
-            bucket->expiration = malloc(sizeof(struct tm));
-        else
-            debug("Hmmm, bucket->expiration wasn't null.");
-        memcpy(bucket->expiration, expiration_date, sizeof(struct tm));
-        debug("New expiration time: %lu", (long)mktime(bucket->expiration));
-
-#ifdef DEBUG
-        struct tm utctime;
-        time_t current;
-
-        /* So dumb */
-        time(&current);
-        gmtime_r(&current, &utctime);
-        current = timegm(&utctime);
-        debug("Current time: %lu", (long)current);
-#endif
-        if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
-                db->state != OL_S_STARTUP) {
-            ol_aol_write_cmd(db, "SPOIL", bucket);
-        }
-        return 0;
+    if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
+        db->state == OL_S_COMMITTING || db->state == OL_S_STARTUP) {
+        /* Fake a transaction: */
+        ol_transaction stack_tx = {
+            .tx_id = 0,
+            .parent_db = NULL,
+            .transaction_db = db
+        };
+        return olt_spoil(&stack_tx, key, klen, expiration_date);
     }
 
-    return 1;
+    ol_transaction *tx = olt_begin(db);
+    int spoil_ret = 10;
+    check(tx != NULL, "Could not begin implicit transaction.");
+
+    spoil_ret = olt_spoil(tx, key, klen, expiration_date);
+    check(spoil_ret == 0, "Could not spoil value. Aborting.");
+    check(olt_commit(tx) == 0, "Could not commit transaction.");
+
+    return spoil_ret;
 
 error:
-    return 1;
+    if (tx != NULL && spoil_ret != 10)
+        olt_abort(tx);
+
+    return spoil_ret;
 }
 
 int ol_scoop(ol_database *db, const char *key, size_t klen) {
-    /* you know... like scoop some data from the jar and eat it? All gone. */
-    uint32_t hash;
-    char _key[KEY_SIZE] = {'\0'};
-    _ol_trunc(key, klen, _key);
-    size_t _klen = strnlen(_key, KEY_SIZE);
-    check_warn(_klen > 0, "Key length cannot be zero.");
-
-
-    MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
-    int index = _ol_calc_idx(db->cur_ht_size, hash);
-
-    if (index < 0) {
-        return 1;
+    if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
+        db->state == OL_S_COMMITTING || db->state == OL_S_STARTUP) {
+        /* Fake a transaction: */
+        ol_transaction stack_tx = {
+            .tx_id = 0,
+            .parent_db = NULL,
+            .transaction_db = db
+        };
+        return olt_scoop(&stack_tx, key, klen);
     }
 
-    ol_bucket *to_free = NULL;
-    int return_level = 2;
-    if (db->hashes[index] != NULL) {
-        size_t larger_key = 0;
-        ol_bucket *bucket = db->hashes[index];
-        larger_key = bucket->klen > _klen ? bucket->klen : _klen;
-        if (strncmp(bucket->key, _key, larger_key) == 0) {
-            if (bucket->next != NULL) {
-                db->hashes[index] = bucket->next;
-            } else {
-                db->hashes[index] = NULL;
-            }
-            if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
-                    db->state != OL_S_STARTUP) {
-                ol_aol_write_cmd(db, "SCOOP", bucket);
-            }
+    ol_transaction *tx = olt_begin(db);
+    int scoop_ret = 10;
+    check(tx != NULL, "Could not begin implicit transaction.");
 
-            to_free = bucket;
-            return_level = 0;
-        } else { /* Keys weren't the same, traverse the bucket LL */
-            do {
-                ol_bucket *last = bucket;
-                bucket = bucket->next;
-                larger_key = bucket->klen > klen ? bucket->klen : klen;
-                if (strncmp(bucket->key, _key, larger_key) == 0) {
-                    if (bucket->next != NULL)
-                        last->next = bucket->next;
-                    else
-                        last->next = NULL;
-                    to_free = bucket;
-                    return_level = 0;
-                    break;
-                }
-            } while (bucket->next != NULL);
-        }
-    }
+    scoop_ret = olt_scoop(tx, key, klen);
+    check(scoop_ret == 0, "Could not scoop value. Aborting.");
 
-    if (to_free != NULL) {
-        if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
-            ols_delete(db->tree, to_free->node);
-            to_free->node = NULL;
-        }
-        unsigned char *data_ptr = db->values + to_free->data_offset;
-        const size_t data_size = to_free->data_size;
-        if (data_size != 0)
-            memset(data_ptr, '\0', data_size);
-        _ol_free_bucket(&to_free);
-        db->rcrd_cnt -= 1;
-    }
-    return return_level;
+    check(olt_commit(tx) == 0, "Could not commit transaction.");
+
+    return scoop_ret;
+
 error:
-    return 1;
+    if (tx != NULL && scoop_ret != 10)
+        olt_abort(tx);
+
+    return scoop_ret;
 }
 
 int ol_cas(ol_database *db, const char *key, const size_t klen,
@@ -648,7 +392,7 @@ int ol_squish(ol_database *db) {
     check(db != NULL, "Cannot squish null database.");
     int fflush_turned_off = 0;
     const int flags = db->feature_set;
-    if(db->is_enabled(OL_F_APPENDONLY, &flags)) {
+    if (db->is_enabled(OL_F_APPENDONLY, &flags)) {
         /* Turn off fflush for the time being. We'll do it once at the end. */
         if (db->is_enabled(OL_F_AOL_FFLUSH, &db->feature_set)) {
             db->disable(OL_F_AOL_FFLUSH, &db->feature_set);
@@ -680,7 +424,7 @@ int ol_squish(ol_database *db) {
             for (ptr = db->hashes[i]; NULL != ptr; ptr = next) {
                 if (!_has_bucket_expired(ptr)) {
                     /* Bucket hasn't been deleted or expired. */
-                    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+                    if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
                         /* AOL is enabled. Write it to the new AOL file. */
                         ol_aol_write_cmd(db, "JAR", ptr);
 
@@ -696,7 +440,7 @@ int ol_squish(ol_database *db) {
         }
     }
 
-    if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
+    if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
         /* Turn off fflush for the time being. We'll do it once at the end. */
         if (fflush_turned_off) {
             db->enable(OL_F_AOL_FFLUSH, &db->feature_set);

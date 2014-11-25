@@ -4,7 +4,9 @@
 #include "logging.h"
 #include "errhandle.h"
 #include "lz4.h"
+#include "utils.h"
 
+#include <sys/file.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -15,10 +17,17 @@
 
 int ol_aol_init(ol_database *db) {
     if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
-        debug("Opening append only log");
-        debug("Append only log: %s", db->aol_file);
-        db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
-        check(db->aolfd != NULL, "Error opening append only file");
+        if (db->aolfd == 0) {
+            debug("Opening append only log");
+            debug("Append only log: %s", db->aol_file);
+            db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
+            check(db->aolfd != NULL, "Error opening append only file");
+
+            int flock_ret = flock(fileno(db->aolfd), LOCK_NB | LOCK_EX);
+            check(flock_ret == 0, "Could not lock AOL file.");
+        } else {
+            ol_log_msg(LOG_WARN, "AOL already initialized.");
+        }
     }
 
     return 0;
@@ -46,14 +55,13 @@ void _deserialize_time(struct tm *fillout, char *buf) {
     fillout->tm_mon -= 1;
 }
 
-#define intlen(value) (value == 0 ? 1 : (int)(floor(log10(value)))+1)
-
 int ol_aol_sync(const ol_database *db) {
     /* Force the OS to flush write to hardware */
     if (db->is_enabled(OL_F_AOL_FFLUSH, &db->feature_set))
         check(fflush(db->aolfd) == 0, "Could not fflush.");
     /* AOL should always fsync at least. */
-    check(fsync(fileno(db->aolfd)) == 0, "Could not fsync");
+    const int aol_fd = fileno(db->aolfd);
+    check(fsync(aol_fd) == 0, "Could not fsync");
     return 0;
 
 error:
@@ -144,7 +152,9 @@ error:
     return NULL;
 }
 
-int ol_aol_restore(ol_database *db) {
+int ol_aol_restore_from_file(ol_database *target_db,
+        const char aol_fname[AOL_FILENAME_ALLOC],
+        const unsigned char *values_data) {
     ol_string *command = NULL,
               *key = NULL,
               *value = NULL,
@@ -152,7 +162,7 @@ int ol_aol_restore(ol_database *db) {
               *read_data_size = NULL,
               *read_org_size = NULL;
 
-    FILE *fd = fopen(db->aol_file, "r");
+    FILE *fd = fopen(aol_fname, "r");
     check(fd, "Error opening file");
     while (!feof(fd)) {
         command = _ol_read_data(fd);
@@ -185,9 +195,9 @@ int ol_aol_restore(ol_database *db) {
             size_t compressed_size = (size_t)strtol(read_data_size->data, NULL, 10);
             size_t data_offset = (size_t)strtol(value->data, NULL, 10);
 
-            /* Pointer in the values file to where the data for this command 
+            /* Pointer in the values file to where the data for this command
              * should be. */
-            unsigned char *data_ptr = db->values + data_offset;
+            const unsigned char *data_ptr = values_data + data_offset;
 
             /* Short circuit check to see if the memory in the location is all
              * null. */
@@ -215,18 +225,17 @@ int ol_aol_restore(ol_database *db) {
                 int processed = LZ4_decompress_fast((const char*)data_ptr, (char *)tmp_data, original_size);
 
                 if (processed == compressed_size) {
-                    ol_jar(db, key->data, key->dlen, (unsigned char*)tmp_data, original_size);
+                    ol_jar(target_db, key->data, key->dlen, (unsigned char*)tmp_data, original_size);
                 } else {
                     if (original_size != compressed_size)
                         ol_log_msg(LOG_WARN, "Could not decompress data that is probably compressed. Data may have been deleted.");
                     /* Now that we've tried to decompress and failed, send off the raw data instead. */
-                    ol_jar(db, key->data, key->dlen, data_ptr, compressed_size);
+                    ol_jar(target_db, key->data, key->dlen, data_ptr, compressed_size);
                 }
             }
 #ifdef DEBUG
             /* This happens a lot and isn't bad, so I'm commenting it out. */
             else {
-
                 ol_log_msg(LOG_WARN, "No data in values file that corresponds with this key. Key has been deleted or updated.");
             }
 #endif
@@ -234,15 +243,23 @@ int ol_aol_restore(ol_database *db) {
             /* Important: Set the new offset to compressed_size + data_offset.
              * We need to do this because compaction/squishing will leave holes
              * in the data that we need to account for during replay.
+             *
+             * ...except when we're commiting a transaction. Then we assume whatever
+             * is there is correct.
              */
-            db->val_size = compressed_size + data_offset;
+            if (target_db->state != OL_S_COMMITTING)
+                target_db->val_size = compressed_size + data_offset;
+            /* TODO: What happens here if a bucket is reallocated? We don't
+             * actually expand the extents, so in that case would we have a
+             * bug?
+             */
 
             ol_string_free(&read_org_size);
             ol_string_free(&read_data_size);
             ol_string_free(&ct);
             ol_string_free(&value);
         } else if (strncmp(command->data, "SCOOP", 5) == 0) {
-            ol_scoop(db, key->data, key->dlen);
+            ol_scoop(target_db, key->data, key->dlen);
         } else if (strncmp(command->data, "SPOIL", 5) == 0) {
             ol_string *spoil = _ol_read_data(fd);
             check(spoil != NULL, "Could not read the rest of SPOIL command for AOL.");
@@ -251,7 +268,7 @@ int ol_aol_restore(ol_database *db) {
             _deserialize_time(&time, spoil->data);
 
             check(spoil, "Error reading");
-            ol_spoil(db, key->data, key->dlen, &time);
+            ol_spoil(target_db, key->data, key->dlen, &time);
             ol_string_free(&spoil);
         }
 
@@ -281,4 +298,8 @@ error:
     }
 
     return -1;
+}
+
+int ol_aol_restore(ol_database *db) {
+    return ol_aol_restore_from_file(db, db->aol_file, db->values);
 }
