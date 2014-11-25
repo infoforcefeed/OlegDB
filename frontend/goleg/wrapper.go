@@ -45,9 +45,9 @@ func CUnjar(db *C.ol_database, key string, klen uintptr, dsize *uintptr) []byte 
 	cklen := (C.size_t)(klen)
 	cdsize := (*C.size_t)(unsafe.Pointer(dsize))
 
-	// Pass them to ol_unjar_ds
+	// Pass them to ol_unjar
 	var ptr *C.uchar
-	res := C.ol_unjar_ds(db, ckey, cklen, &ptr, cdsize)
+	res := C.ol_unjar(db, ckey, cklen, &ptr, cdsize)
 	if res == 1 {
 		return nil
 	}
