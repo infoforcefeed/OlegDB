@@ -128,7 +128,7 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     return 0;
 }
 
-int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash) {
+int _ol_set_bucket_no_incr(ol_database *db, ol_bucket *bucket, uint32_t hash) {
     /* TODO: error codes? */
     int index = _ol_calc_idx(db->cur_ht_size, hash);
     if (db->hashes[index] != NULL) {
@@ -139,7 +139,6 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash) {
     } else {
         db->hashes[index] = bucket;
     }
-    db->rcrd_cnt++;
 
     if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set)) {
         /* Put the bucket into the tree */
@@ -149,6 +148,12 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash) {
         bucket->node = node;
     }
 
+    return 0;
+}
+
+int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash) {
+    _ol_set_bucket_no_incr(db, bucket, hash);
+    db->rcrd_cnt++;
     return 0;
 }
 

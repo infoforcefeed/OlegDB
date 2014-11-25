@@ -17,13 +17,17 @@
 
 int ol_aol_init(ol_database *db) {
     if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
-        debug("Opening append only log");
-        debug("Append only log: %s", db->aol_file);
-        db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
-        check(db->aolfd != NULL, "Error opening append only file");
+        if (db->aolfd == 0) {
+            debug("Opening append only log");
+            debug("Append only log: %s", db->aol_file);
+            db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
+            check(db->aolfd != NULL, "Error opening append only file");
 
-        int flock_ret = flock(fileno(db->aolfd), LOCK_NB | LOCK_EX);
-        check(flock_ret == 0, "Could not lock AOL file.");
+            int flock_ret = flock(fileno(db->aolfd), LOCK_NB | LOCK_EX);
+            check(flock_ret == 0, "Could not lock AOL file.");
+        } else {
+            ol_log_msg(LOG_WARN, "AOL already initialized.");
+        }
     }
 
     return 0;

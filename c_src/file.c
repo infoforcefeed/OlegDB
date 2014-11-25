@@ -164,7 +164,7 @@ int ol_sync(const ol_database *db) {
     }
 
     if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set)) {
-        ol_log_msg(LOG_INFO, "Syncing AOL file.");
+        /* ol_log_msg(LOG_INFO, "Syncing AOL file."); */
         ol_aol_sync(db);
     }
 

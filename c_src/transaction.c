@@ -69,6 +69,7 @@ ol_transaction *olt_begin(ol_database *db) {
      * get endless recursion. Wooo! */
     ol_feature_flags flags = OL_F_APPENDONLY | OL_F_SPLAYTREE | OL_F_LZ4 | OL_F_DISABLE_TX;
     stack_tx.transaction_db = ol_open(new_path, name, flags);
+    stack_tx.transaction_db->rcrd_cnt = stack_tx.parent_db->rcrd_cnt;
     check(stack_tx.transaction_db != NULL, "Could not open transaction database.");
 
     /* Copy the stack thing into the heap thing. */
@@ -357,18 +358,8 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
     larger_key = bucket->klen > _klen ? bucket->klen : _klen;
     if (strncmp(bucket->key, _key, larger_key) == 0) {
         /* We only ACTUALLY want to delete something if we're operating on the transaction_db */
-        if (operating_db == tx->transaction_db) {
-            if (bucket->next != NULL) {
-                operating_db->hashes[index] = bucket->next;
-            } else {
-                operating_db->hashes[index] = NULL;
-            }
-        }
-
-        /* Write the SCOOP command to the log, so we can replay it later. */
-        if (tx->transaction_db->state != OL_S_STARTUP) {
-            ol_aol_write_cmd(tx->transaction_db, "SCOOP", bucket);
-        }
+        if (operating_db == tx->transaction_db)
+            operating_db->hashes[index] = bucket->next;
 
         to_free = bucket;
         return_level = 0;
@@ -390,11 +381,14 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
     }
 
     if (to_free != NULL) {
-        if (tx->transaction_db->is_enabled(OL_F_SPLAYTREE, &tx->transaction_db->feature_set)) {
+        /* Only delete the node from the transaction_db. */
+        if (operating_db == tx->transaction_db &&
+            tx->transaction_db->is_enabled(OL_F_SPLAYTREE, &tx->transaction_db->feature_set)) {
             ols_delete(tx->transaction_db->tree, to_free->node);
             to_free->node = NULL;
         }
 
+        /* Write the SCOOP command to the log, so we can replay it later. */
         if (tx->transaction_db->state != OL_S_STARTUP) {
             ol_aol_write_cmd(tx->transaction_db, "SCOOP", bucket);
         }
@@ -423,6 +417,23 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
 
     ol_bucket *bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
     check_warn(_klen > 0, "Key length of zero not allowed.");
+
+    if (bucket == NULL) {
+        /* Transaction DB doesn't have this key, but the parent does. */
+        operating_db = tx->parent_db;
+        bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
+        if (bucket != NULL) {
+            /* Copy that value into our current transaction db,
+             * and then spoil it.
+             */
+            uint32_t hash;
+            MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
+            ol_bucket *copied = calloc(1, sizeof(ol_bucket));
+            check_mem(copied);
+
+            _ol_set_bucket_no_incr(operating_db, copied, hash);
+        }
+    }
 
     if (bucket != NULL) {
         if (bucket->expiration == NULL)

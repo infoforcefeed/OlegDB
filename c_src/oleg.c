@@ -152,6 +152,8 @@ int ol_close(ol_database *db){
             }
         }
     }
+    if (!db->is_enabled(OL_F_DISABLE_TX, &db->feature_set))
+        check(freed >= rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
 
     if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set) && db->tree != NULL) {
         debug("Destroying tree.");
@@ -180,7 +182,6 @@ int ol_close(ol_database *db){
     free(db);
     db = NULL;
 
-    check(freed == rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
     debug("Database closed. Remember to drink your coffee.");
     return 0;
 
@@ -226,7 +227,7 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
 
 int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
     if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
-        (db->state == OL_S_COMMITTING && db->state != OL_S_STARTUP)) {
+        db->state == OL_S_COMMITTING || db->state == OL_S_STARTUP) {
         /* Fake a transaction: */
         ol_transaction stack_tx = {
             .tx_id = 0,
@@ -259,7 +260,7 @@ int ol_jar(ol_database *db, const char *key, size_t klen,
 
     /* Is disabled_tx enabled? lksjdlkfpfpfllfplflpf */
     if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
-        (db->state == OL_S_COMMITTING && db->state != OL_S_STARTUP)) {
+        db->state == OL_S_COMMITTING || db->state == OL_S_STARTUP) {
         /* Fake a transaction: */
         ol_transaction stack_tx = {
             .tx_id = 0,
@@ -289,7 +290,7 @@ error:
 
 int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiration_date) {
     if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
-        (db->state == OL_S_COMMITTING && db->state != OL_S_STARTUP)) {
+        db->state == OL_S_COMMITTING || db->state == OL_S_STARTUP) {
         /* Fake a transaction: */
         ol_transaction stack_tx = {
             .tx_id = 0,
@@ -318,7 +319,7 @@ error:
 
 int ol_scoop(ol_database *db, const char *key, size_t klen) {
     if (db->is_enabled(OL_F_DISABLE_TX, &db->feature_set) ||
-        (db->state == OL_S_COMMITTING && db->state != OL_S_STARTUP)) {
+        db->state == OL_S_COMMITTING || db->state == OL_S_STARTUP) {
         /* Fake a transaction: */
         ol_transaction stack_tx = {
             .tx_id = 0,
