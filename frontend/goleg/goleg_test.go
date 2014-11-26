@@ -41,7 +41,7 @@ func TestOpen(t *testing.T) {
 	cleanTemp(dir)
 }
 
-const JARN = 1000
+const JARN = 10
 
 func TestJar(t *testing.T) {
 	if testing.Short() {
