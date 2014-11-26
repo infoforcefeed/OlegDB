@@ -29,13 +29,13 @@ endif
 
 all: $(TEST_OUT) $(BIN_OUT)
 
-test.o: ./c_src/test.c
+test.o: ./src/test.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 
-main.o: ./c_src/main.c
+main.o: ./src/main.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 
-%.o: ./c_src/%.c
+%.o: ./src/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -fPIC $<
 
 oleg_test: $(TEST_OUT)
