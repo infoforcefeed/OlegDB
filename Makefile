@@ -24,7 +24,7 @@ else
 	MATH_LINKER=-lm
 endif
 
-all: liboleg oleg_test server
+all: oleg_test frontend
 
 test.o: ./c_src/test.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
@@ -35,8 +35,8 @@ main.o: ./c_src/main.c
 %.o: ./c_src/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -fPIC $<
 
-oleg_test: $(BIN_DIR)oleg_test liboleg
-$(BIN_DIR)oleg_test: test.o main.o
+oleg_test: $(BIN_DIR)oleg_test
+$(BIN_DIR)oleg_test: liboleg test.o main.o
 	$(CC) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
 
 liboleg: $(LIB_DIR)liboleg.so
@@ -48,14 +48,12 @@ uninstall:
 	rm -rf $(INSTALL_BIN)olegdb
 
 frontend: $(BIN_DIR)olegdb
-$(BIN_DIR)olegdb:
+$(BIN_DIR)olegdb: liboleg
 	go build -o $(BIN_DIR)olegdb ./frontend/
-
-server: liboleg frontend
 
 install: goinstall
 
-goinstall: server libinstall
+goinstall: frontend libinstall
 	cp $(BIN_DIR)olegdb $(INSTALL_BIN)olegdb
 
 libinstall: liboleg
