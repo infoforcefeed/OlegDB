@@ -1031,8 +1031,6 @@ int test_can_match_prefixes(const ol_feature_flags features) {
 void run_tests(int results[2]) {
     int tests_run = 0;
     int tests_failed = 0;
-    int *errno_p = __errno_location(); /* 1337 hax */
-    check(errno_p != NULL, "Fuck off gcc");
 
     ol_test_start();
 
