@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"testing"
-	"fmt"
 	"bytes"
 )
 
@@ -78,8 +77,7 @@ func TestUnjar(t *testing.T) {
 
 	for i := 0; i < JARN; i++ {
 		val := database.Unjar("record" + strconv.Itoa(i))
-		fmt.Printf("%#v\n", val)
-		if bytes.Equal(val, []byte("value"+strconv.Itoa(i))) {
+		if !bytes.Equal(val, []byte("value"+strconv.Itoa(i))) {
 			t.Errorf("Value #%d doesn't match", i)
 		}
 	}
