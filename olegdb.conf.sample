@@ -1,0 +1,7 @@
+{
+    "listen": "localhost:38080",
+    "datadir": "data",
+    "usehttps": false,
+    "certfile": "",
+    "pkeyfile": ""
+}

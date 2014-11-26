@@ -30,11 +30,11 @@ def thread_burn(thread_id):
         requests.post(connection_str,
             data=compressed,
             headers={
-                "X-OlegDB-use-by": expiration}
+                "X-Olegdb-Use-By": expiration}
             )
-        duff = requests.head(connection_str) # For code coverage
+        duff = requests.get(connection_str + "/_info") # For code coverage
         if duff.status_code not in [404, 500]:
-            known_count = duff.headers['x-olegdb-rcrd-cnt']
+            known_count = duff.headers['X-Olegdb-Rcrd-Cnt']
         resp = requests.get(connection_str, stream=True)
         raw = resp.raw.read()
 
