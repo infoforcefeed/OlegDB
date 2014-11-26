@@ -5,14 +5,17 @@ ifndef CC
 endif
 VERSION=0.1.5
 SOVERSION=0
-CUR_DIR=$(shell pwd)
-BUILD_DIR=$(CUR_DIR)/build/
+BUILD_DIR=$(shell pwd)/build/
 LIB_DIR=$(BUILD_DIR)lib/
 BIN_DIR=$(BUILD_DIR)bin/
 PREFIX?=/usr/local
 INSTALL_LIB=$(PREFIX)/lib/
 INSTALL_BIN=$(PREFIX)/bin/
 INSTALL_INCLUDE=$(PREFIX)/include/olegdb/
+
+TEST_OUT=$(BIN_DIR)oleg_test
+LIB_OUT=$(LIB_DIR)liboleg.so
+BIN_OUT=$(BIN_DIR)olegdb
 export CGO_LDFLAGS=-L$(BUILD_DIR)lib
 
 INCLUDES=-I./include
@@ -24,7 +27,7 @@ else
 	MATH_LINKER=-lm
 endif
 
-all: oleg_test frontend
+all: $(TEST_OUT) $(BIN_OUT)
 
 test.o: ./c_src/test.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
@@ -35,36 +38,34 @@ main.o: ./c_src/main.c
 %.o: ./c_src/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -fPIC $<
 
-oleg_test: $(BIN_DIR)oleg_test
-$(BIN_DIR)oleg_test: liboleg test.o main.o
-	$(CC) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(BIN_DIR)oleg_test test.o main.o $(MATH_LINKER) -loleg
+oleg_test: $(TEST_OUT)
+$(TEST_OUT): $(LIB_OUT) test.o main.o
+	$(CC) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(TEST_OUT) test.o main.o $(MATH_LINKER) -loleg
 
-liboleg: $(LIB_DIR)liboleg.so
-$(LIB_DIR)liboleg.so: murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o data.o transaction.o
-	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_DIR)liboleg.so $^ -fpic -shared $(MATH_LINKER)
+$(LIB_OUT): murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o data.o transaction.o
+	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_OUT) $^ -fpic -shared $(MATH_LINKER)
 
 uninstall:
 	rm -rf $(INSTALL_LIB)liboleg*
 	rm -rf $(INSTALL_BIN)olegdb
 
-frontend: $(BIN_DIR)olegdb
-$(BIN_DIR)olegdb: liboleg
-	go build -o $(BIN_DIR)olegdb ./frontend/
+$(BIN_OUT): $(LIB_OUT)
+	go build -o $(BIN_OUT) ./frontend/
 
 install: goinstall
 
-goinstall: frontend libinstall
-	cp $(BIN_DIR)olegdb $(INSTALL_BIN)olegdb
+goinstall: $(BIN_OUT) libinstall
+	cp $(BIN_OUT) $(INSTALL_BIN)olegdb
 
-libinstall: liboleg
+libinstall: $(LIB_OUT)
 	@mkdir -p $(INSTALL_LIB)
 	@mkdir -p $(INSTALL_INCLUDE)
-	install $(LIB_DIR)liboleg.so $(INSTALL_LIB)liboleg.so.$(VERSION)
+	install $(LIB_OUT) $(INSTALL_LIB)liboleg.so.$(VERSION)
 	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so
 	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
 	install ./include/*.h $(INSTALL_INCLUDE)
 
-test: liboleg oleg_test
+test: $(LIB_OUT) $(TEST_OUT)
 	./run_tests.sh
 
 clean:
