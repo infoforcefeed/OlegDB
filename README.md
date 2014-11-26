@@ -1,6 +1,8 @@
 OlegDB
 ============
 
+<img src="https://olegdb.org/static/img/olegdb_stars.png" />
+
 [![Build Status](https://travis-ci.org/infoforcefeed/OlegDB.svg?branch=master)](https://travis-ci.org/infoforcefeed/OlegDB)
 ![OlegDB MAYO](http://b.repl.ca/v1/OlegDB-MAYO-brightgreen.png)
 [![Scan Status](https://scan.coverity.com/projects/1414/badge.svg)](https://scan.coverity.com/projects/1414)
@@ -12,9 +14,10 @@ $ pgrep olegdb | xargs kill
 olegdb: No.
 ````
 
-OlegDB is a ~~single-threaded, non-concurrent~~, transactionless NoSQL database
+OlegDB is a ~~single-threaded, non-concurrent, transactionless~~ NoSQL
+~~database~~ datastore
 written by bitter SQL-lovers in a futile attempt to hop on the schemaless trend
-before everyone realizes it was a bad move. It is primarily a C library with an
+before everyone realizes it was a bad move. It is primarily a C library with a
 Go frontend for communication.
 
 Dependencies
@@ -27,8 +30,7 @@ Installation
 ============
 
 OlegDB consists of a server written in Go and a C library for all of the
-heavy lifting. Binaries are in `build/bin/` and the library is in `build/lib/`.
-Beam files are also thrown in `build/bin/`.
+heavy lifting. Binaries are in `build/bin/` and the `liboleg` library is in `build/lib/`.
 
 Currently builds are tested against gcc and clang.
 
@@ -39,6 +41,8 @@ make
 make server
 # Just the C library:
 make liboleg
+# Make and run tests:
+make test
 # Install
 sudo make install
 ```
@@ -54,43 +58,16 @@ To run the Go server:
 ```bash
 olegdb [-conf olegdb.conf] [-bind localhost:8080] [-dir data]
 ```
-For an explaination of the command line parameters, do `olegdb -h`
+For an explanation of the command line parameters, do `olegdb -h`
 
 curl2sudo&reg; install script coming soon.
 
 Documentation
 =============
 
-Documentation exists primarily on the [the website](https://olegdb.org/documentation.html).
+Documentation can be found on the [the website](https://olegdb.org/documentation.html).
 
 Roadmap
 =======
 
-0.1
----
-
-* Persistence
-* Speaks HTTP with a heavy accent
-* 250 byte hard keysize limit
-* Working database
-* Non-guaranteed record expiry
-
-0.2
----
-* Splay Trees for key iteration and introspection
-* pub/sub or general evented framework
-* Lists/Queues
-* Speak Redis/Memcached protocol subsets
-
-0.3
----
-* SPDY Protocol
-
-1.0
----
-
-* Distributed fault-tolerant store
-
-2.0
----
-* BSP Export
+Roadmap is full of lies and half-truths, please ignore.
