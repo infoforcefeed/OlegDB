@@ -4,6 +4,7 @@ compiler:
   - clang
 script: 
   - make liboleg oleg_test
+  - make install
   - export LD_LIBRARY_PATH=./build/lib:$LD_LIBRARY_PATH
   - ./build/bin/oleg_test
   - go test ./...
