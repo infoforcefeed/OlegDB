@@ -7,7 +7,7 @@ script:
   - sudo make install
   - export LD_LIBRARY_PATH=./build/lib:$LD_LIBRARY_PATH
   - ./build/bin/oleg_test
-  - go test ./...
+  - LD_LIBRARY_PATH=./build/lib:/usr/local/lib:/usr/lib:$LD_LIBRARY_PATH go test ./...
 before_install:
   - sudo apt-get update
   - sudo apt-get install golang
