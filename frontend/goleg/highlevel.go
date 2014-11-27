@@ -6,8 +6,8 @@ package goleg
 import "C"
 import (
 	"errors"
-	"time"
 	"sync"
+	"time"
 )
 
 type Database struct {

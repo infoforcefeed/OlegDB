@@ -1,11 +1,11 @@
 package goleg
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"testing"
-	"bytes"
 )
 
 func openRandomDB(features int) (Database, string, error) {
