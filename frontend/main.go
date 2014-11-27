@@ -6,8 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -16,7 +16,7 @@ type Config struct {
 	Listen  string `json:"listen"`
 	DataDir string `json: "datadir"`
 	// HTTPS settings
-	UseHTTPS bool `json:"usehttps"`
+	UseHTTPS bool   `json:"usehttps"`
 	CertFile string `json:"certfile"`
 	PkeyFile string `json:"pkeyfile"`
 }
@@ -25,7 +25,7 @@ var config Config
 var databases map[string]goleg.Database
 
 const (
-Usage = `
+	Usage = `
 Usage: %s -config <config path> [options]
 	Config path:
 		Path to a configuration file. This is required.
@@ -40,7 +40,6 @@ Options:
 		This help.
 `
 )
-
 
 func main() {
 	// Parse command line flags (if there are)
@@ -81,13 +80,17 @@ func main() {
 
 	http.HandleFunc("/", handler)
 	defer unload()
+	var httperr error
 	log.Println("Starting server...")
 	if config.UseHTTPS {
 		log.Println("Listening on https://" + config.Listen)
-		http.ListenAndServeTLS(config.Listen, config.CertFile, config.PkeyFile, nil)
+		httperr = http.ListenAndServeTLS(config.Listen, config.CertFile, config.PkeyFile, nil)
 	} else {
 		log.Println("Listening on http://" + config.Listen)
-		http.ListenAndServe(config.Listen, nil)
+		httperr = http.ListenAndServe(config.Listen, nil)
+	}
+	if httperr != nil {
+		log.Fatal(httperr)
 	}
 }
 
