@@ -81,13 +81,17 @@ func main() {
 
 	http.HandleFunc("/", handler)
 	defer unload()
+	var httperr error
 	log.Println("Starting server...")
 	if config.UseHTTPS {
 		log.Println("Listening on https://" + config.Listen)
-		http.ListenAndServeTLS(config.Listen, config.CertFile, config.PkeyFile, nil)
+		httperr = http.ListenAndServeTLS(config.Listen, config.CertFile, config.PkeyFile, nil)
 	} else {
 		log.Println("Listening on http://" + config.Listen)
-		http.ListenAndServe(config.Listen, nil)
+		httperr = http.ListenAndServe(config.Listen, nil)
+	}
+	if httperr != nil {
+		log.Fatal(httperr)
 	}
 }
 
