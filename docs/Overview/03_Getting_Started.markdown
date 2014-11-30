@@ -1,9 +1,9 @@
-Communicating with OlegDB is done via a pretty simple REST interface.
-You POST to create/update records, GET to retrieve them, DELETE to delete,
-and HEAD to get back some information about them. Probably.
+Communicating with OlegDB is done via a pretty simple `REST` interface.
+You `POST` to create/update records, `GET` to retrieve them, `DELETE` to delete,
+and `HEAD` to get back some information about them. Probably.
 
-For example, to store the value Raphael into the named database turtles under
-the key red you could use something like the following:
+For example, to store the value `Raphael` into the database named `turtles` under
+the key `red` you could use something like the following:
 
 ````
 $ curl -X POST -d 'Raphael' http://localhost:8080/turtles/red
@@ -22,7 +22,7 @@ $ curl -X DELETE http://localhost:8080/turtles/red
 ````
 
 OlegDB supports lazy key expiration. You can specify an expiration date by setting the
-`X-OlegDB-use-by` header to a *UTC* POSIX timestamp .
+`X-OlegDB-use-by` header to a *UTC* POSIX timestamp.
 
 ````
 $ curl -X POST \

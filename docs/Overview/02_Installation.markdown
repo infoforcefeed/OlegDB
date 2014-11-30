@@ -1,5 +1,5 @@
 Installing OlegDB is pretty simple, you only need a POSIX compliant system,
-make, gcc/clang (thats all we test) and Go. You'll also need the source
+`make`, `gcc`/`clang` (thats all we test) and Go. You'll also need the source
 code for OlegDB.
 
 Once you have your fanciful medley of computer science tools, you're ready to
@@ -8,7 +8,7 @@ foreboding? Have no fear, people have been doing this for at least a quarter of
 a century.
 
 I'm going to assume you've extracted the source tarball into a folder called
-`~/src/olegdb` and that you haven't cd'd into it yet. Lets smash some electrons
+`~/src/olegdb` and that you haven't `cd`'d into it yet. Lets smash some electrons
 together:
 
 ```bash
@@ -32,3 +32,6 @@ something like the following:
 ```bash
 $ olegdb -config /path/to/json/config
 ```
+
+OlegDB ships with a default configuration file, `olegdb.conf.sample` which will
+get you up and running.

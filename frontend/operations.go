@@ -25,7 +25,7 @@ func httpGet(w http.ResponseWriter, op Operation) *HTTPError {
 	value := op.Database.Unjar(op.Key)
 	// Check if the item existed
 	if value == nil {
-		return &HTTPError{Code: 404, Message: "Key not found in database"}
+		return &HTTPError{Code: 404, Message: "These aren't your ghosts."}
 	}
 
 	// Send value
@@ -50,7 +50,7 @@ func httpSet(w http.ResponseWriter, op Operation, r *http.Request) *HTTPError {
 		} else {
 			w.WriteHeader(201)
 		}
-		fmt.Fprintf(w, "Value set successfully!")
+		fmt.Fprintf(w, "無駄")
 	} else {
 		return &HTTPError{Code: 500, Message: "Something went horribly wrong..."}
 	}
@@ -63,7 +63,7 @@ func httpSet(w http.ResponseWriter, op Operation, r *http.Request) *HTTPError {
 		}
 		date := time.Unix(int64(ep), 0)
 		op.Database.Spoil(op.Key, date)
-		fmt.Fprintf(w, "\r\nThe jar is spoiling!")
+		// fmt.Fprintf(w, "\r\nThe jar is spoiling!")
 	}
 
 	return nil
