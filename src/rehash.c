@@ -39,7 +39,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     check_mem(tmp_hashes);
 
     ol_mstack *orphans = NULL;
-    orphans = malloc(sizeof(ol_stack));
+    orphans = malloc(sizeof(ol_mstack));
     check_mem(orphans);
     orphans->next = NULL;
     orphans->data = NULL;
