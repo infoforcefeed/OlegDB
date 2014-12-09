@@ -491,6 +491,7 @@ int test_update(const ol_feature_flags features) {
     check(memcmp(item, val, strlen((char*)val)) == 0,
             "Returned value was not the same.");
     free(item);
+    item = NULL;
 
     unsigned char new_val[] = "WOW THAT WAS COOL, WASNT IT?";
     inserted = olt_jar(tx, key, strlen(key), new_val, strlen((char*)new_val));
@@ -510,7 +511,8 @@ int test_update(const ol_feature_flags features) {
 error:
     olt_abort(tx);
     _test_db_close(db);
-    free(item);
+    if (item != NULL)
+        free(item);
     return 1;
 }
 
