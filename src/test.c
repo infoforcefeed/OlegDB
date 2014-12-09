@@ -572,6 +572,11 @@ int test_feature_flags(const ol_feature_flags features) {
 }
 
 int _test_aol(const ol_feature_flags features, ol_database **db) {
+    if (db == NULL || *db == NULL) {
+        ol_log_msg(LOG_ERR, "No database provided");
+        return 3;
+    }
+
     /* Anable AOL and INIT, no need to restore */
     (*db)->enable(OL_F_APPENDONLY, &(*db)->feature_set);
     ol_aol_init(*db);
