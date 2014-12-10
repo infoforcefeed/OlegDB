@@ -46,6 +46,7 @@ static void _tx_directory(char *new_path, ol_database *db) {
 }
 
 ol_transaction *olt_begin(ol_database *db) {
+    char *name = NULL;
     ol_transaction *new_transaction = NULL;
     check(db != NULL, "No database specified in transaction begin.");
     check(db->cur_transactions != NULL, "No transaction tree.");
@@ -62,7 +63,7 @@ ol_transaction *olt_begin(ol_database *db) {
     _tx_directory(new_path, db);
 
     /* Convert our integer tx_id into a string */
-    char *name = tx_to_str(stack_tx.tx_id);
+    name = tx_to_str(stack_tx.tx_id);
     check(name != NULL, "Could not convert tx_id to str.");
 
     /* Make sure implicit transactions is turned OFF, because otherwise we'll
@@ -91,6 +92,8 @@ ol_transaction *olt_begin(ol_database *db) {
 error:
     if (new_transaction != NULL)
         free(new_transaction);
+    if (name != NULL)
+        free(name);
     return NULL;
 }
 
