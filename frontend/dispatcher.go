@@ -74,7 +74,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func getRequestInfo(r *http.Request) (database, key, operation string, err *HTTPError) {
 	params := strings.Split(r.URL.Path[1:], "/")
 	if len(params) < 2 {
-		return "", "", "", &HTTPError{Code: 400, Message: "Not enought arguments in URL"}
+		return "", "", "", &HTTPError{Code: 400, Message: "The wind whispers through your empty forest."}
 	}
 
 	// Get parameters
