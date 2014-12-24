@@ -54,6 +54,7 @@ ol_transaction *olt_begin(ol_database *db) {
     /* We initialize on the stack because tx_id is a const parameter. */
     ol_transaction stack_tx = {
         .tx_id = global_transaction_id,
+        .dirty = 0,
         .parent_db = db,
         .transaction_db = NULL
     };
@@ -118,6 +119,9 @@ int olt_commit(ol_transaction *tx) {
      */
     check(tx->parent_db != NULL, "No parent database.");
     check(tx->parent_db->cur_transactions != NULL, "No transaction tree.");
+
+    if (!tx->dirty)
+        return olt_abort(tx);
 
     char tx_aol_filename[AOL_FILENAME_ALLOC] = {0};
     tx->transaction_db->get_db_file_name(tx->transaction_db, AOL_FILENAME, tx_aol_filename);
@@ -322,6 +326,9 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
         ol_aol_write_cmd(db, "JAR", new_bucket);
     }
 
+    /* Flag the transaction as dirty. */
+    tx->dirty = 1;
+
     return 0;
 
 error:
@@ -407,6 +414,9 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
         }
     }
 
+    /* Flag the transaction as dirty. */
+    tx->dirty = 1;
+
     return return_level;
 error:
     return 1;
@@ -460,6 +470,10 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
                 operating_db->state != OL_S_STARTUP) {
             ol_aol_write_cmd(operating_db, "SPOIL", bucket);
         }
+
+        /* Flag the transaction as dirty. */
+        tx->dirty = 1;
+
         return 0;
     }
 

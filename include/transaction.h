@@ -5,6 +5,7 @@
 
 typedef struct ol_transaction {
     const transaction_id tx_id;
+    int dirty;
     ol_database *parent_db;
     ol_database *transaction_db;
 } ol_transaction;
