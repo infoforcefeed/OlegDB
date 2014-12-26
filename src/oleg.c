@@ -242,7 +242,7 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
     check(tx != NULL, "Could not begin transaction.");
 
     unjar_ret = olt_unjar(tx, key, klen, data, dsize);
-    check(unjar_ret == 0, "Could not unjar.");
+    check(unjar_ret != 2, "Could not unjar.");
 
     check(olt_commit(tx) == 0, "Could not commit transaction.");
 
