@@ -85,7 +85,11 @@ error:
 }
 
 void _ol_close_values(ol_database *db) {
-    munmap(db->values, db->val_size);
+    char values_filename[DB_NAME_SIZE] = {0};
+    db->get_db_file_name(db, VALUES_FILENAME, values_filename);
+    const size_t siz = _ol_get_file_size(values_filename);
+
+    munmap(db->values, siz);
     flock(db->valuesfd, LOCK_UN);
     close(db->valuesfd);
 }

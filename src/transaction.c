@@ -100,13 +100,13 @@ error:
 
 static int _olt_cleanup(ol_transaction *tx, char *values_filename, char *tx_aol_filename) {
     /* Yeah, come at me. */
+    const int ret = ol_close(tx->transaction_db);
     debug("Unlinking values file for transaction, %s", values_filename);
     unlink(values_filename);
 
     debug(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
     unlink(tx_aol_filename);
 
-    const int ret = ol_close(tx->transaction_db);
     free(tx);
 
     return ret;
