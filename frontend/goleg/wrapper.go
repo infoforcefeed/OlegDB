@@ -280,3 +280,101 @@ func CNodeGet(db *C.ol_database, node *C.ol_splay_tree_node) (bool, string, []by
 
 	return true, key, data
 }
+
+// Transactions
+
+func CTBegin(db *C.ol_database) *C.ol_transaction {
+	return C.olt_begin(db)
+}
+
+func CCommit(tx *C.ol_transaction) int {
+	return int(C.olt_commit(tx))
+}
+
+func CAbort(tx *C.ol_transaction) int {
+	return int(C.olt_abort(tx))
+}
+
+func CTFindTxID(tree *C.ol_splay_tree, key C.transaction_id) *C.ol_splay_tree_node {
+	return C.ols_find_tx_id(tree, key)
+}
+
+func CTUnjar(tx *C.ol_transaction, key string, klen uintptr, dsize *uintptr) []byte {
+	// Turn parameters into their C counterparts
+	ckey := C.CString(key)
+	defer C.free(unsafe.Pointer(ckey))
+
+	cklen := (C.size_t)(klen)
+	cdsize := (*C.size_t)(unsafe.Pointer(dsize))
+
+	// Pass them to ol_unjar
+	var ptr *C.uchar
+	res := C.olt_unjar(tx, ckey, cklen, &ptr, cdsize)
+	if res == 1 {
+		return nil
+	}
+	// Retrieve data in Go []bytes
+	data := C.GoBytes(unsafe.Pointer(ptr), C.int(*dsize))
+
+	// Free C pointer
+	C.free(unsafe.Pointer(ptr))
+
+	return data
+}
+
+func CTJar(tx *C.ol_transaction, key string, klen uintptr, value []byte, vsize uintptr) int {
+	// Turn parameters into their C counterparts
+	ckey := C.CString(key)
+	defer C.free(unsafe.Pointer(ckey))
+
+	cklen := (C.size_t)(klen)
+	cvsize := (C.size_t)(vsize)
+
+	cvalue := (*C.uchar)(unsafe.Pointer(&value[0]))
+
+	// Pass them to ol_jar
+	return int(C.ol_jar(tx, ckey, cklen, cvalue, cvsize))
+}
+
+func CTScoop(tx *C.ol_transaction, key string, klen uintptr) int {
+	// Turn parameters into their C counterparts
+	ckey := C.CString(key)
+	defer C.free(unsafe.Pointer(ckey))
+
+	cklen := (C.size_t)(klen)
+
+	// Pass them to ol_scoop
+	return int(C.ol_scoop(tx, ckey, cklen))
+}
+
+func CSpoil(tx *C.ol_transaction, key string, klen uintptr, expiration time.Time) int {
+	// Turn parameters into their C counterparts
+	ckey := C.CString(key)
+	defer C.free(unsafe.Pointer(ckey))
+
+	cklen := (C.size_t)(klen)
+
+	exp := expiration
+
+	var ctime C.struct_tm
+	ctime.tm_year = C.int(exp.Year() - 1900)
+	ctime.tm_mon = C.int(int(exp.Month()) - 1)
+	ctime.tm_mday = C.int(exp.Day())
+	ctime.tm_hour = C.int(exp.Hour())
+	ctime.tm_min = C.int(exp.Minute())
+	ctime.tm_sec = C.int(exp.Second())
+
+	// Pass them to ol_spoil
+	return int(C.ol_spoil(tx, ckey, cklen, &ctime))
+
+}
+
+func CTExists(tx *C.ol_transaction, key string, klen uintptr) int {
+	// Turn parameters into their C counterparts
+	ckey := C.CString(key)
+	defer C.free(unsafe.Pointer(ckey))
+
+	cklen := (C.size_t)(klen)
+
+	return int(C.ol_exists(tx, ckey, cklen))
+}
