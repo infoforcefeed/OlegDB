@@ -105,9 +105,7 @@ func httpMatch(w http.ResponseWriter, op Operation) *HTTPError {
 		return &HTTPError{Code: 404, Message: "No matches found"}
 	}
 	w.Header().Add("X-Olegdb-Num-Matches", strconv.Itoa(len(res)))
-	content := strings.Join(res, "\n")
-	w.Header().Add("Content-Length", strconv.Itoa(len(content)))
-	fmt.Fprintf(w, content)
+	fmt.Fprintf(w, strings.Join(res, "\n"))
 	return nil
 }
 
