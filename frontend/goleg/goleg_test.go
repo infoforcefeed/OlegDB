@@ -85,3 +85,26 @@ func TestUnjar(t *testing.T) {
 	database.Close()
 	cleanTemp(dir)
 }
+
+func TestTransactionalUnjar(t *testing.T) {
+	database, dir, err := openRandomDB(F_LZ4 | F_SPLAYTREE)
+	if err != nil {
+		t.Fatalf("Can't open database: %s", err.Error())
+	}
+
+	for i := 0; i < JARN; i++ {
+		if database.Jar("record"+strconv.Itoa(i), []byte("value"+strconv.Itoa(i))) != 0 {
+			t.Fatalf("Can't jar value #%d", i)
+		}
+	}
+
+	for i := 0; i < JARN; i++ {
+		val := database.TransactionalUnjar("record" + strconv.Itoa(i))
+		if !bytes.Equal(val, []byte("value"+strconv.Itoa(i))) {
+			t.Errorf("Value #%d doesn't match", i)
+		}
+	}
+
+	database.Close()
+	cleanTemp(dir)
+}

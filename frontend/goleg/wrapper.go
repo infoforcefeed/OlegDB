@@ -6,6 +6,7 @@ package goleg
 #include <stdlib.h>
 #include "oleg.h"
 #include "cursor.h"
+#include "transaction.h"
 */
 import "C"
 import (
@@ -287,11 +288,11 @@ func CTBegin(db *C.ol_database) *C.ol_transaction {
 	return C.olt_begin(db)
 }
 
-func CCommit(tx *C.ol_transaction) int {
+func CTCommit(tx *C.ol_transaction) int {
 	return int(C.olt_commit(tx))
 }
 
-func CAbort(tx *C.ol_transaction) int {
+func CTAbort(tx *C.ol_transaction) int {
 	return int(C.olt_abort(tx))
 }
 
@@ -333,7 +334,7 @@ func CTJar(tx *C.ol_transaction, key string, klen uintptr, value []byte, vsize u
 	cvalue := (*C.uchar)(unsafe.Pointer(&value[0]))
 
 	// Pass them to ol_jar
-	return int(C.ol_jar(tx, ckey, cklen, cvalue, cvsize))
+	return int(C.olt_jar(tx, ckey, cklen, cvalue, cvsize))
 }
 
 func CTScoop(tx *C.ol_transaction, key string, klen uintptr) int {
@@ -344,10 +345,10 @@ func CTScoop(tx *C.ol_transaction, key string, klen uintptr) int {
 	cklen := (C.size_t)(klen)
 
 	// Pass them to ol_scoop
-	return int(C.ol_scoop(tx, ckey, cklen))
+	return int(C.olt_scoop(tx, ckey, cklen))
 }
 
-func CSpoil(tx *C.ol_transaction, key string, klen uintptr, expiration time.Time) int {
+func CTSpoil(tx *C.ol_transaction, key string, klen uintptr, expiration time.Time) int {
 	// Turn parameters into their C counterparts
 	ckey := C.CString(key)
 	defer C.free(unsafe.Pointer(ckey))
@@ -365,7 +366,7 @@ func CSpoil(tx *C.ol_transaction, key string, klen uintptr, expiration time.Time
 	ctime.tm_sec = C.int(exp.Second())
 
 	// Pass them to ol_spoil
-	return int(C.ol_spoil(tx, ckey, cklen, &ctime))
+	return int(C.olt_spoil(tx, ckey, cklen, &ctime))
 
 }
 
@@ -376,5 +377,5 @@ func CTExists(tx *C.ol_transaction, key string, klen uintptr) int {
 
 	cklen := (C.size_t)(klen)
 
-	return int(C.ol_exists(tx, ckey, cklen))
+	return int(C.olt_exists(tx, ckey, cklen))
 }

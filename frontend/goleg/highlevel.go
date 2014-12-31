@@ -40,6 +40,15 @@ func (d Database) Unjar(key string) []byte {
 	return CUnjar(d.db, key, uintptr(len(key)), &dsize)
 }
 
+func (d *Database) TransactionalUnjar(key string) []byte {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	tx := CTBegin(d.db)
+	defer CTCommit(tx)
+	var dsize uintptr
+	return CTUnjar(tx, key, uintptr(len(key)), &dsize)
+}
+
 func (d Database) Jar(key string, value []byte) int {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
