@@ -68,12 +68,12 @@ int _ol_grow_and_rehash_db(ol_database *db) {
 
     /* Take care of our orphans */
     ol_log_msg(LOG_INFO, "Have %i orphans to take care of.", orphans_found);
-    do {
+    while (orphans->next != NULL) {
         ol_bucket *rebucket = mspop(&orphans);
         _ol_rehash_insert_bucket(tmp_hashes, to_alloc, rebucket);
 
         orphans_found--;
-    } while (orphans->next != NULL);
+    }
     ol_log_msg(LOG_INFO, "We now have %i orphans not accounted for.", orphans_found);
 
     free(orphans);
