@@ -171,10 +171,9 @@ int ol_close(ol_database *db){
     }
 
     /* Sync and close values file. */
-    if (db->val_size > 0) {
-        msync(db->values, db->val_size, MS_SYNC);
-        _ol_close_values(db);
-    }
+    msync(db->values, db->val_size, MS_SYNC);
+    _ol_close_values(db);
+
     db->feature_set = 0;
     free(db->meta);
     free(db->hashes);
