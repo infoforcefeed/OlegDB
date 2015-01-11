@@ -89,6 +89,13 @@ func (d Database) PrefixMatch(prefix string) (bool, []string) {
 	return len >= 0, out
 }
 
+func (d Database) DumpKeys() (bool, []string) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	len, out := CDumpKeys(d.db)
+	return len >= 0, out
+}
+
 func (d Database) First() (bool, string, []byte) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()

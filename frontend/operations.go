@@ -14,6 +14,7 @@ const (
 	OpSet         = "/post"
 	OpInfo        = "._info"
 	OpDelete      = "/delete"
+	OpAllKeys     = "_all"
 	OpCursorFirst = "_first"
 	OpCursorLast  = "_last"
 	OpCursorNext  = "._next"
@@ -103,6 +104,18 @@ func httpMatch(w http.ResponseWriter, op Operation) *HTTPError {
 	has, res := op.Database.PrefixMatch(op.Key)
 	if !has {
 		return &HTTPError{Code: 404, Message: "No matches found"}
+	}
+	w.Header().Add("X-Olegdb-Num-Matches", strconv.Itoa(len(res)))
+	content := strings.Join(res, "\n")
+	w.Header().Add("Content-Length", strconv.Itoa(len(content)))
+	fmt.Fprintf(w, content)
+	return nil
+}
+
+func httpAll(w http.ResponseWriter, op Operation) *HTTPError {
+	has, res := op.Database.DumpKeys()
+	if !has {
+		return &HTTPError{Code: 404, Message: "Could not dump keys. (Sharks om the beach?)"}
 	}
 	w.Header().Add("X-Olegdb-Num-Matches", strconv.Itoa(len(res)))
 	content := strings.Join(res, "\n")

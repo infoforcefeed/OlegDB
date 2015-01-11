@@ -52,6 +52,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		err = httpInfo(w, operation)
 	case OpDelete:
 		err = httpDelete(w, operation)
+	case OpAllKeys:
+		err = httpAll(w, operation)
 	case OpPrefixMatch:
 		err = httpMatch(w, operation)
 	case OpCursorFirst:
