@@ -264,10 +264,13 @@ void ols_close(ol_splay_tree *tree) {
 }
 
 /* Defined in oleg.h */
+int ol_key_dump(ol_database *db, ol_key_array *data) {
+    return ol_prefix_match(db, NULL, 0, data);
+}
+
+/* Defined in oleg.h */
 int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_key_array *data) {
     if (!db->is_enabled(OL_F_SPLAYTREE, &db->feature_set))
-        return -1;
-    if (!prefix)
         return -1;
     if (db->tree == NULL || db->tree->root == NULL)
         return -1;
@@ -295,7 +298,8 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_key_arr
         if (match_result == 0) {
             spush(&matches, current_node);
             imatches++;
-        } else if (saw_bigger_value && match_result > 0) {
+        } else if (prefix && saw_bigger_value && match_result > 0) {
+            /* If we have a NULL prefix we want to keep going for the entire keyspace. */
             /* We've previously seen a bigger value and now we see one 
              * again. Just quit. */
             break;

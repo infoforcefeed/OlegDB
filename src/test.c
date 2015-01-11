@@ -1030,6 +1030,21 @@ int test_can_match_prefixes(const ol_feature_flags features) {
         free(matches_list[i]);
     }
     free(matches_list);
+
+    /* Test if we can dump all keys */
+    matches_list = NULL;
+    ret = ol_key_dump(db, &matches_list);
+    if (ret != db->rcrd_cnt) {
+        ol_log_msg(LOG_ERR, "Found the wrong number of matches. Error code: %d\n", ret);
+        return 1;
+    }
+
+    for (i = 0; i < ret; i++) {
+        ol_log_msg(LOG_INFO, "Found key: %s", matches_list[i]);
+        free(matches_list[i]);
+    }
+    free(matches_list);
+
     _test_db_close(db);
     return 0;
 
