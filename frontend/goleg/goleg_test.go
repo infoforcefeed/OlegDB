@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"testing"
-	"fmt"
 )
 
 func openRandomDB(features int) (Database, string, error) {
@@ -104,8 +103,6 @@ func TestFullKeyDump(t *testing.T) {
 	if !gotKeys {
 		t.Fatal("Didn't get keys and should have")
 	}
-
-	fmt.Println(keys)
 
 	var j int
 	for i := 0; i <= JARN; i++ {
