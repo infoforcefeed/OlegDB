@@ -65,6 +65,7 @@ libinstall: $(LIB_OUT)
 	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so
 	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
 	install ./include/*.h $(INSTALL_INCLUDE)
+	ldconfig $(INSTALL_LIB)
 
 test: $(LIB_OUT) $(TEST_OUT)
 	./run_tests.sh
