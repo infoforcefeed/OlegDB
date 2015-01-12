@@ -199,6 +199,33 @@ func CPrefixMatch(db *C.ol_database, prefix string, plen uintptr) (int, []string
 	return length, out
 }
 
+func CDumpKeys(db *C.ol_database) (int, []string) {
+
+	// Call native function
+	var ptr C.ol_key_array
+	length := int(C.ol_key_dump(db, &ptr))
+	if length < 0 {
+		return length, nil
+	}
+
+	// Set array structure
+	hdr := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(ptr)),
+		Len:  length,
+		Cap:  length,
+	}
+	strSlice := *(*[]*C.char)(unsafe.Pointer(&hdr))
+	// Create GoString array
+	out := make([]string, 0)
+	for i := range strSlice {
+		out = append(out, C.GoString(strSlice[i]))
+		C.free(unsafe.Pointer(strSlice[i]))
+	}
+	// Free structure
+	C.free(unsafe.Pointer(ptr))
+	return length, out
+}
+
 func CGetBucket(db *C.ol_database, key string, klen uintptr, _key *string, _klen *uintptr) *C.ol_bucket {
 	// Turn parameters into their C counterparts
 	ckey := C.CString(key)

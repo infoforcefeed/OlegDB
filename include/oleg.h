@@ -222,6 +222,14 @@ int ol_ht_bucket_max(size_t ht_size);
  */
 int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_key_array *data);
 
+/* xXx FUNCTION=ol_key_dump xXx
+ * xXx DESCRIPTION=Like ol_prefix_match, except that it takes no prefix and just dumps the entire tree. xXx
+ * xXx RETURNS=-1 on failure and a positive integer representing the number of keys in the database. xXx
+ * xXx *db=Database to retrieve values from. xXx
+ * xXx *data=A pointer to an <code>ol_key_array</code> object where the list of keys will be stored. <strong>Both the list and it's items must be freed after use.</strong> xXx
+ */
+int ol_key_dump(ol_database *db, ol_key_array *data);
+
 /* xXx FUNCTION=ol_exists xXx
  * xXx DESCRIPTION=Returns whether the given key exists on the database xXx
  * xXx RETURNS=0 if the key exists, 1 otherwise. xXx
