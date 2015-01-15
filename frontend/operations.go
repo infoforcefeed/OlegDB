@@ -31,6 +31,7 @@ func httpGet(w http.ResponseWriter, op Operation) *HTTPError {
 
 	// Send value
 	w.Write(value)
+	w.Header().Add("Content-Length", strconv.Itoa(len(value)))
 	return nil
 }
 
