@@ -65,7 +65,13 @@ int _ol_open_values_with_fd(ol_database *db, const int fd, const size_t filesize
     /* Make sure the file is at least as big as VALUES_DEFAULT_SIZE. This
      * should only happen on init. */
     if (filesize == 0) {
-        check(posix_fallocate(fd, 0, to_mmap) == 0, "Could not allocate extents for values file.");
+        check(ftruncate(fd, to_mmap) != -1, "Could not truncate file for values.");
+        const int max = to_mmap / sizeof(unsigned char *);
+        /* Null out the stragglers */
+        int i = 0;
+        for (; i < max; i++) {
+            ((unsigned char **)db->values)[i] = NULL;
+        }
     }
 
     db->valuesfd = fd;
