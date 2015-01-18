@@ -16,9 +16,12 @@ type Config struct {
 	Listen  string `json:"listen"`
 	DataDir string `json: "datadir"`
 	// HTTPS settings
-	UseHTTPS bool   `json:"usehttps"`
-	CertFile string `json:"certfile"`
-	PkeyFile string `json:"pkeyfile"`
+	UseHTTPS         bool   `json:"usehttps"`
+	CertFile         string `json:"certfile"`
+	PkeyFile         string `json:"pkeyfile"`
+	SplayTreeEnabled bool   `json:"splaytreeenabled"`
+	LZ4Enabled       bool   `json:"lz4enabled"`
+	AOLEnabled       bool   `json:"aolenabled"`
 }
 
 var config Config
@@ -30,14 +33,20 @@ Usage: %s -config <config path> [options]
 	Config path:
 		Path to a configuration file. This is required.
 Options:
-	-bind
-		Override Listen directive in configuration.
-	-dir
-		Override db storage location in configuration.
 	-v
 		Version
 	-h
 		This help.
+	-bind
+		Override Listen directive in configuration.
+	-dir
+		Override db storage location in configuration.
+	-enable-lz4
+		Enables LZ4 compression.
+	-enable-splay-tree
+		Enables the splay tree.
+	-enable-aol
+		Enables the append-only log.
 `
 )
 
@@ -46,6 +55,9 @@ func main() {
 	directory := flag.String("dir", "", "Directory where to store dumps and data")
 	configfile := flag.String("config", "", "Config file to read settings from")
 	bindaddr := flag.String("bind", "", "Address and port to bind, host:port")
+	splaytreeenabled := flag.Bool("enable-splay-tree", false, "Enables the splay tree")
+	lz4enabled := flag.Bool("enable-lz4", false, "Enables LZ4 compression")
+	aolenabled := flag.Bool("enable-aol", false, "Enables the append-only log")
 
 	flag.Parse()
 
@@ -78,10 +90,31 @@ func main() {
 		config.Listen = *bindaddr
 	}
 
+	if *splaytreeenabled {
+		config.SplayTreeEnabled = *splaytreeenabled
+	}
+
+	if *lz4enabled {
+		config.LZ4Enabled = *lz4enabled
+	}
+
+	if *aolenabled {
+		config.AOLEnabled = *aolenabled
+	}
+
 	http.HandleFunc("/", handler)
 	defer unload()
 	var httperr error
 	log.Println("Starting server...")
+	if config.LZ4Enabled {
+		log.Println("LZ4 compression is enabled")
+	}
+	if config.AOLEnabled {
+		log.Println("Append-only log is enabled")
+	}
+	if config.SplayTreeEnabled {
+		log.Println("Splay-tree is enabled")
+	}
 	if config.UseHTTPS {
 		log.Println("Listening on https://" + config.Listen)
 		httperr = http.ListenAndServeTLS(config.Listen, config.CertFile, config.PkeyFile, nil)
