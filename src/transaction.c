@@ -114,8 +114,8 @@ static int _olt_cleanup(ol_transaction *tx, char *values_filename, char *tx_aol_
 
 int olt_commit(ol_transaction *tx) {
     /* So at this point we should have a series of operations stored up and
-     * successful in our tx->transaction_db. At this point we need to replay
-     * them all back onto the parent_db.
+     * successful in our tx->transaction_db. We need to replay them all
+     * back onto the parent_db.
      */
     check(tx->parent_db != NULL, "No parent database.");
     check(tx->parent_db->cur_transactions != NULL, "No transaction tree.");
