@@ -113,7 +113,7 @@ func main() {
 		log.Println("Append-only log is enabled")
 	}
 	if config.SplayTreeEnabled {
-		log.Println("Splay-tree log is enabled")
+		log.Println("Splay-tree is enabled")
 	}
 	if config.UseHTTPS {
 		log.Println("Listening on https://" + config.Listen)
