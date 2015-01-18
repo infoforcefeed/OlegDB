@@ -99,7 +99,7 @@ func TestFullKeyDump(t *testing.T) {
 	}
 
 	gotKeys, keys := database.DumpKeys()
-	
+
 	if !gotKeys {
 		t.Fatal("Didn't get keys and should have")
 	}

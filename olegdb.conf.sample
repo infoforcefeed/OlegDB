@@ -3,5 +3,8 @@
     "datadir": "data",
     "usehttps": false,
     "certfile": "",
-    "pkeyfile": ""
+    "pkeyfile": "",
+    "lz4enabled": true,
+    "aolenabled": true,
+    "splaytreeenabled": true
 }

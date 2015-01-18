@@ -29,7 +29,17 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	var ok bool
 	if database, ok = databases[dbname]; !ok {
 		var dberr error
-		databases[dbname], dberr = goleg.Open(config.DataDir, dbname, goleg.F_APPENDONLY|goleg.F_AOL_FFLUSH|goleg.F_LZ4|goleg.F_SPLAYTREE)
+		var flags int
+		if config.AOLEnabled {
+			flags = flags | goleg.F_APPENDONLY
+		}
+		if config.LZ4Enabled {
+			flags = flags | goleg.F_LZ4
+		}
+		if config.SplayTreeEnabled {
+			flags = flags | goleg.F_SPLAYTREE
+		}
+		databases[dbname], dberr = goleg.Open(config.DataDir, dbname, flags)
 		if dberr != nil {
 			http.Error(w, "Cannot open database", 500)
 			return
