@@ -166,6 +166,7 @@ int ol_aol_restore_from_file(ol_database *target_db,
     FILE *fd = fopen(aol_fname, "r");
     check(fd, "Error opening file");
 
+#if _XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L
     {
         const size_t fsize = _ol_get_file_size(aol_fname);
         const int _fd = fileno(fd);
@@ -176,6 +177,7 @@ int ol_aol_restore_from_file(ol_database *target_db,
         check(posix_fadvise(_fd, 0, fsize, POSIX_FADV_WILLNEED) == 0,
                 "Could not fadvise AOL file.");
     }
+#endif
 
     while (!feof(fd)) {
         command = _ol_read_data(fd);
