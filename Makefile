@@ -60,14 +60,14 @@ uninstall:
 	rm -rf $(INSTALL_LIB)liboleg*
 	rm -rf $(INSTALL_BIN)olegdb
 
-olegdb: $(BIN_DIR) $(BIN_OUT)
-$(BIN_OUT): liboleg
+olegdb: liboleg $(BIN_DIR) $(BIN_OUT)
+$(BIN_OUT):
 	go build -o $(BIN_OUT) ./frontend/
 
 install: goinstall
 
 goinstall: olegdb libinstall
-	cp $(BIN_OUT) $(INSTALL_BIN)olegdb
+	@ cp $(BIN_OUT) $(INSTALL_BIN)olegdb
 
 libinstall: liboleg
 	@mkdir -p $(INSTALL_LIB)
@@ -77,7 +77,7 @@ libinstall: liboleg
 	@ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
 	@install ./include/*.h $(INSTALL_INCLUDE)
 	@ldconfig $(INSTALL_LIB)
-	echo "OlegDB installed to $(PREFIX)."
+	@echo "OlegDB installed to $(PREFIX) :^)."
 
 test: $(LIB_OUT) $(TEST_OUT)
 	./run_tests.sh
