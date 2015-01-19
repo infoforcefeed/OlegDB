@@ -145,6 +145,19 @@ error:
     return 1;
 }
 
+int test_transaction_row_locking(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+    ol_transaction *tx = NULL;
+    char key[] = "rampant destruction";
+    unsigned char value[] = "The Churning Black Waters";
+    size_t vsize = strlen((char*)value);
+
+    check(ol_jar(db, key, strnlen(key, KEY_SIZE), value, vsize) == 0, "Could not jar key.");
+    tx = olt_begin(db);
+
+    
+}
+
 int test_cas(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     char key[] = "menopause";

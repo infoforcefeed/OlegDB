@@ -23,6 +23,9 @@ int olt_abort(ol_transaction *tx);
 /* Internal function used to find a transaction in a splay tree. */
 ol_splay_tree_node *ols_find_tx_id(ol_splay_tree *tree, const transaction_id key);
 
+/* This function will lock a record for use in only ONE transaction */
+int olt_lock_bucket(const ol_transaction *tx, ol_bucket *bucket);
+
 /* ACTUAL COMMANDS */
 /* --------------- */
 

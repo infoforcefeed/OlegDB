@@ -62,7 +62,7 @@ typedef char **ol_key_array;
 * xXx next=Collisions are resolved via linked list. This contains the pointer to the next object in the chain, or NULL. xXx
 * xXx expiration=The POSIX timestamp when this key will expire. xXx
 * xXx *node=A pointer to this objects node in the splay tree. xXx
-* xXx tx_id=If this record is a part of a transaction, then this will be a non-negative integer.
+* xXx tx_id=If this record is a part of a transaction, then this will be a non-zero integer.
 */
 typedef struct ol_bucket {
     char                key[KEY_SIZE]; /* The key used to reference the data */

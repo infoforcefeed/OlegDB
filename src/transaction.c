@@ -164,6 +164,31 @@ error:
     return 1;
 }
 
+int olt_lock_bucket(const ol_transaction *tx, ol_bucket *bucket) {
+    check(tx, "Cannot lock a bucket with a NULL transaction");
+    check(tx->parent_db != NULL, "No parent database.");
+    check(tx->parent_db->cur_transactions != NULL, "No transaction tree.");
+    check(bucket, "Cannot lock a NULL bucket");
+
+    if (bucket->tx_id != 0 && bucket->tx_id != tx->tx_id) {
+        ol_splay_tree_node *node = ols_find_tx_id(
+                tx->parent_db->cur_transactions,
+                tx->tx_id
+        );
+
+        if (node) {
+            return 2;
+        }
+    }
+
+    bucket->tx_id = tx->tx_id;
+
+    return 0;
+
+error:
+    return 1;
+}
+
 int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **data, size_t *dsize) {
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
@@ -175,8 +200,10 @@ int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **
     if (bucket == NULL) {
         bucket = ol_get_bucket(tx->parent_db, key, klen, &_key, &_klen);
         /* This is getting messy... */
-        if (bucket != NULL)
+        if (bucket != NULL) {
             operating_db = tx->parent_db;
+            check_warn(olt_lock_bucket(tx, bucket) == 0, "Could not lock bucket.");
+        }
     } else {
         operating_db = tx->transaction_db;
     }
@@ -196,7 +223,7 @@ int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **
             /* It's dead, get rid of it. */
             /* NOTE: We explicitly say the transaction_db here because ITS A
              * FUCKING TRANSACTION. ACID, bro. */
-            check(olt_scoop(tx, key, klen) == 0, "Scoop failed");
+            check(olt_scoop(tx, key, klen) == 0, "Scoop failed.");
         }
     }
 
@@ -217,6 +244,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     ol_database *db = tx->transaction_db;
 
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
+    check_warn(olt_lock_bucket(tx, bucket) == 0, "Could not lock bucket.");
     check_warn(_klen > 0, "Key length of zero not allowed.");
 
     /* Check to see if we have an existing entry with that key */
