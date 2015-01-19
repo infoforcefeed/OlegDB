@@ -73,7 +73,7 @@ typedef struct ol_bucket {
     struct ol_bucket    *next; /* The next ol_bucket in this chain, if any */
     struct tm           *expiration;
     ol_splay_tree_node  *node;
-    int                 tx_id;
+    transaction_id      tx_id;
 } ol_bucket;
 
 /* xXx STRUCT=ol_meta xXx

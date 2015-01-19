@@ -51,3 +51,7 @@
  */
 #define AOL_FILENAME "aol"
 
+/* xXx DEFINE=transaction_id xXx
+ * xXx DESCRIPTION=The type used to store transaction IDs. xXx
+ */
+#define transaction_id uint64_t

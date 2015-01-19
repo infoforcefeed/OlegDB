@@ -1,8 +1,6 @@
 #pragma once
 #include "oleg.h"
 
-#define transaction_id uint64_t
-
 typedef struct ol_transaction {
     const transaction_id tx_id;
     int dirty;
