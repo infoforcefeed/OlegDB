@@ -27,7 +27,17 @@ else
 	MATH_LINKER=-lm
 endif
 
-all: $(TEST_OUT) $(BIN_OUT)
+all: oleg_test olegdb
+
+.PHONY: $(BUILD_DIR)
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
+
+$(LIB_DIR): $(BUILD_DIR)
+	@mkdir -p $(LIB_DIR)
+
+$(BIN_DIR): $(BUILD_DIR)
+	@mkdir -p $(BIN_DIR)
 
 test.o: ./src/test.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
@@ -38,11 +48,11 @@ main.o: ./src/main.c
 %.o: ./src/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -fPIC $<
 
-oleg_test: $(TEST_OUT)
-$(TEST_OUT): $(LIB_OUT) test.o main.o
+oleg_test:  liboleg $(BIN_DIR) $(TEST_OUT)
+$(TEST_OUT): test.o main.o
 	$(CC) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(TEST_OUT) test.o main.o $(MATH_LINKER) -loleg
 
-liboleg: $(LIB_OUT)
+liboleg: $(LIB_DIR) $(LIB_OUT)
 $(LIB_OUT): murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o data.o transaction.o
 	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_OUT) $^ -fpic -shared $(MATH_LINKER)
 
@@ -50,22 +60,24 @@ uninstall:
 	rm -rf $(INSTALL_LIB)liboleg*
 	rm -rf $(INSTALL_BIN)olegdb
 
-$(BIN_OUT): $(LIB_OUT)
+olegdb: $(BIN_DIR) $(BIN_OUT)
+$(BIN_OUT): liboleg
 	go build -o $(BIN_OUT) ./frontend/
 
 install: goinstall
 
-goinstall: $(BIN_OUT) libinstall
+goinstall: olegdb libinstall
 	cp $(BIN_OUT) $(INSTALL_BIN)olegdb
 
-libinstall: $(LIB_OUT)
+libinstall: liboleg
 	@mkdir -p $(INSTALL_LIB)
 	@mkdir -p $(INSTALL_INCLUDE)
-	install $(LIB_OUT) $(INSTALL_LIB)liboleg.so.$(VERSION)
-	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so
-	ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
-	install ./include/*.h $(INSTALL_INCLUDE)
-	ldconfig $(INSTALL_LIB)
+	@install $(LIB_OUT) $(INSTALL_LIB)liboleg.so.$(VERSION)
+	@ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so
+	@ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
+	@install ./include/*.h $(INSTALL_INCLUDE)
+	@ldconfig $(INSTALL_LIB)
+	echo "OlegDB installed to $(PREFIX)."
 
 test: $(LIB_OUT) $(TEST_OUT)
 	./run_tests.sh
