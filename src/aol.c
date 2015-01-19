@@ -1,5 +1,6 @@
 #include "aol.h"
 #include "data.h"
+#include "file.h"
 #include "oleg.h"
 #include "logging.h"
 #include "errhandle.h"
@@ -164,6 +165,18 @@ int ol_aol_restore_from_file(ol_database *target_db,
 
     FILE *fd = fopen(aol_fname, "r");
     check(fd, "Error opening file");
+
+    {
+        const size_t fsize = _ol_get_file_size(aol_fname);
+        const int _fd = fileno(fd);
+        check(posix_fadvise(_fd, 0, fsize, POSIX_FADV_SEQUENTIAL) == 0,
+                "Could not fadvise AOL file.");
+        check(posix_fadvise(_fd, 0, fsize, POSIX_FADV_NOREUSE) == 0,
+                "Could not fadvise AOL file.");
+        check(posix_fadvise(_fd, 0, fsize, POSIX_FADV_WILLNEED) == 0,
+                "Could not fadvise AOL file.");
+    }
+
     while (!feof(fd)) {
         command = _ol_read_data(fd);
         check(command, "Error reading");
