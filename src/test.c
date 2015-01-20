@@ -152,10 +152,16 @@ int test_transaction_row_locking(const ol_feature_flags features) {
     unsigned char value[] = "The Churning Black Waters";
     size_t vsize = strlen((char*)value);
 
-    check(ol_jar(db, key, strnlen(key, KEY_SIZE), value, vsize) == 0, "Could not jar key.");
     tx = olt_begin(db);
+    check(tx != NULL, "Could not begin transaction.");
+    check(olt_jar(tx, key, strnlen(key, KEY_SIZE), value, vsize) == 0, "Could not jar key.");
+    check(olt_commit(tx) == 0, "Could not commit transaction.");
 
-    
+    return 0;
+
+error:
+    _test_db_close(db);
+    return 1;
 }
 
 int test_cas(const ol_feature_flags features) {
