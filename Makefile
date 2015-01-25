@@ -3,7 +3,7 @@ uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 ifndef CC
 	CC = gcc
 endif
-VERSION=0.1.5
+VERSION=0.1.6
 SOVERSION=0
 BUILD_DIR=$(shell pwd)/build/
 LIB_DIR=$(BUILD_DIR)lib/
