@@ -294,21 +294,23 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_key_arr
     int saw_bigger_value = 0;
 
     while (current_node != NULL) {
-        const int match_result = strncmp(current_node->key, prefix, plen);
-        if (match_result == 0) {
-            spush(&matches, current_node);
-            imatches++;
-        } else if (prefix && saw_bigger_value && match_result > 0) {
-            /* If we have a NULL prefix we want to keep going for the entire keyspace. */
-            /* We've previously seen a bigger value and now we see one 
-             * again. Just quit. */
-            break;
-        }
+        /* If we have a NULL prefix we want to keep going for the entire keyspace. */
+        if (prefix) {
+            const int match_result = strncmp(current_node->key, prefix, plen);
+            if (match_result == 0) {
+                spush(&matches, current_node);
+                imatches++;
+            } else if (saw_bigger_value && match_result > 0) {
+                /* We've previously seen a bigger value and now we see one
+                 * again. Just quit. */
+                break;
+            }
 
-        if (match_result > 0) {
-            /* Flip the bit that says we saw a value bigger than the prefix. We
-             * should now only recurse to the current subtree minimum. */
-            saw_bigger_value = 1;
+            if (match_result > 0) {
+                /* Flip the bit that says we saw a value bigger than the prefix. We
+                 * should now only recurse to the current subtree minimum. */
+                saw_bigger_value = 1;
+            }
         }
 
         if (!olc_step(&cursor))

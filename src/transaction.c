@@ -91,10 +91,8 @@ ol_transaction *olt_begin(ol_database *db) {
     return new_transaction;
 
 error:
-    if (new_transaction != NULL)
-        free(new_transaction);
-    if (name != NULL)
-        free(name);
+    free(new_transaction);
+    free(name);
     return NULL;
 }
 

@@ -24,14 +24,16 @@ ol_database *_test_db_open(const ol_feature_flags features) {
         ol_log_msg(LOG_ERR, "Can't create unique directory");
         return NULL;
     }
-    chmod(DB_PATH, 0755);
+    check(chmod(DB_PATH, 0755) == 0, "Could not chmod DB_PATH.");
     ol_database *db = ol_open(DB_PATH, DB_NAME, features);
-    if (db != NULL) {
+    check(db != NULL, "Could not open DB.");
+    if (db != NULL)
         ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
-    } else {
-        ol_log_msg(LOG_ERR, "Could not open database.");
-    }
+
     return db;
+
+error:
+    return NULL;
 }
 
 static int _test_db_close(ol_database *db) {
@@ -619,7 +621,7 @@ int _test_aol(const ol_feature_flags features, ol_database **db) {
         return 4;
     }
 
-    char DB_PATH[DB_NAME_SIZE] = {0};
+    char DB_PATH[DB_NAME_SIZE + 1] = {0};
     strncpy(DB_PATH, (*db)->path, DB_NAME_SIZE);
 
     /* We don't want to use test_db_close here because we want to retrieve
@@ -663,7 +665,7 @@ int test_aol_and_compaction(const ol_feature_flags features) {
     ol_log_msg(LOG_INFO, "Squishing database.");
     ol_squish(db);
 
-    char DB_PATH[DB_NAME_SIZE] = {0};
+    char DB_PATH[DB_NAME_SIZE + 1] = {0};
     strncpy(DB_PATH, db->path, DB_NAME_SIZE);
 
     ol_close(db);
@@ -861,6 +863,7 @@ int test_can_get_next_in_tree(const ol_feature_flags features) {
 
         const int ret = olc_get(&cursor, &r_key, &r_val, &r_vsize);
         check(ret == 0, "Could not retrieve key and value from cursor.");
+        free(r_val);
 
         found++;
     }
