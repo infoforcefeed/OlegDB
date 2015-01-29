@@ -295,12 +295,13 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_key_arr
 
     while (current_node != NULL) {
         /* If we have a NULL prefix we want to keep going for the entire keyspace. */
+        const int match_result = strncmp(current_node->key, prefix, plen);
+        if (match_result == 0) {
+            spush(&matches, current_node);
+            imatches++;
+        }
         if (prefix) {
-            const int match_result = strncmp(current_node->key, prefix, plen);
-            if (match_result == 0) {
-                spush(&matches, current_node);
-                imatches++;
-            } else if (saw_bigger_value && match_result > 0) {
+            if (saw_bigger_value && match_result > 0) {
                 /* We've previously seen a bigger value and now we see one
                  * again. Just quit. */
                 break;
