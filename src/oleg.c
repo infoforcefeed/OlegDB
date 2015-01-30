@@ -22,6 +22,7 @@
 #include "utils.h"
 #include "lz4.h"
 #include "transaction.h"
+#include "stack.h"
 
 inline int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
@@ -462,6 +463,11 @@ int ol_squish(ol_database *db) {
 
 error:
     return 1;
+}
+
+ol_stack *ol_bulk_unjar(ol_database *db, const ol_key_array *keys) {
+    check(db != NULL, "Cannot unjar on NULL database.");
+    return NULL;
 }
 
 struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
