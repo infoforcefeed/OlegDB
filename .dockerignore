@@ -1,0 +1,7 @@
+*.swo
+*.swp
+olegdb
+*.o
+*.dump
+data
+.git
