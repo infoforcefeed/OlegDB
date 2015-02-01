@@ -74,7 +74,7 @@ int _ol_grow_and_rehash_db(ol_database *db) {
         _ol_rehash_insert_bucket(tmp_hashes, to_alloc, (*rebucket));
     }
 
-    vector_free(orphans);;
+    vector_free(orphans);
     free(db->hashes);
 
     db->hashes = tmp_hashes;
