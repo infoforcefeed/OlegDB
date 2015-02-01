@@ -1083,6 +1083,7 @@ void run_tests(int results[2]) {
     ol_run_test(test_aol);
     ol_run_test(test_lz4);
     ol_run_test(test_magic_string_compression);
+    ol_run_test(test_sizet_to_a);
     ol_run_test(test_can_find_all_nodes);
     ol_run_test(test_can_get_next_in_tree);
     ol_run_test(test_can_get_prev_in_tree);

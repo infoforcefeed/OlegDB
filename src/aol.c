@@ -159,7 +159,8 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
         }
 
         strcat(write_buf, "\n");
-        check(fwrite(write_buf, write_buf_size, 1, db->aolfd) > 0, "Could not write to AOL file.");
+        ret = fwrite(write_buf, write_buf_size, 1, db->aolfd);
+        check(ret > -1, "Could not write to AOL file.");
     } else if (strncmp(cmd, "SCOOP", 5) == 0) {
         ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s\n",
                 strlen(cmd), cmd,
@@ -185,8 +186,8 @@ error:
     return -1;
 }
 
-ol_string *_ol_read_data(FILE *fd) {
-    ol_string *data = calloc(1, sizeof(ol_string));
+ol_string _ol_read_data(FILE *fd) {
+    ol_string data = {0};
 
     int c = fgetc(fd);
     if (c == ':'){
@@ -201,68 +202,63 @@ ol_string *_ol_read_data(FILE *fd) {
         buf[i + 1] = '\0';
         l = (size_t)strtol(buf, NULL, 10);
         const size_t total_size = l+1;
-        data->data = calloc(1, total_size);
-        check(fread(data->data, l, 1, fd) == 1, "Could not read from AOL file.");
-        data->data[l] = '\0';
-        data->dlen = l; /* Don't use total_size here because it's an off-by-1. */
-        return data;
+        data.data = calloc(1, total_size);
+        check(fread(data.data, l, 1, fd) == 1, "Could not read from AOL file.");
+        data.data[l] = '\0';
+        data.dlen = l; /* Don't use total_size here because it's an off-by-1. */
     } else if (c == EOF) {
-        data->dlen = 0;
-        data->data = NULL;
-        return data; /* A NULL ol_string means EOF was reached */
+        data.dlen = 0;
+        data.data = NULL;
     }
 
-    free(data);
-    return NULL;
+    return data;
 
 error:
-    ol_string_free(&data);
-    return NULL;
+    free(data.data);
+    return data;
 }
 
 int ol_aol_restore_from_file(ol_database *target_db,
         const char aol_fname[AOL_FILENAME_ALLOC],
         const unsigned char *values_data) {
-    ol_string *command = NULL,
-              *key = NULL,
-              *value = NULL,
-              *ct = NULL,
-              *read_data_size = NULL,
-              *read_org_size = NULL;
+
+    ol_string command = {0},
+              key = {0},
+              ct = {0},
+              read_org_size = {0},
+              read_data_size = {0},
+              value = {0};
 
     FILE *fd = fopen(aol_fname, "r");
     check(fd, "Error opening file");
 
     while (!feof(fd)) {
         command = _ol_read_data(fd);
-        check(command, "Error reading");
 
         /* Kind of a hack to check for EOF. If the struct is blank, then we
          * read past EOF in _ol_read_data. feof is rarely useful I guess... */
-        if (command->data == NULL) {
-            free(command);
+        if (command.data == NULL)
             break;
-        }
 
         key = _ol_read_data(fd);
-        check(key, "Error reading"); /* Everything needs a key */
+        check(key.data, "Error reading"); /* Everything needs a key */
 
-        if (strncmp(command->data, "JAR", 3) == 0) {
+        if (strncmp(command.data, "JAR", 3) == 0) {
             ct = _ol_read_data(fd);
-            check(ct, "Error reading");
+            check(ct.data, "Error reading");
 
             read_org_size = _ol_read_data(fd);
-            check(read_org_size, "Error reading");
+            check(read_org_size.data, "Error reading");
 
             read_data_size = _ol_read_data(fd);
-            check(read_data_size, "Error reading");
+            check(read_data_size.data, "Error reading");
 
             value = _ol_read_data(fd);
-            check(value, "Error reading");
+            check(value.data, "Error reading");
 
-            size_t original_size = (size_t)strtol(read_org_size->data, NULL, 10);
-            size_t compressed_size = (size_t)strtol(read_data_size->data, NULL, 10);
-            size_t data_offset = (size_t)strtol(value->data, NULL, 10);
+            size_t original_size = (size_t)strtol(read_org_size.data, NULL, 10);
+            size_t compressed_size = (size_t)strtol(read_data_size.data, NULL, 10);
+            size_t data_offset = (size_t)strtol(value.data, NULL, 10);
 
             /* Pointer in the values file to where the data for this command
              * should be. */
@@ -294,12 +290,12 @@ int ol_aol_restore_from_file(ol_database *target_db,
                 int processed = LZ4_decompress_fast((const char*)data_ptr, (char *)tmp_data, original_size);
 
                 if (processed == compressed_size) {
-                    ol_jar(target_db, key->data, key->dlen, (unsigned char*)tmp_data, original_size);
+                    ol_jar(target_db, key.data, key.dlen, (unsigned char*)tmp_data, original_size);
                 } else {
                     if (original_size != compressed_size)
                         ol_log_msg(LOG_WARN, "Could not decompress data that is probably compressed. Data may have been deleted.");
                     /* Now that we've tried to decompress and failed, send off the raw data instead. */
-                    ol_jar(target_db, key->data, key->dlen, data_ptr, compressed_size);
+                    ol_jar(target_db, key.data, key.dlen, data_ptr, compressed_size);
                 }
             }
 #ifdef DEBUG
@@ -323,22 +319,21 @@ int ol_aol_restore_from_file(ol_database *target_db,
              * bug?
              */
 
-            ol_string_free(&read_org_size);
-            ol_string_free(&read_data_size);
-            ol_string_free(&ct);
-            ol_string_free(&value);
-        } else if (strncmp(command->data, "SCOOP", 5) == 0) {
-            ol_scoop(target_db, key->data, key->dlen);
-        } else if (strncmp(command->data, "SPOIL", 5) == 0) {
-            ol_string *spoil = _ol_read_data(fd);
-            check(spoil != NULL, "Could not read the rest of SPOIL command for AOL.");
+            free(read_org_size.data);
+            free(read_data_size.data);
+            free(ct.data);
+            free(value.data);
+        } else if (strncmp(command.data, "SCOOP", 5) == 0) {
+            ol_scoop(target_db, key.data, key.dlen);
+        } else if (strncmp(command.data, "SPOIL", 5) == 0) {
+            ol_string spoil = _ol_read_data(fd);
+            check(spoil.data, "Could not read the rest of SPOIL command for AOL.");
 
             struct tm time = {0};
-            _deserialize_time(&time, spoil->data);
+            _deserialize_time(&time, spoil.data);
 
-            check(spoil, "Error reading");
-            ol_spoil(target_db, key->data, key->dlen, &time);
-            ol_string_free(&spoil);
+            ol_spoil(target_db, key.data, key.dlen, &time);
+            free(spoil.data);
         }
 
         /* Strip the newline char after each "record" */
@@ -346,8 +341,8 @@ int ol_aol_restore_from_file(ol_database *target_db,
         check(fread(&c, 1, 1, fd) != 0, "Error reading");
         check(c == '\n', "Could not strip newline");
 
-        ol_string_free(&command);
-        ol_string_free(&key);
+        free(command.data);
+        free(key.data);
     }
     fclose(fd);
     return 0;
@@ -356,12 +351,12 @@ error:
     ol_log_msg(LOG_ERR, "Restore failed. Corrupt AOL?");
 
     /* Free all the stuff */
-    ol_string_free(&command);
-    ol_string_free(&key);
-    ol_string_free(&value);
-    ol_string_free(&ct);
-    ol_string_free(&read_org_size);
-    ol_string_free(&read_data_size);
+    free(command.data);
+    free(key.data);
+    free(value.data);
+    free(ct.data);
+    free(read_org_size.data);
+    free(read_data_size.data);
     if (fd != NULL) {
         fclose(fd);
     }
