@@ -20,14 +20,8 @@ static inline void _ol_rehash_insert_bucket(
     new_index = _ol_calc_idx(to_alloc, hash);
     if (tmp_hashes[new_index] != NULL) {
         /* Enforce that this is the last bucket, KILL THE ORPHANS */
-        ol_bucket *old_bucket = tmp_hashes[new_index];
-        /* Since we're using consistent hashing, we won't actually need to
-         * move a lot of the buckets around.
-         */
-        if (old_bucket != bucket) {
-            ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(old_bucket);
-            last_bucket->next = bucket;
-        }
+        ol_bucket *last_bucket = _ol_get_last_bucket_in_slot(tmp_hashes[new_index]);
+        last_bucket->next = bucket;
     } else {
         tmp_hashes[new_index] = bucket;
     }
