@@ -5,7 +5,7 @@
 #include "utils.h"
 #include "errhandle.h"
 #include "logging.h"
-#include "stack.h"
+#include "vector.h"
 #include "murmur3.h"
 
 static inline void _ol_rehash_insert_bucket(
@@ -43,12 +43,9 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     tmp_hashes = calloc(1, to_alloc);
     check_mem(tmp_hashes);
 
-    ol_mstack *orphans = NULL;
-    orphans = malloc(sizeof(ol_mstack));
+    vector *orphans = NULL;
+    orphans = vector_new(sizeof(ol_bucket *), 256);
     check_mem(orphans);
-    orphans->next = NULL;
-    orphans->data = NULL;
-    int orphans_found = 0;
 
     int iterations = ol_ht_bucket_max(db->cur_ht_size);
     for (i = 0; i < iterations; i++) {
@@ -57,13 +54,11 @@ int _ol_grow_and_rehash_db(ol_database *db) {
             if (bucket->next != NULL) {
                 ol_bucket *tmp_bucket = bucket;
                 do {
-                    mspush(&orphans, tmp_bucket->next);
+                    vector_append_ptr(orphans, tmp_bucket->next);
 
                     ol_bucket *next = tmp_bucket->next;
                     tmp_bucket->next = NULL;
                     tmp_bucket = next;
-
-                    orphans_found++;
                 } while (tmp_bucket->next != NULL);
             }
             /* Rehash the bucket itself. */
@@ -72,17 +67,16 @@ int _ol_grow_and_rehash_db(ol_database *db) {
     }
 
     /* Take care of our orphans */
-    ol_log_msg(LOG_INFO, "Have %i orphans to take care of.", orphans_found);
-    while (orphans->next != NULL) {
-        ol_bucket *rebucket = mspop(&orphans);
-        _ol_rehash_insert_bucket(tmp_hashes, to_alloc, rebucket);
-
-        orphans_found--;
+    ol_log_msg(LOG_INFO, "Have %i orphans to take care of.", orphans->count);
+    unsigned int j;
+    for (j = 0; j < orphans->count; j++) {
+        ol_bucket **rebucket = vector_get_danger(orphans, j);
+        _ol_rehash_insert_bucket(tmp_hashes, to_alloc, (*rebucket));
     }
-    ol_log_msg(LOG_INFO, "We now have %i orphans not accounted for.", orphans_found);
 
-    free(orphans);
+    vector_free(orphans);;
     free(db->hashes);
+
     db->hashes = tmp_hashes;
     db->cur_ht_size = to_alloc;
     debug("Current hash table size is now: %zu bytes.", to_alloc);
