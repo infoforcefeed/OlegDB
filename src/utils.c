@@ -50,11 +50,20 @@ void _ol_free_bucket(ol_bucket **ptr) {
     *ptr = NULL;
 }
 
-int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
-    int index;
-    /* Powers of two, baby! */
-    index = hash & (ol_ht_bucket_max(ht_size) - 1);
-    return index;
+/* Implementation of Google's Jump Consistent Hashing algo */
+static inline int jump_hash(uint64_t key, int num_buckets) {
+    int64_t b = -1, j = 0;
+    double shifted = (double)(1LL << 31);
+    while (j < num_buckets) {
+        b = j;
+        key = key * 2862933555777941757ULL + 1;
+        j = (b + 1) * (shifted / (double)((key >> 33) + 1));
+    }
+    return b;
+}
+
+inline int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
+    return jump_hash(hash, ol_ht_bucket_max(ht_size));
 }
 
 const int _ol_compute_padded_size(const int size) {
