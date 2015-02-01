@@ -36,3 +36,5 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash);
 int _has_bucket_expired(const ol_bucket *bucket);
 
 void _ol_trunc(const char *key, size_t klen, char *out);
+
+void sizet_to_a(const size_t src, const size_t dest_len, char *dest);

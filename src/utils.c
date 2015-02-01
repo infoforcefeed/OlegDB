@@ -205,3 +205,13 @@ int _ol_get_value_from_bucket(const ol_database *db, const ol_bucket *bucket,
 error:
     return 1;
 }
+
+static const char lookup[] = "0123456789";
+inline void sizet_to_a(const size_t src, const size_t dest_len, char *dest) {
+    size_t copy = src;
+    uint i;
+    for (i = dest_len; i > 0; i--) {
+        dest[(i - 1)] = lookup[copy % 10];
+        copy /= 10;
+    }
+}
