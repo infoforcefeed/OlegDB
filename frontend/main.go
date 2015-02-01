@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 )
 
 type Config struct {
@@ -58,6 +59,14 @@ func main() {
 	splaytreeenabled := flag.Bool("enable-splay-tree", false, "Enables the splay tree")
 	lz4enabled := flag.Bool("enable-lz4", false, "Enables LZ4 compression")
 	aolenabled := flag.Bool("enable-aol", false, "Enables the append-only log")
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt)
+	go func() {
+		<- signals
+		unload()
+		os.Exit(0)
+	}()
 
 	flag.Parse()
 
@@ -129,6 +138,8 @@ func main() {
 
 func unload() {
 	for v := range databases {
+		log.Println("Closing " + v + "...")
 		databases[v].Close()
+		log.Println(v + " closed.")
 	}
 }
