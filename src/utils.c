@@ -50,7 +50,7 @@ void _ol_free_bucket(ol_bucket **ptr) {
     *ptr = NULL;
 }
 
-int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
+inline int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
     int index;
     /* Powers of two, baby! */
     index = hash & (ol_ht_bucket_max(ht_size) - 1);
@@ -195,4 +195,15 @@ int _ol_get_value_from_bucket(const ol_database *db, const ol_bucket *bucket,
 
 error:
     return 1;
+}
+
+static const char lookup[] = "0123456789";
+inline void sizet_to_a(const size_t src, const size_t dest_len, char dest[static MAX_SIZE_T_STR_SIZE]) {
+    size_t copy = src;
+    dest[dest_len] = '\0';
+    uint i;
+    for (i = dest_len; i > 0; i--) {
+        dest[(i - 1)] = lookup[copy % 10];
+        copy /= 10;
+    }
 }

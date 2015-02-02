@@ -6,6 +6,7 @@
 #include "errhandle.h"
 #include "file.h"
 #include "logging.h"
+#include "utils.h"
 #include "oleg.h"
 #include "test.h"
 #include "tree.h"
@@ -123,6 +124,19 @@ int test_zero_length_keys(const ol_feature_flags features) {
 error:
     olt_abort(tx);
     _test_db_close(db);
+    return 1;
+}
+
+int test_sizet_to_a(const ol_feature_flags features) {
+    const size_t test_num = 123456;
+    char buf[intlen(test_num)];
+    check(memset(buf, '\0', intlen(test_num)) == buf, "Could not memset buf.");
+
+    sizet_to_a(test_num, intlen(test_num), buf);
+    check(strncmp("123456", buf, intlen(test_num)) == 0, "Numbers were not the same.");
+
+    return 0;
+error:
     return 1;
 }
 
