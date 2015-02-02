@@ -86,79 +86,79 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
         memset(write_buf, '\0', write_buf_size);
 
         /* CMD */
-        strcpy(write_buf, ":3:JAR");
+        strncpy(write_buf, ":3:JAR", write_buf_size);
 
         /* Key length */
         {
-            strcat(write_buf, ":");
+            strncat(write_buf, ":", write_buf_size);
             char klen_buf[MAX_SIZE_T_STR_SIZE];
             sizet_to_a(bct->klen, uintlen(bct->klen), klen_buf);
-            strcat(write_buf, klen_buf);
+            strncat(write_buf, klen_buf, write_buf_size);
         }
 
         /* Key */
-        strcat(write_buf, ":");
-        strcat(write_buf, bct->key);
+        strncat(write_buf, ":", write_buf_size);
+        strncat(write_buf, bct->key, write_buf_size);
 
         /* Deprecated content type shit */
-        strcat(write_buf, ":1: ");
+        strncat(write_buf, ":1: ", write_buf_size);
 
         /* Original size size */
         {
-            strcat(write_buf, ":");
+            strncat(write_buf, ":", write_buf_size);
             size_t osize_len_len = uintlen(uintlen(bct->original_size));
             char osize_len_buf[MAX_SIZE_T_STR_SIZE];
             osize_len_buf[osize_len_len] = '\0';
             sizet_to_a(uintlen(bct->original_size), osize_len_len, osize_len_buf);
-            strcat(write_buf, osize_len_buf);
+            strncat(write_buf, osize_len_buf, write_buf_size);
         }
 
         /* Original size */
         {
-            strcat(write_buf, ":");
+            strncat(write_buf, ":", write_buf_size);
             size_t osize_len = uintlen(bct->original_size);
             char osize_buf[MAX_SIZE_T_STR_SIZE];
             sizet_to_a(bct->original_size, osize_len, osize_buf);
-            strcat(write_buf, osize_buf);
+            strncat(write_buf, osize_buf, write_buf_size);
         }
 
         /* Data size size */
         {
-            strcat(write_buf, ":");
+            strncat(write_buf, ":", write_buf_size);
             size_t dsize_len_len = uintlen(uintlen(bct->data_size));
             char dsize_len_buf[MAX_SIZE_T_STR_SIZE];
             sizet_to_a(uintlen(bct->data_size), dsize_len_len, dsize_len_buf);
-            strcat(write_buf, dsize_len_buf);
+            strncat(write_buf, dsize_len_buf, write_buf_size);
         }
 
         /* Data size */
         {
-            strcat(write_buf, ":");
+            strncat(write_buf, ":", write_buf_size);
             size_t dsize_len = uintlen(bct->data_size);
             char dsize_len_buf[MAX_SIZE_T_STR_SIZE];
             sizet_to_a(bct->data_size, dsize_len, dsize_len_buf);
-            strcat(write_buf, dsize_len_buf);
+            strncat(write_buf, dsize_len_buf, write_buf_size);
         }
 
         /* Data offset size */
         {
-            strcat(write_buf, ":");
+            strncat(write_buf, ":", write_buf_size);
             size_t doff_len_len = uintlen(uintlen(bct->data_offset));
             char doff_len_buf[MAX_SIZE_T_STR_SIZE];
             sizet_to_a(uintlen(bct->data_offset), doff_len_len, doff_len_buf);
-            strcat(write_buf, doff_len_buf);
+            strncat(write_buf, doff_len_buf, write_buf_size);
         }
 
         /* Data offset */
         {
-            strcat(write_buf, ":");
+            strncat(write_buf, ":", write_buf_size);
             size_t doff_len = uintlen(bct->data_offset);
             char doff_len_buf[MAX_SIZE_T_STR_SIZE];
             sizet_to_a(bct->data_offset, doff_len, doff_len_buf);
-            strcat(write_buf, doff_len_buf);
+            strncat(write_buf, doff_len_buf, write_buf_size);
         }
 
-        strcat(write_buf, "\n");
+        strncat(write_buf, "\n", write_buf_size);
         ret = fwrite(write_buf, write_buf_size, 1, db->aolfd);
         check(ret > -1, "Could not write to AOL file.");
     } else if (strncmp(cmd, "SCOOP", 5) == 0) {
