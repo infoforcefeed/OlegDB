@@ -37,8 +37,6 @@ Currently builds are tested against gcc and clang.
 ```bash
 # Building everything:
 make
-# Just the golang frontend:
-make server
 # Just the C library:
 make liboleg
 # Make and run tests:
