@@ -126,7 +126,8 @@ error:
     return NULL;
 }
 
-int ol_close(ol_database *db){
+
+static inline int _ol_close_common(ol_database *db) {
     debug("Closing \"%s\" database.", db->name);
 
     /* TODO: Commit/abort transactions here. */
@@ -162,29 +163,47 @@ int ol_close(ol_database *db){
         db->tree = NULL;
     }
 
-    if (db->aolfd) {
-        debug("Force flushing files");
-        fflush(db->aolfd);
-        flock(fileno(db->aolfd), LOCK_UN);
-        fclose(db->aolfd);
-        debug("Files flushed to disk");
-    }
+    return 0;
 
-    /* Sync and close values file. */
-    msync(db->values, db->val_size, MS_SYNC);
+error:
+    return 1;
+}
+
+static inline void _ol_close_final(ol_database *db) {
+    fclose(db->aolfd);
     _ol_close_values(db);
 
     db->feature_set = 0;
     free(db->meta);
     free(db->hashes);
-    memset(db, '\0', sizeof(ol_database));
+    memset(db, 0, sizeof(ol_database));
     free(db);
 
     debug("Database closed. Remember to drink your coffee.");
-    return 0;
+}
 
-error:
-    return 1;
+int ol_close(ol_database *db) {
+    int rc = _ol_close_common(db);
+
+    if (db->aolfd) {
+        debug("Force flushing files");
+        fflush(db->aolfd);
+        debug("Files flushed to disk");
+        flock(fileno(db->aolfd), LOCK_UN);
+    }
+
+    /* Sync and close values file. */
+    msync(db->values, db->val_size, MS_SYNC);
+
+    _ol_close_final(db);
+
+    return rc;
+}
+
+int ol_close_fast(ol_database *db) {
+    int rc = _ol_close_common(db);
+    _ol_close_final(db);
+    return rc;
 }
 
 int ol_exists(ol_database *db, const char *key, size_t klen) {

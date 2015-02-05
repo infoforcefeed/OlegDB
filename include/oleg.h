@@ -148,6 +148,13 @@ ol_database *ol_open(const char *path, const char *name, int features);
  */
 int ol_close(ol_database *database);
 
+/* xXx FUNCTION=ol_close_fast xXx
+ * xXx DESCRIPTION=Closes a database without syncing the AOL or Values file. Intended to be used for transaction that did nothing. xXx
+ * xXx RETURNS=0 on success, 1 if not everything could be freed. xXx
+ * xXx *database=The database to close. xXx
+ */
+int ol_close_fast(ol_database *database);
+
 /* xXx FUNCTION=ol_unjar xXx
  * xXx DESCRIPTION=This function retrieves a value from the database. <strong>data must be freed after calling this function!</strong> It also writes the size of the data to <code>dsize</code>. Pass dsize as NULL if you don't care. xXx
  * xXx RETURNS=0 on success, 1 on failure or if the key was not found.

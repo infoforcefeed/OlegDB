@@ -161,6 +161,27 @@ error:
     return 1;
 }
 
+int test_basic_transaction_abort(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+    ol_transaction *tx = NULL;
+    char key[] = "hexagonal vacancy";
+    unsigned char value[] = "suspicious characters";
+    size_t vsize = strlen((char*)value);
+
+    check(ol_jar(db, key, strnlen(key, KEY_SIZE), value, vsize) == 0, "Could not jar key.");
+    tx = olt_begin(db);
+
+    check(tx != NULL, "Could not begin transaction.");
+    check(olt_abort(tx) == 0, "Could not commit transaction.");
+
+    _test_db_close(db);
+    return 0;
+error:
+    olt_abort(tx);
+    _test_db_close(db);
+    return 1;
+}
+
 int test_cas(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     char key[] = "menopause";
@@ -1077,6 +1098,7 @@ void run_tests(int results[2]) {
      * or disabled. */
     const ol_feature_flags feature_set = DB_DEFAULT_FEATURES;
     ol_run_test(test_basic_transaction);
+    ol_run_test(test_basic_transaction_abort);
     ol_run_test(test_can_jump_cursor);
     ol_run_test(test_unjar_msgpack);
     ol_run_test(test_aol_and_compaction);
