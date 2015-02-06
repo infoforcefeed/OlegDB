@@ -6,6 +6,7 @@
 #include "errhandle.h"
 #include "file.h"
 #include "logging.h"
+#include "utils.h"
 #include "oleg.h"
 #include "test.h"
 #include "tree.h"
@@ -24,14 +25,16 @@ ol_database *_test_db_open(const ol_feature_flags features) {
         ol_log_msg(LOG_ERR, "Can't create unique directory");
         return NULL;
     }
-    chmod(DB_PATH, 0755);
+    check(chmod(DB_PATH, 0755) == 0, "Could not chmod DB_PATH.");
     ol_database *db = ol_open(DB_PATH, DB_NAME, features);
-    if (db != NULL) {
+    check(db != NULL, "Could not open DB.");
+    if (db != NULL)
         ol_log_msg(LOG_INFO, "Opened DB: %p.", db);
-    } else {
-        ol_log_msg(LOG_ERR, "Could not open database.");
-    }
+
     return db;
+
+error:
+    return NULL;
 }
 
 static int _test_db_close(ol_database *db) {
@@ -121,6 +124,19 @@ int test_zero_length_keys(const ol_feature_flags features) {
 error:
     olt_abort(tx);
     _test_db_close(db);
+    return 1;
+}
+
+int test_sizet_to_a(const ol_feature_flags features) {
+    const size_t test_num = 123456;
+    char buf[intlen(test_num)];
+    check(memset(buf, '\0', intlen(test_num)) == buf, "Could not memset buf.");
+
+    sizet_to_a(test_num, intlen(test_num), buf);
+    check(strncmp("123456", buf, intlen(test_num)) == 0, "Numbers were not the same.");
+
+    return 0;
+error:
     return 1;
 }
 
@@ -638,7 +654,7 @@ int _test_aol(const ol_feature_flags features, ol_database **db) {
         return 4;
     }
 
-    char DB_PATH[DB_NAME_SIZE] = {0};
+    char DB_PATH[DB_NAME_SIZE + 1] = {0};
     strncpy(DB_PATH, (*db)->path, DB_NAME_SIZE);
 
     /* We don't want to use test_db_close here because we want to retrieve
@@ -682,7 +698,7 @@ int test_aol_and_compaction(const ol_feature_flags features) {
     ol_log_msg(LOG_INFO, "Squishing database.");
     ol_squish(db);
 
-    char DB_PATH[DB_NAME_SIZE] = {0};
+    char DB_PATH[DB_NAME_SIZE + 1] = {0};
     strncpy(DB_PATH, db->path, DB_NAME_SIZE);
 
     ol_close(db);
@@ -880,6 +896,7 @@ int test_can_get_next_in_tree(const ol_feature_flags features) {
 
         const int ret = olc_get(&cursor, &r_key, &r_val, &r_vsize);
         check(ret == 0, "Could not retrieve key and value from cursor.");
+        free(r_val);
 
         found++;
     }

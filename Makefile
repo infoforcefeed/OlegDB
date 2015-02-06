@@ -3,7 +3,7 @@ uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 ifndef CC
 	CC = gcc
 endif
-VERSION=0.1.5
+VERSION=0.1.6
 SOVERSION=0
 BUILD_DIR=$(shell pwd)/build/
 LIB_DIR=$(BUILD_DIR)lib/
@@ -53,7 +53,7 @@ $(TEST_OUT): test.o main.o
 	$(CC) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(TEST_OUT) test.o main.o $(MATH_LINKER) -loleg
 
 liboleg: $(LIB_DIR) $(LIB_OUT)
-$(LIB_OUT): murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o data.o transaction.o
+$(LIB_OUT): vector.o murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o transaction.o
 	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_OUT) $^ -fpic -shared $(MATH_LINKER)
 
 uninstall:

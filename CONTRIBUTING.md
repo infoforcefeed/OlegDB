@@ -60,7 +60,7 @@ Code Review
 
 All code should be code-reviewed by at least one other person before being
 merged into master. Master is considered stable and should always pass tests.
-Ping [@qpfiffer](github.com/qpfiffer) for quick commentary.
+Ping [@qpfiffer](https://github.com/qpfiffer) for quick commentary.
 
 Documentation
 -------------

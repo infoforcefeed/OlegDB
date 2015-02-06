@@ -179,7 +179,6 @@ int ol_close(ol_database *db){
     free(db->hashes);
     memset(db, '\0', sizeof(ol_database));
     free(db);
-    db = NULL;
 
     debug("Database closed. Remember to drink your coffee.");
     return 0;
