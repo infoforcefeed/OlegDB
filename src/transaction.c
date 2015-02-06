@@ -164,10 +164,16 @@ error:
 
 int olt_lock_bucket(const ol_transaction *tx, ol_bucket *bucket) {
     check(tx, "Cannot lock a bucket with a NULL transaction");
-    check(tx->parent_db != NULL, "No parent database.");
-    check(tx->parent_db->cur_transactions != NULL, "No transaction tree.");
     check(bucket, "Cannot lock a NULL bucket");
 
+
+    /* If we don't have a parent DB there are no transactions we are
+     * competing against. Just succeed.
+     */
+    if (!tx->parent_db)
+        return 0;
+
+    check(tx->parent_db->cur_transactions, "No transaction tree.");
     if (bucket->tx_id != 0 && bucket->tx_id != tx->tx_id) {
         ol_splay_tree_node *node = ols_find_tx_id(
                 tx->parent_db->cur_transactions,
@@ -242,11 +248,11 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     ol_database *db = tx->transaction_db;
 
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check_warn(olt_lock_bucket(tx, bucket) == 0, "Could not lock bucket.");
     check_warn(_klen > 0, "Key length of zero not allowed.");
 
     /* Check to see if we have an existing entry with that key */
     if (bucket != NULL) {
+        check_warn(olt_lock_bucket(tx, bucket) == 0, "Could not lock bucket.");
         return _ol_reallocate_bucket(db, bucket, value, vsize);
     }
 
@@ -254,6 +260,9 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     ol_bucket *new_bucket = calloc(1, sizeof(ol_bucket));
     if (new_bucket == NULL)
         return 1;
+
+    /* Lock the new bucket right off the bat. */
+    check_warn(olt_lock_bucket(tx, new_bucket) == 0, "Could not lock bucket.");
 
     /* copy _key into new bucket */
     if (strncpy(new_bucket->key, _key, _klen) != new_bucket->key) {
