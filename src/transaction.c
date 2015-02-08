@@ -96,9 +96,8 @@ error:
     return NULL;
 }
 
-static int _olt_cleanup(ol_transaction *tx, char *values_filename, char *tx_aol_filename) {
+static void _olt_cleanup_common(ol_transaction *tx, char *values_filename, char *tx_aol_filename) {
     /* Yeah, come at me. */
-    const int ret = ol_close(tx->transaction_db);
     debug("Unlinking values file for transaction, %s", values_filename);
     unlink(values_filename);
 
@@ -106,7 +105,17 @@ static int _olt_cleanup(ol_transaction *tx, char *values_filename, char *tx_aol_
     unlink(tx_aol_filename);
 
     free(tx);
+}
 
+static int _olt_cleanup_fast(ol_transaction *tx, char *values_filename, char *tx_aol_filename) {
+    const int ret = ol_close_fast(tx->transaction_db);
+    _olt_cleanup_common(tx, values_filename, tx_aol_filename);
+    return ret;
+}
+
+static int _olt_cleanup(ol_transaction *tx, char *values_filename, char *tx_aol_filename) {
+    const int ret = ol_close(tx->transaction_db);
+    _olt_cleanup_common(tx, values_filename, tx_aol_filename);
     return ret;
 }
 
@@ -156,7 +165,7 @@ int olt_abort(ol_transaction *tx) {
     char values_filename[DB_NAME_SIZE] = {0};
     tx->transaction_db->get_db_file_name(tx->transaction_db, VALUES_FILENAME, values_filename);
 
-    return _olt_cleanup(tx, values_filename, tx_aol_filename);
+    return _olt_cleanup_fast(tx, values_filename, tx_aol_filename);
 
 error:
     return 1;

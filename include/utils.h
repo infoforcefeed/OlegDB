@@ -5,6 +5,7 @@
 /* Utility functions that don't have a home. */
 
 #define intlen(value) (value == 0 ? 1 : (int)(floor(log10(value)))+1)
+#define uintlen(value) (value == 0 ? 1 : (unsigned int)(floor(log10(value)))+1)
 
 /* Internal function used to get the last bucket on the
  * linked list of ol_bucket objects in a db slot. */
@@ -36,3 +37,9 @@ int _ol_set_bucket(ol_database *db, ol_bucket *bucket, uint32_t hash);
 int _has_bucket_expired(const ol_bucket *bucket);
 
 void _ol_trunc(const char *key, size_t klen, char *out);
+
+/* This function pretty influenced by Lwan's helpful blog posts:
+ * http://tia.mat.br/blog/html/2014/06/23/integer_to_string_conversion.html
+ */
+#define MAX_SIZE_T_STR_SIZE (3 * sizeof(size_t))
+void sizet_to_a(const size_t src, const size_t dest_len, char dest[static MAX_SIZE_T_STR_SIZE]);

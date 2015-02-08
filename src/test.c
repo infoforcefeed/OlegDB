@@ -6,6 +6,7 @@
 #include "errhandle.h"
 #include "file.h"
 #include "logging.h"
+#include "utils.h"
 #include "oleg.h"
 #include "test.h"
 #include "tree.h"
@@ -126,6 +127,19 @@ error:
     return 1;
 }
 
+int test_sizet_to_a(const ol_feature_flags features) {
+    const size_t test_num = 123456;
+    char buf[intlen(test_num)];
+    check(memset(buf, '\0', intlen(test_num)) == buf, "Could not memset buf.");
+
+    sizet_to_a(test_num, intlen(test_num), buf);
+    check(strncmp("123456", buf, intlen(test_num)) == 0, "Numbers were not the same.");
+
+    return 0;
+error:
+    return 1;
+}
+
 int test_basic_transaction(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     ol_transaction *tx = NULL;
@@ -138,6 +152,27 @@ int test_basic_transaction(const ol_feature_flags features) {
 
     check(tx != NULL, "Could not begin transaction.");
     check(olt_commit(tx) == 0, "Could not commit transaction.");
+
+    _test_db_close(db);
+    return 0;
+error:
+    olt_abort(tx);
+    _test_db_close(db);
+    return 1;
+}
+
+int test_basic_transaction_abort(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+    ol_transaction *tx = NULL;
+    char key[] = "hexagonal vacancy";
+    unsigned char value[] = "suspicious characters";
+    size_t vsize = strlen((char*)value);
+
+    check(ol_jar(db, key, strnlen(key, KEY_SIZE), value, vsize) == 0, "Could not jar key.");
+    tx = olt_begin(db);
+
+    check(tx != NULL, "Could not begin transaction.");
+    check(olt_abort(tx) == 0, "Could not commit transaction.");
 
     _test_db_close(db);
     return 0;
@@ -1063,6 +1098,7 @@ void run_tests(int results[2]) {
      * or disabled. */
     const ol_feature_flags feature_set = DB_DEFAULT_FEATURES;
     ol_run_test(test_basic_transaction);
+    ol_run_test(test_basic_transaction_abort);
     ol_run_test(test_can_jump_cursor);
     ol_run_test(test_unjar_msgpack);
     ol_run_test(test_aol_and_compaction);
