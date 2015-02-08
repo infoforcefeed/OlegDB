@@ -168,8 +168,9 @@ int _ol_get_value_from_bucket(const ol_database *db, const ol_bucket *bucket,
         unsigned char **data, size_t *dsize) {
     check(bucket != NULL, "Cannot retrieve value from NULL bucket.");
     /* Allocate memory to store memcpy'd data into. */
-    *data = calloc(1, bucket->original_size);
-    check(*data != NULL, "Could not allocate memory for compressed data.");
+    *data = malloc(bucket->original_size + 1);
+    check_mem(*data);
+    (*data)[bucket->original_size] = '\0';
 
     if (dsize != NULL) {
         /* "memcpy never fails!" */
