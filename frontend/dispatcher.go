@@ -60,6 +60,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		err = httpSet(w, operation, r)
 	case OpInfo:
 		err = httpInfo(w, operation)
+	case OpUptime:
+		err = httpUptime(w, operation)
 	case OpDelete:
 		err = httpDelete(w, operation)
 	case OpAllKeys:

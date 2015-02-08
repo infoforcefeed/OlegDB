@@ -15,6 +15,7 @@ const (
 	OpInfo        = "._info"
 	OpDelete      = "/delete"
 	OpAllKeys     = "_all"
+	OpUptime      = "_uptime"
 	OpCursorFirst = "_first"
 	OpCursorLast  = "_last"
 	OpCursorNext  = "._next"
@@ -88,6 +89,13 @@ func httpInfo(w http.ResponseWriter, op Operation) *HTTPError {
 
 	// Send empty body
 	fmt.Fprintf(w, "\r\n")
+	return nil
+}
+
+func httpUptime(w http.ResponseWriter, op Operation) *HTTPError {
+	res := op.Database.Uptime()
+
+	fmt.Fprintf(w, "%d", res)
 	return nil
 }
 
