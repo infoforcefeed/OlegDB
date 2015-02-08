@@ -484,9 +484,29 @@ error:
     return 1;
 }
 
-ol_stack *ol_bulk_unjar(ol_database *db, const ol_key_array *keys) {
+ol_stack *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys) {
+    ol_transaction *tx = NULL;
+    ol_stack *to_return = NULL;
     check(db != NULL, "Cannot unjar on NULL database.");
-    return NULL;
+    check((tx = olt_begin(db)) != NULL, "Could not begin transaction.");
+
+    to_return = calloc(1, sizeof(ol_stack));
+
+    unsigned int i;
+    for (i = 0; i < num_keys; i++) {
+        const char *key = keys[i];
+        unsigned char *item = NULL;
+        size_t item_size = 0;
+        olt_unjar(tx, key, strnlen(key, KEY_SIZE), &item, &item_size);
+
+        if (item != NULL) {
+            spush(&to_return, item);
+        }
+    }
+
+    check(olt_commit(tx) == 0, "Could not commit unjar transaction.");
+
+    return to_return;
 
 error:
     return NULL;

@@ -283,8 +283,11 @@ int ol_cas(ol_database *db, const char *key, const size_t klen,
 /* xXx FUNCTION=ol_bulk_unjar xXx
  * xXx DESCRIPTION=Bulk unjar operation. xXx
  * xXx RETURNS=An immuteable <code>ol_stack</code> of matched values. Both the stack and the values of the stack must be freed. xXx
+ * xXx *db=The database to unjar from. xXx
+ * xXx *keys=An <code>ol_key_array</code> of keys to unjar. xXx
+ * xXx num_keys=The number of keys in <code>*keys</code>. xXx
  */
-struct ol_stack *ol_bulk_unjar(ol_database *db, const ol_key_array *keys);
+struct ol_stack *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys);
 
 #ifdef __cplusplus
 }
