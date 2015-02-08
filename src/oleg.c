@@ -468,6 +468,9 @@ error:
 ol_stack *ol_bulk_unjar(ol_database *db, const ol_key_array *keys) {
     check(db != NULL, "Cannot unjar on NULL database.");
     return NULL;
+
+error:
+    return NULL;
 }
 
 struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
