@@ -63,7 +63,7 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 	go func() {
-		<- signals
+		<-signals
 		unload()
 		os.Exit(0)
 	}()
