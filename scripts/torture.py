@@ -30,7 +30,7 @@ def thread_burn(thread_id):
         requests.post(connection_str,
             data=compressed,
             headers={
-                "X-Olegdb-Use-By": expiration}
+                "X-Olegdb-use-by": expiration}
             )
         duff = requests.get(connection_str + "/_info") # For code coverage
         if duff.status_code not in [404, 500]:
