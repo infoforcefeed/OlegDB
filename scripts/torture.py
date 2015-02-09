@@ -7,7 +7,7 @@ def fill_fast(thread_id):
     i = 0
     while True:
         random_str = os.urandom(16)
-        connection_str = "".join(["http://localhost:8080/oleg/", str(thread_id), "_", str(i)])
+        connection_str = "".join(["http://localhost:38080/oleg/", str(thread_id), "_", str(i)])
         requests.post(connection_str, data=random_str)
         i = i + 1
 
@@ -26,7 +26,7 @@ def thread_burn(thread_id):
         quoted = urllib.quote(random_key_str)
         expiration = int(calendar.timegm(time.gmtime()) + (random.random() * 10))
 
-        connection_str = "http://localhost:8080/oleg/{}".format(quoted)
+        connection_str = "http://localhost:38080/oleg/{}".format(quoted)
         requests.post(connection_str,
             data=compressed,
             headers={
