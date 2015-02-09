@@ -35,7 +35,7 @@ def thread_burn(thread_id):
         info_url = connection_str + "/_info"
         duff = requests.get(info_url) # For code coverage
         if duff.status_code == 400:
-            print "Badd connection str: " + info_url
+            print "Sick fuckin' goat str: " + info_url
         elif duff.status_code not in [404, 500]:
             known_count = duff.headers['X-Olegdb-Rcrd-Cnt']
         resp = requests.get(connection_str, stream=True)
