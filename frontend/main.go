@@ -32,6 +32,7 @@ type DBOpenRequest struct {
 	// Filled out on return:
 	Database goleg.Database
 	DBError error
+	SenderChannel chan DBOpenRequest
 }
 
 var config Config

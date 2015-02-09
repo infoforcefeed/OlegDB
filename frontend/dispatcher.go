@@ -43,7 +43,7 @@ func db_requester() {
 			database = databases[dbname]
 		}
 
-		db_open_channel <- DBOpenRequest{
+		db_request.SenderChannel <- DBOpenRequest{
 			DBName: dbname,
 			Database: database,
 			DBError: dberr,
@@ -52,8 +52,9 @@ func db_requester() {
 }
 
 func fetch_db(dbname string) (goleg.Database, error) {
-	db_open_channel <- DBOpenRequest{DBName: dbname}
-	answer := <-db_open_channel
+	c := make(chan DBOpenRequest)
+	db_open_channel <- DBOpenRequest{DBName: dbname, SenderChannel: c}
+	answer := <-c
 	return answer.Database, answer.DBError
 }
 
