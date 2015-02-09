@@ -17,6 +17,46 @@ type HTTPError struct {
 	Message string
 }
 
+func db_requester() {
+	for {
+		db_request := <-db_open_channel
+		dbname := db_request.DBName
+
+		var database goleg.Database
+		var dberr error
+		var ok bool
+		if database, ok = databases[dbname]; !ok {
+			var flags int
+
+			if config.AOLEnabled {
+				flags = flags | goleg.F_APPENDONLY
+			}
+
+			if config.LZ4Enabled {
+				flags = flags | goleg.F_LZ4
+			}
+
+			if config.SplayTreeEnabled {
+				flags = flags | goleg.F_SPLAYTREE
+			}
+			databases[dbname], dberr = goleg.Open(config.DataDir, dbname, flags)
+			database = databases[dbname]
+		}
+
+		db_open_channel <- DBOpenRequest{
+			DBName: dbname,
+			Database: database,
+			DBError: dberr,
+		}
+	}
+}
+
+func fetch_db(dbname string) (goleg.Database, error) {
+	db_open_channel <- DBOpenRequest{DBName: dbname}
+	answer := <-db_open_channel
+	return answer.Database, answer.DBError
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	dbname, key, opname, err := getRequestInfo(r)
 	if err != nil {
@@ -26,25 +66,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	// Get the database if loaded, show error otherwise
 	var database goleg.Database
-	var ok bool
-	if database, ok = databases[dbname]; !ok {
-		var dberr error
-		var flags int
-		if config.AOLEnabled {
-			flags = flags | goleg.F_APPENDONLY
-		}
-		if config.LZ4Enabled {
-			flags = flags | goleg.F_LZ4
-		}
-		if config.SplayTreeEnabled {
-			flags = flags | goleg.F_SPLAYTREE
-		}
-		databases[dbname], dberr = goleg.Open(config.DataDir, dbname, flags)
-		if dberr != nil {
-			http.Error(w, "Cannot open database", 500)
-			return
-		}
-		database = databases[dbname]
+	var dberr error
+
+	database, dberr = fetch_db(dbname)
+	if dberr != nil {
+		http.Error(w, "Cannot open database", 500)
+		return
 	}
 
 	operation := Operation{
