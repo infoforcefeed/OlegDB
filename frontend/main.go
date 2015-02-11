@@ -27,17 +27,18 @@ type Config struct {
 
 // Used to request databases from the global list.
 type DBOpenRequest struct {
-	// Name of the database requested:
 	DBName string
-	// Filled out on return:
+	SenderChannel chan DBOpenResponse
+}
+
+type DBOpenResponse struct {
 	Database goleg.Database
 	DBError error
-	SenderChannel chan DBOpenRequest
 }
 
 var config Config
+var dbOpenChannel chan DBOpenRequest
 var databases map[string]goleg.Database
-var db_open_channel chan DBOpenRequest
 
 const (
 	Usage = `
@@ -136,8 +137,7 @@ func main() {
 		log.Println("Splay-tree is enabled")
 	}
 
-	db_open_channel = make(chan DBOpenRequest)
-	go db_requester()
+	dbOpenChannel = DBRequester()
 
 	if config.UseHTTPS {
 		log.Println("Listening on https://" + config.Listen)

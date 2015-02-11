@@ -17,43 +17,46 @@ type HTTPError struct {
 	Message string
 }
 
-func db_requester() {
-	for {
-		db_request := <-db_open_channel
-		dbname := db_request.DBName
+func DBRequester() chan DBOpenRequest {
+	DBRequestChannel := make(chan DBOpenRequest)
+	go func() {
+		for {
+			dbRequest := <-DBRequestChannel
+			dbname := dbRequest.DBName
 
-		var database goleg.Database
-		var dberr error
-		var ok bool
-		if database, ok = databases[dbname]; !ok {
-			var flags int
+			var database goleg.Database
+			var dberr error
+			var ok bool
+			if database, ok = databases[dbname]; !ok {
+				var flags int
 
-			if config.AOLEnabled {
-				flags = flags | goleg.F_APPENDONLY
+				if config.AOLEnabled {
+					flags = flags | goleg.F_APPENDONLY
+				}
+
+				if config.LZ4Enabled {
+					flags = flags | goleg.F_LZ4
+				}
+
+				if config.SplayTreeEnabled {
+					flags = flags | goleg.F_SPLAYTREE
+				}
+				databases[dbname], dberr = goleg.Open(config.DataDir, dbname, flags)
+				database = databases[dbname]
 			}
 
-			if config.LZ4Enabled {
-				flags = flags | goleg.F_LZ4
+			dbRequest.SenderChannel <- DBOpenResponse{
+				Database: database,
+				DBError: dberr,
 			}
-
-			if config.SplayTreeEnabled {
-				flags = flags | goleg.F_SPLAYTREE
-			}
-			databases[dbname], dberr = goleg.Open(config.DataDir, dbname, flags)
-			database = databases[dbname]
 		}
-
-		db_request.SenderChannel <- DBOpenRequest{
-			DBName: dbname,
-			Database: database,
-			DBError: dberr,
-		}
-	}
+	}()
+	return DBRequestChannel
 }
 
-func fetch_db(dbname string) (goleg.Database, error) {
-	c := make(chan DBOpenRequest)
-	db_open_channel <- DBOpenRequest{DBName: dbname, SenderChannel: c}
+func fetchDB(dbOpenChannel chan DBOpenRequest, dbname string) (goleg.Database, error) {
+	c := make(chan DBOpenResponse)
+	dbOpenChannel <- DBOpenRequest{DBName: dbname, SenderChannel: c}
 	answer := <-c
 	return answer.Database, answer.DBError
 }
@@ -69,7 +72,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	var database goleg.Database
 	var dberr error
 
-	database, dberr = fetch_db(dbname)
+	database, dberr = fetchDB(dbOpenChannel, dbname)
 	if dberr != nil {
 		http.Error(w, "Cannot open database", 500)
 		return
