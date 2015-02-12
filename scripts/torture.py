@@ -17,6 +17,7 @@ def fill_fast(thread_id):
             break
 
 def thread_burn(thread_id):
+    known_count = 0
     while True:
         random_length = (random.random() * 10000) + 1
         #compressed = "".join(["A" for i in range(0, int(random_length))])
@@ -50,7 +51,6 @@ def thread_burn(thread_id):
             print "Last known count: {}".format(known_count)
 
 def main():
-    known_count = 0
     for x in range(0,3):
         thread.start_new_thread(thread_burn, (x,))
         #thread.start_new_thread(fill_fast, (x,))
