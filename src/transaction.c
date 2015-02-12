@@ -438,7 +438,7 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
     ol_bucket *bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
     check_warn(_klen > 0, "Key length of zero not allowed.");
 
-    if (bucket == NULL) {
+    if (bucket == NULL && tx->parent_db != NULL) {
         /* Transaction DB doesn't have this key, but the parent does. */
         operating_db = tx->parent_db;
         bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
