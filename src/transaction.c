@@ -101,7 +101,7 @@ static void _olt_cleanup_common(ol_transaction *tx, char *values_filename, char 
     debug("Unlinking values file for transaction, %s", values_filename);
     unlink(values_filename);
 
-    debug(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
+    debug("Unlinking aol file for transaction, %s", tx_aol_filename);
     unlink(tx_aol_filename);
 
     free(tx);
