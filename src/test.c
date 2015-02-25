@@ -386,38 +386,6 @@ error:
     return 1;
 }
 
-int test_unjar_ds(const ol_feature_flags features) {
-    ol_database *db = _test_db_open(features);
-    ol_transaction *tx = olt_begin(db);
-    unsigned char *item = NULL;
-    check(tx != NULL, "Could not begin transaction.");
-
-    char key[64] = "FANCY KEY IS YO MAMA";
-    unsigned char val[] = "invariable variables invariably trip up programmers";
-    size_t val_len = strlen((char*)val);
-    int inserted = olt_jar(tx, key, strlen(key), val, val_len);
-
-    check(inserted == 0, "Could not insert.");
-
-    size_t to_test;
-    olt_unjar(tx, key, strlen(key), &item, &to_test);
-    ol_log_msg(LOG_INFO, "Retrieved value.");
-    check(item != NULL, "Coult not find key.");
-
-    check(memcmp(item, val, strlen((char*)val)) == 0, "Returned value was not the same.");
-    check(to_test == val_len, "Sizes were not the same.");
-
-    check(olt_commit(tx) == 0, "Could not commit transaction.");;
-    _test_db_close(db);
-    free(item);
-    return 0;
-
-error:
-    olt_abort(tx);
-    _test_db_close(db);
-    free(item);
-    return 1;
-}
 int test_unjar(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     ol_transaction *tx = olt_begin(db);
@@ -1119,7 +1087,6 @@ void run_tests(int results[2]) {
         const ol_feature_flags feature_set = (i | OL_F_AOL_FFLUSH) & OL_F_APPENDONLY;
         /* Fucking macros man */
         ol_run_test(test_jar);
-        ol_run_test(test_unjar_ds);
         ol_run_test(test_cas);
         ol_run_test(test_unjar);
         ol_run_test(test_sync);
