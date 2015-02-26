@@ -399,12 +399,18 @@ int test_unjar(const ol_feature_flags features) {
         "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!"
         "{json: \"ain't real\"}";
     int inserted = olt_jar(tx, key, strlen(key), val, strlen((char*)val));
-
     check(inserted == 0, "Could not insert.");
 
     olt_unjar(tx, key, strlen(key), &item, NULL);
     check(item != NULL, "Could not find key.");
     check(memcmp(item, val, strlen((char*)val)) == 0, "Returned value was not the same.");
+
+    inserted = olt_jar(tx, key, strlen(key), (unsigned char *)"new val", strlen("new val"));
+    check(inserted == 0, "Could not insert a second time.");
+
+    unsigned char* new_item = NULL;
+    olt_unjar(tx, key, strlen(key), &new_item, NULL);
+    check(memcmp(new_item, "new val", strlen("new val")) == 0, "Returned value was not the same.");
 
     check(olt_commit(tx) == 0, "Could not commit transaction.");;
     _test_db_close(db);

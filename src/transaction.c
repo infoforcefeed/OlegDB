@@ -225,6 +225,12 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
 
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
     check_warn(_klen > 0, "Key length of zero not allowed.");
+    if (bucket == NULL && tx->parent_db != NULL) {
+        /* We only want to fetch the bucket here, so we don't set db. All
+         * further operations should happen on the tx db.
+         */
+        bucket = ol_get_bucket(tx->parent_db, key, klen, &_key, &_klen);
+    }
 
     /* Check to see if we have an existing entry with that key */
     if (bucket != NULL) {
