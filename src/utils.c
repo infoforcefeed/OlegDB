@@ -67,7 +67,7 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 
     unsigned char *old_data_ptr = db->values + bucket->data_offset;
     /* Clear out the old data in the file. */
-    if (bucket->data_size > 0)
+    if (db->state != OL_S_STARTUP && bucket->data_size > 0)
         memset(old_data_ptr, '\0', bucket->data_size);
     /* Compute the new position of the data in the values file: */
     size_t new_offset = db->val_size;
