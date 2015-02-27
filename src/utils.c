@@ -112,8 +112,11 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
             extended_value_area = 1;
             new_data_ptr = db->values + db->val_size;
         }
-        if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
-            return 4;
+        if (db->state != OL_S_STARTUP) {
+            /* Like above, avoid writing to the values file on startup. */
+            if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
+                return 4;
+        }
     }
 
     if (bucket->expiration != NULL) {
