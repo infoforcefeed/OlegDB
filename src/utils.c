@@ -89,8 +89,18 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
             new_data_ptr = db->values + db->val_size;
         }
 
-        cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
-                                      (int)vsize);
+        if (db->state != OL_S_STARTUP) {
+            cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
+                                          (int)vsize);
+        } else {
+            /* We're starting up, so we don't want to actually write to the
+             * values file. We just want the size and stuff.
+             */
+            int maxoutsize = LZ4_compressBound(vsize);
+            char tmp_data[maxoutsize];
+            cmsize = (size_t)LZ4_compress((char *)value, (char *)tmp_data,
+                                                 (int)vsize);
+        }
     } else {
         if (vsize <= bucket->data_size) {
             /* We don't need to put this value at the end of the file if the
