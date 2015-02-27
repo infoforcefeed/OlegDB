@@ -75,15 +75,17 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 
     /* Compress using LZ4 if enabled */
     size_t cmsize = 0;
+    int extended_value_area = 0;
     if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         int maxoutsize = LZ4_compressBound(vsize);
-        if (maxoutsize <=  bucket->data_size) {
+        if (maxoutsize <= bucket->data_size) {
             /* We don't need to put this value at the end of the file if the
              * new value is small enough. */
             new_data_ptr = old_data_ptr;
             new_offset = bucket->data_offset;
         } else {
             _ol_ensure_values_file_size(db, maxoutsize);
+            extended_value_area = 1;
             new_data_ptr = db->values + db->val_size;
         }
 
@@ -97,6 +99,7 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
             new_offset = bucket->data_offset;
         } else {
             _ol_ensure_values_file_size(db, vsize);
+            extended_value_area = 1;
             new_data_ptr = db->values + db->val_size;
         }
         if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
@@ -119,7 +122,8 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     bucket->data_offset = new_offset;
 
     /* Remember to increment the tracked data size of the DB. */
-    db->val_size += bucket->data_size;
+    if (extended_value_area)
+        db->val_size += bucket->data_size;
 
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) && db->state != OL_S_STARTUP) {
         ol_aol_write_cmd(db, "JAR", bucket);
