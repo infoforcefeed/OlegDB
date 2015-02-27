@@ -234,6 +234,8 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
 
     /* Check to see if we have an existing entry with that key */
     if (bucket != NULL) {
+        /* Flag the transaction as dirty. */
+        tx->dirty = 1;
         return _ol_reallocate_bucket(db, bucket, value, vsize);
     }
 
