@@ -35,103 +35,119 @@ func (d Database) Close() int {
 
 func (d Database) Unjar(key string) []byte {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
 	var dsize uintptr
-	return CUnjar(d.db, key, uintptr(len(key)), &dsize)
+	var ret = CUnjar(d.db, key, uintptr(len(key)), &dsize)
+	d.mutex.Unlock()
+	return ret
 }
 
 func (d Database) Jar(key string, value []byte) int {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	return CJar(d.db, key, uintptr(len(key)), value, uintptr(len(value)))
+	var ret = CJar(d.db, key, uintptr(len(key)), value, uintptr(len(value)))
+	d.mutex.Unlock()
+	return ret
 }
 
 func (d Database) Scoop(key string) int {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	return CScoop(d.db, key, uintptr(len(key)))
+	var ret = CScoop(d.db, key, uintptr(len(key)))
+	d.mutex.Unlock()
+	return ret
 }
 
 func (d Database) Uptime() int {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	return CUptime(d.db)
+	var ret = CUptime(d.db)
+	d.mutex.Unlock()
+	return ret
 }
 
 func (d Database) Expiration(key string) (time.Time, bool) {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	return CExpirationTime(d.db, key, uintptr(len(key)))
+	var time, exists = CExpirationTime(d.db, key, uintptr(len(key)))
+	d.mutex.Unlock()
+	return time, exists
 }
 
 func (d Database) Spoil(key string, expiration time.Time) int {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	return CSpoil(d.db, key, uintptr(len(key)), expiration)
+	var ret = CSpoil(d.db, key, uintptr(len(key)), expiration)
+	d.mutex.Unlock()
+	return ret
 }
 
 func (d Database) Exists(key string) bool {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	return CExists(d.db, key, uintptr(len(key))) == 0
+	var ret = CExists(d.db, key, uintptr(len(key))) == 0
+	d.mutex.Unlock()
+	return ret
 }
 
 func (d Database) Squish() bool {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	return CSquish(d.db) == 1
+	var ret = CSquish(d.db) == 1
+	d.mutex.Unlock()
+	return ret
 }
 
 func (d Database) PrefixMatch(prefix string) (bool, []string) {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
 	len, out := CPrefixMatch(d.db, prefix, uintptr(len(prefix)))
+	d.mutex.Unlock()
 	return len >= 0, out
 }
 
 func (d Database) DumpKeys() (bool, []string) {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
 	len, out := CDumpKeys(d.db)
+	d.mutex.Unlock()
 	return len >= 0, out
 }
 
 func (d Database) First() (bool, string, []byte) {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
 	node := CNodeFirst(d.db)
 	if node == nil {
+		d.mutex.Unlock()
 		return false, "", nil
 	}
-	return CNodeGet(d.db, node)
+	var exists, key, data = CNodeGet(d.db, node)
+	d.mutex.Unlock()
+	return exists, key, data
 }
 
 func (d Database) Last() (bool, string, []byte) {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
 	node := CNodeLast(d.db)
 	if node == nil {
+		d.mutex.Unlock()
 		return false, "", nil
 	}
-	return CNodeGet(d.db, node)
+	var exists, key, data = CNodeGet(d.db, node)
+	d.mutex.Unlock()
+	return exists, key, data
 }
 
 func (d Database) Next(key string) (bool, string, []byte) {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
 	node := CNodeNext(d.db, key, uintptr(len(key)))
 	if node == nil {
+		d.mutex.Unlock()
 		return false, "", nil
 	}
-	return CNodeGet(d.db, node)
+	var exists, next_key, data = CNodeGet(d.db, node)
+	d.mutex.Unlock()
+	return exists, next_key, data
 }
 
 func (d Database) Prev(key string) (bool, string, []byte) {
 	d.mutex.Lock()
-	defer d.mutex.Unlock()
 	node := CNodePrev(d.db, key, uintptr(len(key)))
 	if node == nil {
+		d.mutex.Unlock()
 		return false, "", nil
 	}
-	return CNodeGet(d.db, node)
+	var exists, prev_key, data = CNodeGet(d.db, node)
+	d.mutex.Unlock()
+	return exists, prev_key, data
 }
