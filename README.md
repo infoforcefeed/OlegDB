@@ -45,6 +45,8 @@ make test
 sudo make install
 ```
 
+Note that BSD users may have to use `gmake` where applicable.
+
 To run tests:
 
 ```bash
