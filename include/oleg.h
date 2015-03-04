@@ -95,7 +95,7 @@ typedef struct ol_meta {
 * xXx name=The name of the database. xXx
 * xXx path[PATH_LENGTH]=Path to the database's working directory. xXx
 * xXx aol_file=Path and filename of the append only log. xXx
-* xXx aolfd=Pointer of FILE type to append only log. xXx
+* xXx aolfd=Open file descriptor to the AOL file. xXx
 * xXx feature_set=Bitmask holding enabled/disabled status of various features. See ol_feature_flags. xXx
 * xXx state=Current state of the database. See ol_state_flags. xXx
 * xXx rcrd_cnt=Number of records in the database. xXx
@@ -118,7 +118,7 @@ typedef struct ol_database {
     char            name[DB_NAME_SIZE];
     char            path[PATH_LENGTH];
     char            aol_file[AOL_FILENAME_ALLOC];
-    FILE            *aolfd;
+    int             aolfd;
     int             feature_set;
     short int       state;
     int             rcrd_cnt;

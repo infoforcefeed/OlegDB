@@ -28,10 +28,10 @@ int ol_aol_init(ol_database *db) {
         if (db->aolfd == 0) {
             debug("Opening append only log");
             debug("Append only log: %s", db->aol_file);
-            db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
-            check(db->aolfd != NULL, "Error opening append only file");
+            db->aolfd = open(db->aol_file, O_RDWR, AOL_FILEMODE);
+            check(db->aolfd > 0, "Error opening append only file");
 
-            int flock_ret = flock(fileno(db->aolfd), LOCK_NB | LOCK_EX);
+            int flock_ret = flock(db->aolfd, LOCK_NB | LOCK_EX);
             check(flock_ret == 0, "Could not lock AOL file.");
         } else {
             ol_log_msg(LOG_WARN, "AOL already initialized.");
@@ -66,10 +66,9 @@ void _deserialize_time(struct tm *fillout, char *buf) {
 int ol_aol_sync(const ol_database *db) {
     /* Force the OS to flush write to hardware */
     if (db->is_enabled(OL_F_AOL_FFLUSH, &db->feature_set))
-        check(fflush(db->aolfd) == 0, "Could not fflush.");
+        check(fsync(db->aolfd) == 0, "Could not fflush.");
     /* AOL should always fsync at least. */
-    const int aol_fd = fileno(db->aolfd);
-    check(fsync(aol_fd) == 0, "Could not fsync");
+    check(fsync(db->aolfd) == 0, "Could not fsync");
     return 0;
 
 error:
@@ -81,8 +80,7 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
     if (strncmp(cmd, "JAR", 3) == 0) {
         /* I'LL RIGOR YER MORTIS */
         const size_t write_buf_size =
-            strlen(":") + uintlen(strlen(cmd)) + strlen(":") + strlen(cmd) +
-            strlen(":") + uintlen(bct->klen) + strlen(":") + strlen(bct->key) +
+            strlen(":3:JAR:") + uintlen(bct->klen) + strlen(":") + strlen(bct->key) +
             strlen(":1: ") +
             strlen(":") + uintlen(uintlen(bct->original_size)) + strlen(":") + uintlen(bct->original_size) +
             strlen(":") + uintlen(uintlen(bct->data_size)) + strlen(":") + uintlen(bct->data_size) +
@@ -114,22 +112,61 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
         APPEND_UINT(bct->data_offset);
 
         strncat(write_buf, "\n", write_buf_size);
-        ret = fwrite(write_buf, write_buf_size, 1, db->aolfd);
-        check(ret > -1, "Could not write to AOL file.");
+        ret = write(db->aolfd, write_buf, write_buf_size);
+        check(ret > -1, "Could not write JAR to AOL file.");
     } else if (strncmp(cmd, "SCOOP", 5) == 0) {
-        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s\n",
-                strlen(cmd), cmd,
-                bct->klen, bct->key);
-        check(ret > -1, "Error writing to file.");
+        const size_t write_buf_size =
+            strlen(":5:SCOOP:") + uintlen(bct->klen) +
+            strlen(":") + strlen(bct->key) + strlen("\n");
+
+        char write_buf[write_buf_size + 1];
+        memset(write_buf, '\0', write_buf_size);
+
+        /* CMD */
+        strncpy(write_buf, ":5:SCOOP", write_buf_size);
+
+        APPEND_UINT(bct->klen);
+
+        /* Key */
+        strncat(write_buf, ":", write_buf_size);
+        strncat(write_buf, bct->key, write_buf_size);
+        strncat(write_buf, "\n", write_buf_size);
+
+        ret = write(db->aolfd, write_buf, write_buf_size);
+        check(ret > -1, "Could not write SCOOP to AOL file.");
     } else if (strncmp(cmd, "SPOIL", 5) == 0) {
         char exptime[21] = {'\0'};
         _serialize_time(bct->expiration, exptime);
 
-        ret = fprintf(db->aolfd, ":%zu:%s:%zu:%s:%zu:%*s\n",
-                strlen(cmd), cmd,
-                bct->klen, bct->key,
-                strlen(exptime), 20, exptime);
-        check(ret > -1, "Error writing to file.");
+        const size_t write_buf_size =
+            strlen(":5:SPOIL") +
+            strlen(":") + uintlen(bct->klen) +
+            strlen(":") + strlen(bct->key) +
+            strlen(":") + uintlen(strlen(exptime)) +
+            strlen(":") + strlen(exptime) +
+            strlen("\n");
+
+        char write_buf[write_buf_size + 1];
+        memset(write_buf, '\0', write_buf_size);
+
+        /* CMD */
+        strncpy(write_buf, ":5:SPOIL", write_buf_size);
+
+        APPEND_UINT(bct->klen);
+
+        /* Key */
+        strncat(write_buf, ":", write_buf_size);
+        strncat(write_buf, bct->key, write_buf_size);
+
+        APPEND_UINT(strlen(exptime));
+
+        strncat(write_buf, ":", write_buf_size);
+        strncat(write_buf, exptime, write_buf_size);
+
+        strncat(write_buf, "\n", write_buf_size);
+
+        ret = write(db->aolfd, write_buf, write_buf_size);
+        check(ret > -1, "Could not write SPOIL to AOL file.");
     } else {
         ol_log_msg(LOG_ERR, "No such command '%s'", cmd);
         return -1;

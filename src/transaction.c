@@ -143,7 +143,7 @@ int olt_commit(ol_transaction *tx) {
     /* Make sure everything is written: */
     ol_sync(tx->transaction_db);
     /* Throw fflush in here because fuck Linux */
-    fflush(tx->transaction_db->aolfd);
+    fsync(tx->transaction_db->aolfd);
 
     tx->parent_db->state = OL_S_COMMITTING;
     ol_aol_restore_from_file(tx->parent_db, tx_aol_filename, tx->transaction_db->values);

@@ -175,7 +175,7 @@ error:
 }
 
 static inline void _ol_close_final(ol_database *db) {
-    fclose(db->aolfd);
+    close(db->aolfd);
     _ol_close_values(db);
 
     db->feature_set = 0;
@@ -192,9 +192,9 @@ int ol_close(ol_database *db) {
 
     if (db->aolfd) {
         debug("Force flushing files");
-        fflush(db->aolfd);
+        fsync(db->aolfd);
         debug("Files flushed to disk");
-        flock(fileno(db->aolfd), LOCK_UN);
+        flock(db->aolfd, LOCK_UN);
     }
 
     /* Sync and close values file. */
@@ -425,14 +425,14 @@ int ol_squish(ol_database *db) {
         }
 
         /* AOL is enabled. Create a new aol file that we'll be using. */
-        fflush(db->aolfd);
-        fclose(db->aolfd);
+        fsync(db->aolfd);
+        close(db->aolfd);
 
         /* Create a new file which we'll move into the old ones place later */
         db->get_db_file_name(db, "aol.new", db->aol_file);
 
         /* Get a new file descriptor */
-        db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
+        db->aolfd = open(db->aol_file, O_RDWR, AOL_FILEMODE);
     }
 
     /* Iterate through the hash table instead of using the tree just
@@ -471,8 +471,8 @@ int ol_squish(ol_database *db) {
             db->enable(OL_F_AOL_FFLUSH, &db->feature_set);
         }
         /* Make sure all of the new stuff is written */
-        fflush(db->aolfd);
-        fclose(db->aolfd);
+        fsync(db->aolfd);
+        close(db->aolfd);
 
         char new_filename[AOL_FILENAME_ALLOC] = {0};
         /* Set the old filename. */
@@ -482,7 +482,7 @@ int ol_squish(ol_database *db) {
         check(rename(new_filename, db->aol_file) == 0, "Could not rename new AOL to old AOL.");
 
         /* Get a new file descriptor */
-        db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
+        db->aolfd = open(db->aol_file, O_RDWR, AOL_FILEMODE);
     }
 
     return 0;
