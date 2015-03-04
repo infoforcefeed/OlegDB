@@ -28,8 +28,8 @@ int ol_aol_init(ol_database *db) {
         if (db->aolfd == 0) {
             debug("Opening append only log");
             debug("Append only log: %s", db->aol_file);
-            db->aolfd = open(db->aol_file, O_RDWR, AOL_FILEMODE);
-            check(db->aolfd > 0, "Error opening append only file");
+            db->aolfd = open(db->aol_file, O_RDWR | O_CREAT);
+            check(db->aolfd >= 0, "Error opening append only file");
 
             int flock_ret = flock(db->aolfd, LOCK_NB | LOCK_EX);
             check(flock_ret == 0, "Could not lock AOL file.");
@@ -221,7 +221,7 @@ int ol_aol_restore_from_file(ol_database *target_db,
               read_data_size = {0},
               value = {0};
 
-    FILE *fd = fopen(aol_fname, "r");
+    int fd = open(aol_fname, O_RDONLY);
     check(fd, "Error opening file");
 
     while (!feof(fd)) {
