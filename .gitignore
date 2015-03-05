@@ -4,3 +4,4 @@ olegdb
 *.o
 *.dump
 data
+build
