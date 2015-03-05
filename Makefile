@@ -1,5 +1,6 @@
-CFLAGS=-Wall -Werror -g3 -O2 -Wstrict-aliasing=2
+CFLAGS=-Wall -Werror -g -O2 -Wstrict-aliasing=2
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+
 ifndef CC
 	CC = gcc
 endif
@@ -50,11 +51,11 @@ main.o: ./src/main.c
 
 oleg_test:  liboleg $(BIN_DIR) $(TEST_OUT)
 $(TEST_OUT): test.o main.o
-	$(CC) $(CFLAGS) $(INCLUDES) -L$(LIB_DIR) -o $(TEST_OUT) test.o main.o $(MATH_LINKER) -loleg
+	$(CC) $(INCLUDES) -L$(LIB_DIR) -o $(TEST_OUT) test.o main.o $(MATH_LINKER) -loleg
 
 liboleg: $(LIB_DIR) $(LIB_OUT)
 $(LIB_OUT): vector.o murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o transaction.o
-	$(CC) $(CFLAGS) $(INCLUDES) -o $(LIB_OUT) $^ -fpic -shared $(MATH_LINKER)
+	$(CC) $(INCLUDES) -o $(LIB_OUT) $^ -fpic -shared $(MATH_LINKER)
 
 uninstall:
 	rm -rf $(INSTALL_LIB)liboleg*
