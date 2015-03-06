@@ -177,14 +177,14 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
  */
 int ol_jar(ol_database *db, const char *key, size_t klen, const unsigned char *value, size_t vsize);
 
-/* xXx FUNCTION=ol_expiration xXx
+/* xXx FUNCTION=ol_sniff xXx
  * xXx DESCRIPTION=Retrieves the expiration time for a given key from the database. xXx
  * xXx RETURNS=Stored <code>struct tm *</code> representing the time that this key will expire, or NULL if not found. xXx
  * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  */
-struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen);
+struct tm *ol_sniff(ol_database *db, const char *key, size_t klen);
 
 /* xXx FUNCTION=ol_scoop xXx
  * xXx DESCRIPTION=Removes an object from the database. Get that crap out of the mayo jar. xXx

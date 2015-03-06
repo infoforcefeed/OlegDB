@@ -89,15 +89,15 @@ func CUptime(db *C.ol_database) int {
 	return int(C.ol_uptime(db))
 }
 
-func CExpirationTime(db *C.ol_database, key string, klen uintptr) (time.Time, bool) {
+func CSniff(db *C.ol_database, key string, klen uintptr) (time.Time, bool) {
 	// Turn parameters into their C counterparts
 	ckey := C.CString(key)
 	defer C.free(unsafe.Pointer(ckey))
 
 	cklen := (C.size_t)(klen)
 
-	// Pass them to ol_expiration_time
-	ctime := C.ol_expiration_time(db, ckey, cklen)
+	// Pass them to ol_sniff
+	ctime := C.ol_sniff(db, ckey, cklen)
 
 	// Does the expiration exist? If no, return false as second param
 	if ctime == nil {
