@@ -64,7 +64,7 @@ func (d Database) Uptime() int {
 
 func (d Database) Expiration(key string) (time.Time, bool) {
 	d.mutex.Lock()
-	var time, exists = CExpirationTime(d.db, key, uintptr(len(key)))
+	var time, exists = CSniff(d.db, key, uintptr(len(key)))
 	d.mutex.Unlock()
 	return time, exists
 }

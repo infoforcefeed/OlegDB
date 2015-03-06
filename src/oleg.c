@@ -491,7 +491,7 @@ error:
     return 1;
 }
 
-struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
+struct tm *ol_sniff(ol_database *db, const char *key, size_t klen) {
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
