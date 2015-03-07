@@ -37,8 +37,8 @@ Attributes
 | `UPTIME` | Returns the uptime of the database | No | `ol_uptime` |
 | `SQUISH` | Squishes the AOL file | No | `ol_squish` |
 | `PONDER` | Start a transaction | No | |
-| `GO AWAY` | Abort a transaction | No | |
-| `SHIP IT` | Ends a transaction | No | |
+| `NO BULLY` | Abort a transaction | No | |
+| `SHIP IT` | Commits a transaction | No | |
 | `PURCHASE <table>` | Switches active database table | Yes | |
 | `GTFO` | Closes active database table | Yes | |
 
