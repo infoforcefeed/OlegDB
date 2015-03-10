@@ -60,6 +60,7 @@ $(LIB_OUT): vector.o murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tr
 uninstall:
 	rm -rf $(INSTALL_LIB)liboleg*
 	rm -rf $(INSTALL_BIN)olegdb
+	rm -rf $(INSTALL_INCLUDE)
 
 olegdb: liboleg $(BIN_DIR) $(BIN_OUT)
 $(BIN_OUT):
