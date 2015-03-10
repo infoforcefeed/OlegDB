@@ -62,6 +62,11 @@ For an explanation of the command line parameters, do `olegdb -h`
 
 curl2sudo&reg; install script coming soon.
 
+Un-Installation
+============
+
+`sudo make uninstall`
+
 Documentation
 =============
 
