@@ -11,6 +11,7 @@
 #include "test.h"
 #include "tree.h"
 #include "transaction.h"
+#include "vector.h"
 
 #define DB_DEFAULT_FEATURES OL_F_SPLAYTREE | OL_F_LZ4
 
@@ -434,13 +435,14 @@ int test_bulk_unjar(const ol_feature_flags features) {
     }
 
     char *to_unjar[KEY_SIZE] = {"crazy hash0", "crazy hash1", "crazy hash2"};
-    ol_stack *bulk_unjarred = ol_bulk_unjar(db, to_unjar, max_records);
+    vector *bulk_unjarred = ol_bulk_unjar(db, to_unjar, max_records);
     check(bulk_unjarred, "Could not bulk unjar.");
 
     unsigned int total = 0;
-    while (bulk_unjarred->next != NULL) {
-        const unsigned char *data = spop(&bulk_unjarred);
-        free((unsigned char *)data);
+    unsigned int i;
+    for (i = 0; i < bulk_unjarred->count; i++) {
+        unsigned char **data = vector_get_danger(bulk_unjarred, i);
+        free(*data);
         total++;
     }
 

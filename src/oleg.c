@@ -23,6 +23,7 @@
 #include "lz4.h"
 #include "transaction.h"
 #include "stack.h"
+#include "vector.h"
 
 inline unsigned int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
@@ -492,13 +493,13 @@ error:
     return 1;
 }
 
-ol_stack *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys) {
+vector *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys) {
     ol_transaction *tx = NULL;
-    ol_stack *to_return = NULL;
+    vector *to_return = NULL;
     check(db != NULL, "Cannot unjar on NULL database.");
     check((tx = olt_begin(db)) != NULL, "Could not begin transaction.");
 
-    to_return = calloc(1, sizeof(ol_stack));
+    to_return = vector_new(sizeof(unsigned char *), 256);
 
     unsigned int i;
     for (i = 0; i < num_keys; i++) {
@@ -508,7 +509,9 @@ ol_stack *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t n
         olt_unjar(tx, key, strnlen(key, KEY_SIZE), &item, &item_size);
 
         if (item != NULL) {
-            spush(&to_return, item);
+            vector_append_ptr(to_return, item);
+        } else {
+            vector_append_ptr(to_return, NULL);
         }
     }
 
@@ -520,7 +523,7 @@ error:
     return NULL;
 }
 
-struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
+struct tm *ol_sniff(ol_database *db, const char *key, size_t klen) {
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
