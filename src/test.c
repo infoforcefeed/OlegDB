@@ -87,7 +87,11 @@ int test_open_close(const ol_feature_flags features) {
 
 int test_bucket_max(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
+#if __x86_64__ || __ppc64__
     int expected_bucket_max = HASH_MALLOC / 8;
+#else
+    int expected_bucket_max = HASH_MALLOC / 4;
+#endif
 
     ol_log_msg(LOG_INFO, "Expected max is: %i", expected_bucket_max);
     int generated_bucket_max = ol_ht_bucket_max(db->cur_ht_size);
