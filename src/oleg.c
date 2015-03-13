@@ -24,7 +24,7 @@
 #include "transaction.h"
 #include "stack.h"
 
-inline int ol_ht_bucket_max(size_t ht_size) {
+inline unsigned int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
 }
 
@@ -142,7 +142,7 @@ static inline int _ol_close_common(ol_database *db) {
     }
     */
 
-    int iterations = ol_ht_bucket_max(db->cur_ht_size);
+    unsigned int iterations = ol_ht_bucket_max(db->cur_ht_size);
     int rcrd_cnt = db->rcrd_cnt;
     int freed = 0;
     debug("Freeing %d records.", rcrd_cnt);
@@ -226,7 +226,7 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
 
     MurmurHash3_x86_32(*_key, *_klen, DEVILS_SEED, &hash);
 
-    int index = _ol_calc_idx(db->cur_ht_size, hash);
+    unsigned int index = _ol_calc_idx(db->cur_ht_size, hash);
     if (db->hashes[index] != NULL) {
         size_t larger_key = 0;
         ol_bucket *tmp_bucket;
@@ -438,7 +438,7 @@ int ol_squish(ol_database *db) {
 
     /* Iterate through the hash table instead of using the tree just
      * so you can use this in case the tree isn't enabled. */
-    const int iterations = ol_ht_bucket_max(db->cur_ht_size);
+    const unsigned int iterations = ol_ht_bucket_max(db->cur_ht_size);
 
     int i = 0;
     for (; i < iterations; i++) {
