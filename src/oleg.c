@@ -95,6 +95,7 @@ ol_database *ol_open(const char *path, const char *name, int features){
 
     new_db->feature_set = features;
     new_db->state = OL_S_STARTUP;
+    debug("Initializing tree.");
     /* Allocate a splay tree if we're into that */
     if (new_db->is_enabled(OL_F_SPLAYTREE, &new_db->feature_set)) {
         ols_init(&new_db->tree);
@@ -103,22 +104,26 @@ ol_database *ol_open(const char *path, const char *name, int features){
     /* We figure out the filename now incase someone flips the aol_init bit
      * later.
      */
+    debug("Getting DB filename.");
     new_db->get_db_file_name(new_db, AOL_FILENAME, new_db->aol_file);
 
     /* Are we a TX database? Well, if not then we require AOL. Because we might
      * transact and thats crazy. */
+    debug("Initialzing transaction tree.");
     if (!new_db->is_enabled(OL_F_DISABLE_TX, &new_db->feature_set)) {
         new_db->enable(OL_F_APPENDONLY, &new_db->feature_set);
         ols_init(&(new_db->cur_transactions));
         check(new_db->cur_transactions != NULL, "Could not init transaction tree.");
     }
 
+    debug("Initialzing AOL.");
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
         ol_aol_init(new_db);
         check(ol_aol_restore(new_db) == 0, "Error restoring from AOL file");
     }
     new_db->state = OL_S_AOKAY;
 
+    debug("Everything worked.");
     return new_db;
 
 error:
@@ -318,6 +323,7 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
         return olt_spoil(&stack_tx, key, klen, expiration_date);
     }
 
+    debug("Beginning ol_spoil.");
     ol_transaction *tx = olt_begin(db);
     int spoil_ret = 10;
     check(tx != NULL, "Could not begin implicit transaction.");
@@ -325,10 +331,12 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
     spoil_ret = olt_spoil(tx, key, klen, expiration_date);
     check(spoil_ret == 0, "Could not spoil value. Aborting.");
     check(olt_commit(tx) == 0, "Could not commit transaction.");
+    debug("End of ol_spoil.");
 
     return spoil_ret;
 
 error:
+    debug("Error in ol_spoil.");
     if (tx != NULL && spoil_ret != 10)
         olt_abort(tx);
 

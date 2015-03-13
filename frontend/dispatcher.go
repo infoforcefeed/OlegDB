@@ -17,6 +17,50 @@ type HTTPError struct {
 	Message string
 }
 
+func DBRequester() chan DBOpenRequest {
+	DBRequestChannel := make(chan DBOpenRequest)
+	go func() {
+		for {
+			dbRequest := <-DBRequestChannel
+			dbname := dbRequest.DBName
+
+			var database goleg.Database
+			var dberr error
+			var ok bool
+			if database, ok = databases[dbname]; !ok {
+				var flags int
+
+				if config.AOLEnabled {
+					flags = flags | goleg.F_APPENDONLY
+				}
+
+				if config.LZ4Enabled {
+					flags = flags | goleg.F_LZ4
+				}
+
+				if config.SplayTreeEnabled {
+					flags = flags | goleg.F_SPLAYTREE
+				}
+				databases[dbname], dberr = goleg.Open(config.DataDir, dbname, flags)
+				database = databases[dbname]
+			}
+
+			dbRequest.SenderChannel <- DBOpenResponse{
+				Database: database,
+				DBError: dberr,
+			}
+		}
+	}()
+	return DBRequestChannel
+}
+
+func fetchDB(dbOpenChannel chan DBOpenRequest, dbname string) (goleg.Database, error) {
+	c := make(chan DBOpenResponse)
+	dbOpenChannel <- DBOpenRequest{DBName: dbname, SenderChannel: c}
+	answer := <-c
+	return answer.Database, answer.DBError
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	dbname, key, opname, err := getRequestInfo(r)
 	if err != nil {
@@ -26,25 +70,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	// Get the database if loaded, show error otherwise
 	var database goleg.Database
-	var ok bool
-	if database, ok = databases[dbname]; !ok {
-		var dberr error
-		var flags int
-		if config.AOLEnabled {
-			flags = flags | goleg.F_APPENDONLY
-		}
-		if config.LZ4Enabled {
-			flags = flags | goleg.F_LZ4
-		}
-		if config.SplayTreeEnabled {
-			flags = flags | goleg.F_SPLAYTREE
-		}
-		databases[dbname], dberr = goleg.Open(config.DataDir, dbname, flags)
-		if dberr != nil {
-			http.Error(w, "Cannot open database", 500)
-			return
-		}
-		database = databases[dbname]
+	var dberr error
+
+	database, dberr = fetchDB(dbOpenChannel, dbname)
+	if dberr != nil {
+		http.Error(w, "Cannot open database", 500)
+		return
 	}
 
 	operation := Operation{

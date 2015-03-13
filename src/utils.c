@@ -67,7 +67,7 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 
     unsigned char *old_data_ptr = db->values + bucket->data_offset;
     /* Clear out the old data in the file. */
-    if (bucket->data_size > 0)
+    if (db->state != OL_S_STARTUP && bucket->data_size > 0)
         memset(old_data_ptr, '\0', bucket->data_size);
     /* Compute the new position of the data in the values file: */
     size_t new_offset = db->val_size;
@@ -75,20 +75,32 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 
     /* Compress using LZ4 if enabled */
     size_t cmsize = 0;
+    int extended_value_area = 0;
     if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         int maxoutsize = LZ4_compressBound(vsize);
-        if (maxoutsize <=  bucket->data_size) {
+        if (maxoutsize <= bucket->data_size) {
             /* We don't need to put this value at the end of the file if the
              * new value is small enough. */
             new_data_ptr = old_data_ptr;
             new_offset = bucket->data_offset;
         } else {
             _ol_ensure_values_file_size(db, maxoutsize);
+            extended_value_area = 1;
             new_data_ptr = db->values + db->val_size;
         }
 
-        cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
-                                      (int)vsize);
+        if (db->state != OL_S_STARTUP) {
+            cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
+                                          (int)vsize);
+        } else {
+            /* We're starting up, so we don't want to actually write to the
+             * values file. We just want the size and stuff.
+             */
+            int maxoutsize = LZ4_compressBound(vsize);
+            char tmp_data[maxoutsize];
+            cmsize = (size_t)LZ4_compress((char *)value, (char *)tmp_data,
+                                                 (int)vsize);
+        }
     } else {
         if (vsize <= bucket->data_size) {
             /* We don't need to put this value at the end of the file if the
@@ -97,10 +109,14 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
             new_offset = bucket->data_offset;
         } else {
             _ol_ensure_values_file_size(db, vsize);
+            extended_value_area = 1;
             new_data_ptr = db->values + db->val_size;
         }
-        if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
-            return 4;
+        if (db->state != OL_S_STARTUP) {
+            /* Like above, avoid writing to the values file on startup. */
+            if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
+                return 4;
+        }
     }
 
     if (bucket->expiration != NULL) {
@@ -119,7 +135,8 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     bucket->data_offset = new_offset;
 
     /* Remember to increment the tracked data size of the DB. */
-    db->val_size += bucket->data_size;
+    if (extended_value_area)
+        db->val_size += bucket->data_size;
 
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) && db->state != OL_S_STARTUP) {
         ol_aol_write_cmd(db, "JAR", bucket);

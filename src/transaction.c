@@ -101,7 +101,7 @@ static void _olt_cleanup_common(ol_transaction *tx, char *values_filename, char 
     debug("Unlinking values file for transaction, %s", values_filename);
     unlink(values_filename);
 
-    debug(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
+    debug("Unlinking aol file for transaction, %s", tx_aol_filename);
     unlink(tx_aol_filename);
 
     free(tx);
@@ -226,8 +226,12 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
     check_warn(_klen > 0, "Key length of zero not allowed.");
 
-    /* Check to see if we have an existing entry with that key */
+    /* We only want to hit this codepath within the same database, otherwise
+     * weird stuff happens. Like fires and stuff.
+     */
     if (bucket != NULL) {
+        /* Flag the transaction as dirty. */
+        tx->dirty = 1;
         return _ol_reallocate_bucket(db, bucket, value, vsize);
     }
 
@@ -438,7 +442,7 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
     ol_bucket *bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
     check_warn(_klen > 0, "Key length of zero not allowed.");
 
-    if (bucket == NULL) {
+    if (bucket == NULL && tx->parent_db != NULL) {
         /* Transaction DB doesn't have this key, but the parent does. */
         operating_db = tx->parent_db;
         bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);

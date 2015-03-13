@@ -49,7 +49,6 @@ int _ol_grow_and_rehash_db(ol_database *db) {
                 ol_bucket *tmp_bucket = bucket;
                 do {
                     vector_append_ptr(orphans, tmp_bucket->next);
-
                     ol_bucket *next = tmp_bucket->next;
                     tmp_bucket->next = NULL;
                     tmp_bucket = next;

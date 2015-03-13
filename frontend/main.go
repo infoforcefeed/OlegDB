@@ -25,7 +25,19 @@ type Config struct {
 	AOLEnabled       bool   `json:"aolenabled"`
 }
 
+// Used to request databases from the global list.
+type DBOpenRequest struct {
+	DBName string
+	SenderChannel chan DBOpenResponse
+}
+
+type DBOpenResponse struct {
+	Database goleg.Database
+	DBError error
+}
+
 var config Config
+var dbOpenChannel chan DBOpenRequest
 var databases map[string]goleg.Database
 
 const (
@@ -63,7 +75,7 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 	go func() {
-		<- signals
+		<-signals
 		unload()
 		os.Exit(0)
 	}()
@@ -124,6 +136,9 @@ func main() {
 	if config.SplayTreeEnabled {
 		log.Println("Splay-tree is enabled")
 	}
+
+	dbOpenChannel = DBRequester()
+
 	if config.UseHTTPS {
 		log.Println("Listening on https://" + config.Listen)
 		httperr = http.ListenAndServeTLS(config.Listen, config.CertFile, config.PkeyFile, nil)
