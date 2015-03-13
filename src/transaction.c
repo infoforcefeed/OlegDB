@@ -366,7 +366,7 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
         operating_db = tx->parent_db;
     }
 
-    if (index < 0 || operating_db->hashes[index] == NULL)
+    if (operating_db->hashes[index] == NULL)
         return 1;
 
     /* Now that we know what database we're operating on, continue
