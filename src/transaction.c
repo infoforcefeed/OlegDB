@@ -312,7 +312,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     /* Remember to increment the tracked data size of the DB. */
     db->val_size += new_bucket->data_size;
 
-    int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
+    unsigned int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
     /* TODO: rehash this shit at 80% */
     if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
         debug("Record count is now %i; growing hash table.", db->rcrd_cnt);
@@ -357,7 +357,7 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_database *operating_db = tx->transaction_db;
     /* First attempt to calculate the index in the transaction_db */
-    int index = _ol_calc_idx(tx->transaction_db->cur_ht_size, hash);
+    unsigned int index = _ol_calc_idx(tx->transaction_db->cur_ht_size, hash);
     /* If we couldn't find it in the transaction_db, look for the value in the
      * parent_db (the one we forked from) */
     if (tx->transaction_db->hashes[index] == NULL &&

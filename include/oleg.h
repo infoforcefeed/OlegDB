@@ -217,7 +217,7 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
  * xXx RETURNS=The maximum possible bucket slots for db. xXx
  * xXx *ht_size=The size you want to divide by <code>sizeof(ol_bucket)</code>. xXx
  */
-int ol_ht_bucket_max(size_t ht_size);
+unsigned int ol_ht_bucket_max(size_t ht_size);
 
 /* xXx FUNCTION=ol_prefix_match xXx
  * xXx DESCRIPTION=Returns values of keys that match a given prefix. xXx

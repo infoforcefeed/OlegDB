@@ -12,7 +12,7 @@ static inline void _ol_rehash_insert_bucket(
         ol_bucket **tmp_hashes,
         const size_t to_alloc,
         ol_bucket *bucket) {
-    int new_index;
+    unsigned int new_index;
 
     uint32_t hash;
     MurmurHash3_x86_32(bucket->key, bucket->klen, DEVILS_SEED, &hash);

@@ -50,8 +50,8 @@ void _ol_free_bucket(ol_bucket **ptr) {
     *ptr = NULL;
 }
 
-inline int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
-    int index;
+inline unsigned int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
+    unsigned int index;
     /* Powers of two, baby! */
     index = hash & (ol_ht_bucket_max(ht_size) - 1);
     return index;
@@ -147,7 +147,7 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 
 int _ol_set_bucket_no_incr(ol_database *db, ol_bucket *bucket, uint32_t hash) {
     /* TODO: error codes? */
-    int index = _ol_calc_idx(db->cur_ht_size, hash);
+    unsigned int index = _ol_calc_idx(db->cur_ht_size, hash);
     if (db->hashes[index] != NULL) {
         db->meta->key_collisions++;
         ol_bucket *tmp_bucket = db->hashes[index];

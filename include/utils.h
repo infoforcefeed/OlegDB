@@ -19,7 +19,7 @@ int _ol_get_value_from_bucket(const ol_database *db, const ol_bucket *bucket,
 void _ol_free_bucket(ol_bucket **ptr);
 
 /* Internal function used to find a buckets position in the DB */
-int _ol_calc_idx(const size_t ht_size, const uint32_t hash);
+unsigned int _ol_calc_idx(const size_t ht_size, const uint32_t hash);
 
 /* Computes the padded size of a value on disk. */
 const int _ol_compute_padded_size(const int size);
