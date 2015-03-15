@@ -14,13 +14,10 @@ y
 y
 y
 y
-' localhost:38080/waifu/_bulk_unjar
+' localhost:38080/test/_bulk_unjar
 * Connected to localhost (127.0.0.1) port 38080 (#0)
-&gt; POST /waifu/_bulk_unjar HTTP/1.1
-&gt; User-Agent: curl/7.40.0
+&gt; POST /test/_bulk_unjar HTTP/1.1
 &gt; Host: localhost:38080
-&gt; Accept: */*
-&gt; Content-Length: 12
 &gt; Content-Type: application/x-www-form-urlencoded
 &gt; 
 * upload completely sent off: 12 out of 12 bytes
