@@ -21,7 +21,7 @@ const (
 	OpCursorNext  = "._next"
 	OpCursorPrev  = "._prev"
 	OpPrefixMatch = "._match"
-	OpBulkGet     = "_bulk_get"
+	OpBulkUnjar   = "_bulk_unjar"
 )
 
 func httpGet(w http.ResponseWriter, op Operation) *HTTPError {
@@ -171,5 +171,11 @@ func httpCurPrev(w http.ResponseWriter, op Operation) *HTTPError {
 	}
 	w.Header().Add("X-Olegdb-Key", key)
 	w.Write(data)
+	return nil
+}
+
+func httpBulkUnjar(w http.ResponseWriter, op Operation) *HTTPError {
+	matched_keys := op.Database.BulkUnjar(op.Key)
+	// JSON OR SOME SHIT
 	return nil
 }

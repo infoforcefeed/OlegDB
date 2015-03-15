@@ -107,6 +107,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		err = httpCurNext(w, operation)
 	case OpCursorPrev:
 		err = httpCurPrev(w, operation)
+	case OpBulkGet:
+		err = httpBulkUnjar(w, operation)
 	default:
 		err = &HTTPError{Message: "I don't get what you're trying to do", Code: 400}
 	}
