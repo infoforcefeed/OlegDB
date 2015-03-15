@@ -21,6 +21,7 @@ const (
 	OpCursorNext  = "._next"
 	OpCursorPrev  = "._prev"
 	OpPrefixMatch = "._match"
+	OpBulkGet     = "_bulk_get"
 )
 
 func httpGet(w http.ResponseWriter, op Operation) *HTTPError {

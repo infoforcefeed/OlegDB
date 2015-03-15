@@ -6,6 +6,7 @@ package goleg
 #include <stdlib.h>
 #include "oleg.h"
 #include "cursor.h"
+#include "vector.h"
 */
 import "C"
 import (
@@ -199,6 +200,26 @@ func CPrefixMatch(db *C.ol_database, prefix string, plen uintptr) (int, []string
 	return length, out
 }
 
+func CBulkUnjar(db *C.ol_database, keys []string) [][]byte {
+	ckeys := C.ol_key_array{}
+	//var ckeys []*C.char
+
+	// Set array structure
+	for i, v := range keys {
+		ckey := C.CString(v)
+		defer C.free(unsafe.Pointer(ckey))
+		ckeys = append(ckeys, ckey)
+	}
+
+	values := C.ol_bulk_unjar(db, ckeys, len(ckeys))
+	defer C.vector_free(values)
+
+	for s := range values.count {
+	}
+
+	return [][]byte{}
+}
+
 func CDumpKeys(db *C.ol_database) (int, []string) {
 
 	// Call native function
@@ -209,7 +230,7 @@ func CDumpKeys(db *C.ol_database) (int, []string) {
 	}
 
 	// Set array structure
-	hdr := reflect.SliceHeader{
+	hdr := reflect.SliceHeader {
 		Data: uintptr(unsafe.Pointer(ptr)),
 		Len:  length,
 		Cap:  length,
