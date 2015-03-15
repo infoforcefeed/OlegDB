@@ -175,7 +175,10 @@ func httpCurPrev(w http.ResponseWriter, op Operation) *HTTPError {
 }
 
 func httpBulkUnjar(w http.ResponseWriter, op Operation) *HTTPError {
-	matched_keys := op.Database.BulkUnjar(op.Keys[0])
-	// JSON OR SOME SHIT
+	matched_keys := op.Database.BulkUnjar(op.Keys)
+
+	for _, key := range matched_keys {
+		w.Write([]byte(fmt.Sprintf("%0d%s", len(key), key)))
+	}
 	return nil
 }

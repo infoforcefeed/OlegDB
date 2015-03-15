@@ -2,6 +2,7 @@ package main
 
 import (
 	"./goleg"
+	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -107,7 +108,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		err = httpCurNext(w, operation)
 	case OpCursorPrev:
 		err = httpCurPrev(w, operation)
-	case OpBulkGet:
+	case OpBulkUnjar:
 		err = httpBulkUnjar(w, operation)
 	default:
 		err = &HTTPError{Message: "I don't get what you're trying to do", Code: 400}
@@ -121,7 +122,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func getRequestInfo(r *http.Request) (database string, keys []string, operation string, err *HTTPError) {
 	params := strings.Split(r.URL.Path[1:], "/")
 	if len(params) < 2 {
-		return "", "", "", &HTTPError{Code: 400, Message: "The wind whispers through your empty forest."}
+		return "", []string{""}, "", &HTTPError{Code: 400, Message: "The wind whispers through your empty forest."}
 	}
 
 	// Get parameters
@@ -148,7 +149,12 @@ func getRequestInfo(r *http.Request) (database string, keys []string, operation 
 		} else {
 			if keys[0] == "_bulk_unjar" {
 				// grab keys from POST body
-				keys := strings.Split(r.Body, "\n")
+				body, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					// TODO(kt): This is the fucking worst. Please, lets fix this.
+					return "", []string{""}, "", &HTTPError{Code: 400, Message: "The wind whispers through your empty forest. And I'm sorry."}
+				}
+				keys = strings.Split(string(body), "\n")
 			} else {
 				operation = keys[0]
 				keys = []string{""}
