@@ -116,3 +116,32 @@ func TestFullKeyDump(t *testing.T) {
 		t.Fatal("One or more keys did not dump")
 	}
 }
+
+func TestBulkUnjarOnlyReturnsKeysWeGiveIt(t *testing.T) {
+	database, _, err := openRandomDB(F_LZ4 | F_SPLAYTREE)
+	if err != nil {
+		t.Fatalf("Can't open database: %s", err.Error())
+	}
+
+	keys := []string{"key0", "key1", "key2", "key3"}
+
+	for i, key := range keys {
+		if database.Jar(key, []byte("value"+strconv.Itoa(i))) != 0 {
+			t.Fatalf("Can't jar value #%d", i)
+		}
+	}
+
+	subset := keys[1:] //sans key0
+
+	values := database.BulkUnjar(subset)
+
+	if l := len(values); l != 3 {
+		t.Fatalf("Expected a length of 3, got %d", l)
+	}
+
+	for i, value := range values {
+		if subset[i][3] != string(value)[5] {
+			t.Fatalf("Expected %s, got %s", subset[i][3], string(value)[5])
+		}
+	}
+}
