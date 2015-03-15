@@ -178,7 +178,7 @@ func httpBulkUnjar(w http.ResponseWriter, op Operation) *HTTPError {
 	matched_keys := op.Database.BulkUnjar(op.Keys)
 
 	for _, key := range matched_keys {
-		w.Write([]byte(fmt.Sprintf("%0d%s", len(key), key)))
+		w.Write([]byte(fmt.Sprintf("%08d%s", len(key), key)))
 	}
 	return nil
 }
