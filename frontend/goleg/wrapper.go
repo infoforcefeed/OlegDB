@@ -221,11 +221,15 @@ func CBulkUnjar(db *C.ol_database, keys []string) [][]byte {
 	// TODO: Will not work for unsigned char data with nulls sprinkled
 	// throughout. :^)
 	for i := (uint)(0); i < (uint)(values.count); i++ {
-		raw_value := C.vector_get(values, (C.uint)(i))
-		raw_len := C.strlen(*(**C.char)(raw_value))
-		coerced := C.GoBytes(unsafe.Pointer(*(**C.char)(raw_value)), (C.int)(raw_len))
-		toReturn = append(toReturn, coerced)
-		C.free(unsafe.Pointer(*(**C.char)(raw_value)))
+		raw_value := *(**C.char)(C.vector_get(values, (C.uint)(i)))
+		if raw_value != nil {
+			raw_len := C.strlen(raw_value)
+			coerced := C.GoBytes(unsafe.Pointer(raw_value), (C.int)(raw_len))
+			toReturn = append(toReturn, coerced)
+			C.free(unsafe.Pointer(raw_value))
+		} else {
+			toReturn = append(toReturn, []byte{})
+		}
 	}
 
 	return toReturn
