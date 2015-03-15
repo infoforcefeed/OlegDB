@@ -8,7 +8,7 @@ import (
 
 type Operation struct {
 	Database  *goleg.Database
-	Key       string
+	Keys      []string
 	Operation string
 }
 
@@ -47,7 +47,7 @@ func DBRequester() chan DBOpenRequest {
 
 			dbRequest.SenderChannel <- DBOpenResponse{
 				Database: database,
-				DBError: dberr,
+				DBError:  dberr,
 			}
 		}
 	}()
@@ -62,7 +62,7 @@ func fetchDB(dbOpenChannel chan DBOpenRequest, dbname string) (goleg.Database, e
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	dbname, key, opname, err := getRequestInfo(r)
+	dbname, keys, opname, err := getRequestInfo(r)
 	if err != nil {
 		http.Error(w, err.Message, err.Code)
 		return
@@ -78,9 +78,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	operation := Operation {
+	operation := Operation{
 		Database:  &database,
-		Key:       key,
+		Keys:      keys,
 		Operation: opname,
 	}
 
@@ -118,7 +118,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getRequestInfo(r *http.Request) (database, key, operation string, err *HTTPError) {
+func getRequestInfo(r *http.Request) (database string, keys []string, operation string, err *HTTPError) {
 	params := strings.Split(r.URL.Path[1:], "/")
 	if len(params) < 2 {
 		return "", "", "", &HTTPError{Code: 400, Message: "The wind whispers through your empty forest."}
@@ -126,7 +126,7 @@ func getRequestInfo(r *http.Request) (database, key, operation string, err *HTTP
 
 	// Get parameters
 	database = params[0]
-	key = params[1]
+	keys = []string{params[1]}
 	operation = OpGet
 
 	// Get operation name, it can either be:
@@ -139,18 +139,25 @@ func getRequestInfo(r *http.Request) (database, key, operation string, err *HTTP
 		operation = "." + params[2]
 	} else
 	// 3. A second argument starting with a _ (but not another _)
-	if key[0] == '_' {
-		// To get _key you do __key
-		if key[1] == '_' {
-			key = key[1:]
+	if keys[0][0] == '_' {
+		// To get _foobar you do __foobar
+		// To explain more: keys can start with underscores, but driver will have to
+		// escape them.
+		if keys[0][1] == '_' {
+			keys = []string{keys[0][1:]}
 		} else {
-			operation = key
-			key = ""
+			if keys[0] == "_bulk_unjar" {
+				// grab keys from POST body
+				keys := strings.Split(r.Body, "\n")
+			} else {
+				operation = keys[0]
+				keys = []string{""}
+			}
 		}
 	}
 
 	// Case insensitive
 	operation = strings.ToLower(operation)
 
-	return database, key, operation, nil
+	return database, keys, operation, nil
 }
