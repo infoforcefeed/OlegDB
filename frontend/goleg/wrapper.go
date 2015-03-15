@@ -245,7 +245,7 @@ func CDumpKeys(db *C.ol_database) (int, []string) {
 	}
 
 	// Set array structure
-	hdr := reflect.SliceHeader {
+	hdr := reflect.SliceHeader{
 		Data: uintptr(unsafe.Pointer(ptr)),
 		Len:  length,
 		Cap:  length,
