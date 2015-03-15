@@ -78,7 +78,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	operation := Operation{
+	operation := Operation {
 		Database:  &database,
 		Key:       key,
 		Operation: opname,
