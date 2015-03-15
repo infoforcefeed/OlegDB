@@ -133,7 +133,18 @@ func getRequestInfo(r *http.Request) (database string, keys []string, operation 
 	// Get operation name, it can either be:
 	// 1. An HTTP method that's not GET
 	if strings.ToUpper(r.Method) != "GET" {
-		operation = "/" + r.Method
+		if keys[0] == "_bulk_unjar" {
+			// grab keys from POST body
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				// TODO(kt): This is the fucking worst. Please, lets fix this.
+				return "", []string{""}, "", &HTTPError{Code: 400, Message: "The wind whispers through your empty forest. And I'm sorry."}
+			}
+			keys = strings.Split(string(body), "\n")
+			operation = "_bulk_unjar"
+		} else {
+			operation = "/" + r.Method
+		}
 	} else
 	// 2. A third argument (Cursor iteration)
 	if len(params) > 2 {
@@ -147,18 +158,8 @@ func getRequestInfo(r *http.Request) (database string, keys []string, operation 
 		if keys[0][1] == '_' {
 			keys = []string{keys[0][1:]}
 		} else {
-			if keys[0] == "_bulk_unjar" {
-				// grab keys from POST body
-				body, err := ioutil.ReadAll(r.Body)
-				if err != nil {
-					// TODO(kt): This is the fucking worst. Please, lets fix this.
-					return "", []string{""}, "", &HTTPError{Code: 400, Message: "The wind whispers through your empty forest. And I'm sorry."}
-				}
-				keys = strings.Split(string(body), "\n")
-			} else {
-				operation = keys[0]
-				keys = []string{""}
-			}
+			operation = keys[0]
+			keys = []string{""}
 		}
 	}
 
