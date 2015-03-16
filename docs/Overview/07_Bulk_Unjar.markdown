@@ -39,3 +39,8 @@ value `00000000` which fits the format, has no actual value and just keeps on
 going to the next key.
 
 Parsing is up to you, sky captain.
+
+WARNING: This operation is unsafe for binary data. Current `unjar` will return a
+null-terminated C string and no length in bytes. Since binary data can
+potentially contain null characters, this means you should only _bulk_unjar keys
+with values of ascii strings.
