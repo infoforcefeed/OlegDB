@@ -133,7 +133,6 @@ error:
     return NULL;
 }
 
-
 static inline int _ol_close_common(ol_database *db) {
     debug("Closing \"%s\" database.", db->name);
 

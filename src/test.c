@@ -448,7 +448,7 @@ int test_bulk_unjar(const ol_feature_flags features) {
 
     check(total == max_records, "Did not get all records from bulk unjar.");
 
-    free(bulk_unjarred);
+    vector_free(bulk_unjarred);
     _test_db_close(db);
     return 0;
 
