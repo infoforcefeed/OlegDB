@@ -11,7 +11,7 @@ else
     if [ $1 == "gdb" ]; then
         gdb --args $CMD
     elif [ $1 == "valgrind" ]; then
-        valgrind --track-origins=yes --leak-check=full $CMD
+        valgrind --track-fds=yes --track-origins=yes --leak-check=full $CMD
     else
         $CMD
     fi

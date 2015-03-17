@@ -159,10 +159,14 @@ static inline int _ol_close_common(ol_database *db) {
             }
         }
     }
-    if (!db->is_enabled(OL_F_DISABLE_TX, &db->feature_set))
-        check(freed >= rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
 
-    if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set) && db->tree != NULL) {
+    if (!db->is_enabled(OL_F_DISABLE_TX, &db->feature_set)) {
+        ols_close(db->cur_transactions);
+        free(db->cur_transactions);
+        check(freed >= rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
+    }
+
+    if (db->tree != NULL) {
         debug("Destroying tree.");
         ols_close(db->tree);
         free(db->tree);
