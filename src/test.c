@@ -485,6 +485,7 @@ int test_unjar(const ol_feature_flags features) {
 
     check(olt_commit(tx) == 0, "Could not commit transaction.");;
     _test_db_close(db);
+    free(new_item);
     free(item);
     return 0;
 

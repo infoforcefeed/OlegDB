@@ -215,7 +215,6 @@ func CBulkUnjar(db *C.ol_database, keys []string) [][]byte {
 	keysPtr = &ckeys[0]
 
 	values := (*C.vector)(C.ol_bulk_unjar(db, keysPtr, (C.size_t)(len(ckeys))))
-	defer C.vector_free(values)
 
 	var toReturn [][]byte
 	// TODO: Will not work for unsigned char data with nulls sprinkled
@@ -231,6 +230,7 @@ func CBulkUnjar(db *C.ol_database, keys []string) [][]byte {
 			toReturn = append(toReturn, []byte{})
 		}
 	}
+	C.vector_free(values)
 
 	return toReturn
 }
