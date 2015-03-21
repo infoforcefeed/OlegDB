@@ -2,13 +2,14 @@ package main
 
 import (
 	"./goleg"
+	"io/ioutil"
 	"net/http"
 	"strings"
 )
 
 type Operation struct {
 	Database  *goleg.Database
-	Key       string
+	Keys      []string
 	Operation string
 }
 
@@ -47,7 +48,7 @@ func DBRequester() chan DBOpenRequest {
 
 			dbRequest.SenderChannel <- DBOpenResponse{
 				Database: database,
-				DBError: dberr,
+				DBError:  dberr,
 			}
 		}
 	}()
@@ -62,7 +63,7 @@ func fetchDB(dbOpenChannel chan DBOpenRequest, dbname string) (goleg.Database, e
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	dbname, key, opname, err := getRequestInfo(r)
+	dbname, keys, opname, err := getRequestInfo(r)
 	if err != nil {
 		http.Error(w, err.Message, err.Code)
 		return
@@ -80,7 +81,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	operation := Operation{
 		Database:  &database,
-		Key:       key,
+		Keys:      keys,
 		Operation: opname,
 	}
 
@@ -107,6 +108,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		err = httpCurNext(w, operation)
 	case OpCursorPrev:
 		err = httpCurPrev(w, operation)
+	case OpBulkUnjar:
+		err = httpBulkUnjar(w, operation)
 	default:
 		err = &HTTPError{Message: "I don't get what you're trying to do", Code: 400}
 	}
@@ -116,39 +119,52 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getRequestInfo(r *http.Request) (database, key, operation string, err *HTTPError) {
+func getRequestInfo(r *http.Request) (database string, keys []string, operation string, err *HTTPError) {
 	params := strings.Split(r.URL.Path[1:], "/")
 	if len(params) < 2 {
-		return "", "", "", &HTTPError{Code: 400, Message: "The wind whispers through your empty forest."}
+		return "", []string{""}, "", &HTTPError{Code: 400, Message: "The wind whispers through your empty forest."}
 	}
 
 	// Get parameters
 	database = params[0]
-	key = params[1]
+	keys = []string{params[1]}
 	operation = OpGet
 
 	// Get operation name, it can either be:
 	// 1. An HTTP method that's not GET
 	if strings.ToUpper(r.Method) != "GET" {
-		operation = "/" + r.Method
+		if keys[0] == "_bulk_unjar" {
+			// grab keys from POST body
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				// TODO(kt): This is the fucking worst. Please, lets fix this.
+				return "", []string{""}, "", &HTTPError{Code: 400, Message: "The wind whispers through your empty forest. And I'm sorry."}
+			}
+			keys = strings.Split(string(body), "\n")
+			operation = "_bulk_unjar"
+		} else {
+			operation = "/" + r.Method
+		}
 	} else
 	// 2. A third argument (Cursor iteration)
 	if len(params) > 2 {
 		operation = "." + params[2]
 	} else
 	// 3. A second argument starting with a _ (but not another _)
-	if key[0] == '_' {
-		// To get _key you do __key
-		if key[1] == '_' {
-			key = key[1:]
+	if keys[0][0] == '_' {
+		// To get _foobar you do __foobar
+		// To explain more: keys can start with underscores, but driver will have to
+		// escape them.
+		if keys[0][1] == '_' {
+			keys = []string{keys[0][1:]}
 		} else {
-			operation = key
-			key = ""
+			operation = keys[0]
+			keys = []string{""}
 		}
 	}
 
 	// Case insensitive
 	operation = strings.ToLower(operation)
 
-	return database, key, operation, nil
+	return database, keys, operation, nil
 }

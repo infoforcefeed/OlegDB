@@ -151,3 +151,10 @@ func (d Database) Prev(key string) (bool, string, []byte) {
 	d.mutex.Unlock()
 	return exists, prev_key, data
 }
+
+func (d Database) BulkUnjar(keys []string) [][]byte {
+	d.mutex.Lock()
+	out := CBulkUnjar(d.db, keys)
+	d.mutex.Unlock()
+	return out
+}

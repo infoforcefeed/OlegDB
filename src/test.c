@@ -11,6 +11,7 @@
 #include "test.h"
 #include "tree.h"
 #include "transaction.h"
+#include "vector.h"
 
 #define DB_DEFAULT_FEATURES OL_F_SPLAYTREE | OL_F_LZ4
 
@@ -72,6 +73,38 @@ static int _test_db_close(ol_database *db) {
     rmdir(DB_PATH);
 
     return ret;
+}
+
+static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
+    int i;
+    unsigned char to_insert[] = "Hello I am some data for you and I am rather "
+        "a lot of data aren't I? Bigger data is better, as the NoSQL world is "
+        "fond of saying. Geez, I hope senpai notices me today! That would be "
+        "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!";
+    for (i = 0; i < NUM_KEYS; i++) {
+        /* DONT NEED YOUR SHIT, GCC */
+        char key[64] = "crazy hash";
+        char append[10] = "";
+
+        sprintf(append, "%i", i);
+        strcat(key, append);
+
+        size_t len = strlen((char *)to_insert);
+        int insert_result = ol_jar(db, key, strlen(key), to_insert, len);
+
+        if (insert_result > 0) {
+            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
+            _test_db_close(db);
+            return 2;
+        }
+
+        if (db->rcrd_cnt != i+1) {
+            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
+            _test_db_close(db);
+            return 3;
+        }
+    }
+    return 0;
 }
 
 int test_open_close(const ol_feature_flags features) {
@@ -390,6 +423,40 @@ error:
     return 1;
 }
 
+int test_bulk_unjar(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+
+    const int max_records = 3;
+    ol_log_msg(LOG_INFO, "Inserting %i records.", max_records);
+    int ret = _insert_keys(db, max_records);
+    if (ret > 0) {
+        ol_log_msg(LOG_ERR, "Error inserting keys. Error code: %d\n", ret);
+        return 1;
+    }
+
+    char *to_unjar[KEY_SIZE] = {"crazy hash0", "crazy hash1", "crazy hash2"};
+    vector *bulk_unjarred = ol_bulk_unjar(db, to_unjar, max_records);
+    check(bulk_unjarred, "Could not bulk unjar.");
+
+    unsigned int total = 0;
+    unsigned int i;
+    for (i = 0; i < bulk_unjarred->count; i++) {
+        unsigned char **data = vector_get_danger(bulk_unjarred, i);
+        free(*data);
+        total++;
+    }
+
+    check(total == max_records, "Did not get all records from bulk unjar.");
+
+    vector_free(bulk_unjarred);
+    _test_db_close(db);
+    return 0;
+
+error:
+    _test_db_close(db);
+    return 1;
+}
+
 int test_unjar(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     ol_transaction *tx = olt_begin(db);
@@ -418,6 +485,7 @@ int test_unjar(const ol_feature_flags features) {
 
     check(olt_commit(tx) == 0, "Could not commit transaction.");;
     _test_db_close(db);
+    free(new_item);
     free(item);
     return 0;
 
@@ -529,38 +597,6 @@ error:
     if (item != NULL)
         free(item);
     return 1;
-}
-
-static int _insert_keys(ol_database *db, unsigned int NUM_KEYS) {
-    int i;
-    unsigned char to_insert[] = "Hello I am some data for you and I am rather "
-        "a lot of data aren't I? Bigger data is better, as the NoSQL world is "
-        "fond of saying. Geez, I hope senpai notices me today! That would be "
-        "so marvelous, really. Hopefully I don't segfault again! Wooooooooooo!";
-    for (i = 0; i < NUM_KEYS; i++) {
-        /* DONT NEED YOUR SHIT, GCC */
-        char key[64] = "crazy hash";
-        char append[10] = "";
-
-        sprintf(append, "%i", i);
-        strcat(key, append);
-
-        size_t len = strlen((char *)to_insert);
-        int insert_result = ol_jar(db, key, strlen(key), to_insert, len);
-
-        if (insert_result > 0) {
-            ol_log_msg(LOG_ERR, "Could not insert. Error code: %i\n", insert_result);
-            _test_db_close(db);
-            return 2;
-        }
-
-        if (db->rcrd_cnt != i+1) {
-            ol_log_msg(LOG_ERR, "Record count is not higher. Hash collision?. Error code: %i\n", insert_result);
-            _test_db_close(db);
-            return 3;
-        }
-    }
-    return 0;
 }
 
 int test_feature_flags(const ol_feature_flags features) {
@@ -1075,6 +1111,7 @@ void run_tests(int results[2]) {
     /* These tests are special and depend on certain features being enabled
      * or disabled. */
     const ol_feature_flags feature_set = DB_DEFAULT_FEATURES;
+    ol_run_test(test_bulk_unjar);
     ol_run_test(test_basic_transaction);
     ol_run_test(test_basic_transaction_abort);
     ol_run_test(test_can_jump_cursor);

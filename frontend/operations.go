@@ -21,10 +21,11 @@ const (
 	OpCursorNext  = "._next"
 	OpCursorPrev  = "._prev"
 	OpPrefixMatch = "._match"
+	OpBulkUnjar   = "_bulk_unjar"
 )
 
 func httpGet(w http.ResponseWriter, op Operation) *HTTPError {
-	value := op.Database.Unjar(op.Key)
+	value := op.Database.Unjar(op.Keys[0])
 	// Check if the item existed
 	if value == nil {
 		return &HTTPError{Code: 404, Message: "These aren't your ghosts."}
@@ -43,9 +44,9 @@ func httpSet(w http.ResponseWriter, op Operation, r *http.Request) *HTTPError {
 	}
 
 	// Check if value already existed
-	exists := op.Database.Exists(op.Key)
+	exists := op.Database.Exists(op.Keys[0])
 
-	res := op.Database.Jar(op.Key, value)
+	res := op.Database.Jar(op.Keys[0], value)
 	if res == 0 {
 		// Status 201 if created, 200 if updated
 		if exists {
@@ -65,7 +66,7 @@ func httpSet(w http.ResponseWriter, op Operation, r *http.Request) *HTTPError {
 			return &HTTPError{Code: 500, Message: "The expiration format is wrong!"}
 		}
 		date := time.Unix(int64(ep), 0)
-		op.Database.Spoil(op.Key, date)
+		op.Database.Spoil(op.Keys[0], date)
 		// fmt.Fprintf(w, "\r\nThe jar is spoiling!")
 	}
 
@@ -74,12 +75,12 @@ func httpSet(w http.ResponseWriter, op Operation, r *http.Request) *HTTPError {
 
 func httpInfo(w http.ResponseWriter, op Operation) *HTTPError {
 	// Does it even exists?
-	if !op.Database.Exists(op.Key) {
+	if !op.Database.Exists(op.Keys[0]) {
 		return &HTTPError{Code: 404, Message: "Key not found in database"}
 	}
 
 	// Get and set Expiration
-	res, doesExpire := op.Database.Expiration(op.Key)
+	res, doesExpire := op.Database.Expiration(op.Keys[0])
 	if doesExpire {
 		w.Header().Add("Expires", strconv.Itoa(int(res.UTC().Unix())))
 	}
@@ -100,7 +101,7 @@ func httpUptime(w http.ResponseWriter, op Operation) *HTTPError {
 }
 
 func httpDelete(w http.ResponseWriter, op Operation) *HTTPError {
-	res := op.Database.Scoop(op.Key)
+	res := op.Database.Scoop(op.Keys[0])
 	if res != 0 {
 		return &HTTPError{Code: 500, Message: "Something went horribly wrong..."}
 	}
@@ -110,7 +111,7 @@ func httpDelete(w http.ResponseWriter, op Operation) *HTTPError {
 }
 
 func httpMatch(w http.ResponseWriter, op Operation) *HTTPError {
-	has, res := op.Database.PrefixMatch(op.Key)
+	has, res := op.Database.PrefixMatch(op.Keys[0])
 	if !has {
 		return &HTTPError{Code: 404, Message: "No matches found"}
 	}
@@ -154,7 +155,7 @@ func httpCurLast(w http.ResponseWriter, op Operation) *HTTPError {
 }
 
 func httpCurNext(w http.ResponseWriter, op Operation) *HTTPError {
-	has, key, data := op.Database.Next(op.Key)
+	has, key, data := op.Database.Next(op.Keys[0])
 	if !has {
 		return &HTTPError{Code: 404, Message: "No records found"}
 	}
@@ -164,11 +165,20 @@ func httpCurNext(w http.ResponseWriter, op Operation) *HTTPError {
 }
 
 func httpCurPrev(w http.ResponseWriter, op Operation) *HTTPError {
-	has, key, data := op.Database.Prev(op.Key)
+	has, key, data := op.Database.Prev(op.Keys[0])
 	if !has {
 		return &HTTPError{Code: 404, Message: "No records found"}
 	}
 	w.Header().Add("X-Olegdb-Key", key)
 	w.Write(data)
+	return nil
+}
+
+func httpBulkUnjar(w http.ResponseWriter, op Operation) *HTTPError {
+	matched_keys := op.Database.BulkUnjar(op.Keys)
+
+	for _, key := range matched_keys {
+		w.Write([]byte(fmt.Sprintf("%08d%s", len(key), key)))
+	}
 	return nil
 }

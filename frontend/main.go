@@ -27,13 +27,13 @@ type Config struct {
 
 // Used to request databases from the global list.
 type DBOpenRequest struct {
-	DBName string
+	DBName        string
 	SenderChannel chan DBOpenResponse
 }
 
 type DBOpenResponse struct {
 	Database goleg.Database
-	DBError error
+	DBError  error
 }
 
 var config Config

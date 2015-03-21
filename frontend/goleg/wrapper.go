@@ -4,8 +4,10 @@ package goleg
 #cgo CFLAGS: -I../../include
 #cgo LDFLAGS: -loleg
 #include <stdlib.h>
+#include <string.h>
 #include "oleg.h"
 #include "cursor.h"
+#include "vector.h"
 */
 import "C"
 import (
@@ -197,6 +199,40 @@ func CPrefixMatch(db *C.ol_database, prefix string, plen uintptr) (int, []string
 	// Free structure
 	C.free(unsafe.Pointer(ptr))
 	return length, out
+}
+
+func CBulkUnjar(db *C.ol_database, keys []string) [][]byte {
+	var ckeys []*C.char
+
+	// Set array structure
+	for _, v := range keys {
+		ckey := C.CString(v)
+		defer C.free(unsafe.Pointer(ckey))
+		ckeys = append(ckeys, ckey)
+	}
+
+	var keysPtr C.ol_key_array
+	keysPtr = &ckeys[0]
+
+	values := (*C.vector)(C.ol_bulk_unjar(db, keysPtr, (C.size_t)(len(ckeys))))
+
+	var toReturn [][]byte
+	// TODO: Will not work for unsigned char data with nulls sprinkled
+	// throughout. :^)
+	for i := (uint)(0); i < (uint)(values.count); i++ {
+		raw_value := *(**C.char)(C.vector_get(values, (C.uint)(i)))
+		if raw_value != nil {
+			raw_len := C.strlen(raw_value)
+			coerced := C.GoBytes(unsafe.Pointer(raw_value), (C.int)(raw_len))
+			toReturn = append(toReturn, coerced)
+			C.free(unsafe.Pointer(raw_value))
+		} else {
+			toReturn = append(toReturn, []byte{})
+		}
+	}
+	C.vector_free(values)
+
+	return toReturn
 }
 
 func CDumpKeys(db *C.ol_database) (int, []string) {

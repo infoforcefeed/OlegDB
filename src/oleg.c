@@ -22,6 +22,8 @@
 #include "utils.h"
 #include "lz4.h"
 #include "transaction.h"
+#include "stack.h"
+#include "vector.h"
 
 inline unsigned int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
@@ -131,7 +133,6 @@ error:
     return NULL;
 }
 
-
 static inline int _ol_close_common(ol_database *db) {
     debug("Closing \"%s\" database.", db->name);
 
@@ -158,10 +159,14 @@ static inline int _ol_close_common(ol_database *db) {
             }
         }
     }
-    if (!db->is_enabled(OL_F_DISABLE_TX, &db->feature_set))
-        check(freed >= rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
 
-    if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set) && db->tree != NULL) {
+    if (!db->is_enabled(OL_F_DISABLE_TX, &db->feature_set)) {
+        ols_close(db->cur_transactions);
+        free(db->cur_transactions);
+        check(freed >= rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
+    }
+
+    if (db->tree != NULL) {
         debug("Destroying tree.");
         ols_close(db->tree);
         free(db->tree);
@@ -489,6 +494,36 @@ int ol_squish(ol_database *db) {
 
 error:
     return 1;
+}
+
+vector *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys) {
+    ol_transaction *tx = NULL;
+    vector *to_return = NULL;
+    check(db != NULL, "Cannot unjar on NULL database.");
+    check((tx = olt_begin(db)) != NULL, "Could not begin transaction.");
+
+    to_return = vector_new(sizeof(unsigned char *), 256);
+
+    unsigned int i;
+    for (i = 0; i < num_keys; i++) {
+        const char *key = keys[i];
+        unsigned char *item = NULL;
+        size_t item_size = 0;
+        olt_unjar(tx, key, strnlen(key, KEY_SIZE), &item, &item_size);
+
+        if (item != NULL) {
+            vector_append_ptr(to_return, item);
+        } else {
+            vector_append_ptr(to_return, NULL);
+        }
+    }
+
+    check(olt_commit(tx) == 0, "Could not commit unjar transaction.");
+
+    return to_return;
+
+error:
+    return NULL;
 }
 
 struct tm *ol_sniff(ol_database *db, const char *key, size_t klen) {

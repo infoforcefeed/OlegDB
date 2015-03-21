@@ -280,6 +280,15 @@ int ol_cas(ol_database *db, const char *key, const size_t klen,
                             unsigned char *value, size_t vsize,
                             const unsigned char *ovalue, const size_t ovsize);
 
+/* xXx FUNCTION=ol_bulk_unjar xXx
+ * xXx DESCRIPTION=Bulk unjar operation. xXx
+ * xXx RETURNS=An immutable <code>vector</code> of pointers to matched values. The vector must be freed using <code>vector_free</code>, in addition to it's values with <code>free</code>. xXx
+ * xXx *db=The database to unjar from. xXx
+ * xXx *keys=An <code>ol_key_array</code> of keys to unjar. xXx
+ * xXx num_keys=The number of keys in <code>*keys</code>. xXx
+ */
+struct vector *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys);
+
 #ifdef __cplusplus
 }
 #endif
