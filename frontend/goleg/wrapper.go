@@ -48,7 +48,7 @@ func CUnjar(db *C.ol_database, key string, klen uintptr, dsize *uintptr) []byte 
 	// Pass them to ol_unjar
 	var ptr *C.uchar
 	res := C.ol_unjar(db, ckey, cklen, &ptr, cdsize)
-	if res == 1 {
+	if res != 0 {
 		return nil
 	}
 	// Retrieve data in Go []bytes
