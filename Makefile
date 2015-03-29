@@ -54,7 +54,7 @@ $(TEST_OUT): test.o main.o
 	$(CC) $(INCLUDES) -L$(LIB_DIR) -o $(TEST_OUT) test.o main.o $(MATH_LINKER) -loleg
 
 liboleg: $(LIB_DIR) $(LIB_OUT)
-$(LIB_OUT): vector.o murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o transaction.o
+$(LIB_OUT): f_mem_debug.o vector.o murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o transaction.o
 	$(CC) $(INCLUDES) -o $(LIB_OUT) $^ -fpic -shared $(MATH_LINKER)
 
 uninstall:

@@ -12,6 +12,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#define F_MEMORY_DEBUG
+#include "forge.h"
 #include "oleg.h"
 #include "file.h"
 #include "aol.h"
@@ -261,7 +263,9 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
             .parent_db = NULL,
             .transaction_db = db
         };
-        return olt_unjar(&stack_tx, key, klen, data, dsize);
+        int fuckyou = olt_unjar(&stack_tx, key, klen, data, dsize);
+        f_debug_mem_print(0);
+        return fuckyou;
     }
 
     ol_transaction *tx = olt_begin(db);
@@ -273,6 +277,7 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
 
     check(olt_commit(tx) == 0, "Could not commit transaction.");
 
+    f_debug_mem_print(0);
     return unjar_ret;
 
 error:

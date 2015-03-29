@@ -1,5 +1,7 @@
 /* Functions needed to rehash the main hash table. */
 #include <stdlib.h>
+#define F_MEMORY_DEBUG
+#include "forge.h"
 #include "oleg.h"
 #include "rehash.h"
 #include "utils.h"

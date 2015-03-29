@@ -57,6 +57,7 @@ func DBRequester() chan DBOpenRequest {
 
 func fetchDB(dbOpenChannel chan DBOpenRequest, dbname string) (goleg.Database, error) {
 	c := make(chan DBOpenResponse)
+	defer close(c)
 	dbOpenChannel <- DBOpenRequest{DBName: dbname, SenderChannel: c}
 	answer := <-c
 	return answer.Database, answer.DBError

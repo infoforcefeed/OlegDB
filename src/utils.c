@@ -1,5 +1,7 @@
 /* Common utility functions. */
 #include <stdlib.h>
+#define F_MEMORY_DEBUG
+#include "forge.h"
 #include "oleg.h"
 #include "utils.h"
 #include "errhandle.h"

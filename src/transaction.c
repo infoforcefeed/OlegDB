@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define F_MEMORY_DEBUG
+#include "forge.h"
 #include "oleg.h"
 #include "logging.h"
 #include "errhandle.h"
