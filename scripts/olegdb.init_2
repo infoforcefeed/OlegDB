@@ -1,0 +1,86 @@
+#!/bin/bash -e
+### BEGIN INIT INFO
+# Provides: olegdb
+# Required-Start: $local_fs $network
+# Required-Stop: $local_fs $network
+# Default-Start:  2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Starts, stops and meddles with OlegDB
+# Description: OlegDB is a k/v store and no one will ever read this. 
+### END INIT INFO
+
+RUN_DIR=/run/olegdb
+PID_FILE=$RUN_DIR/pid
+DATA_DIR=/var/lib/olegdb
+HOST=127.0.0.1
+PORT=8080
+PROG=olegdb
+OLEGDB_USER=olegdb
+LOG_FILE=/var/log/olegdb.log
+
+start_olegdb() {
+    mkdir -p "$RUN_DIR"
+    mkdir -p "$DATA_DIR"
+    chown $OLEGDB_USER:$OLEGDB_USER "$RUN_DIR" -R
+    chown $OLEGDB_USER:$OLEGDB_USER "$DATA_DIR" -R
+    touch $LOG_FILE
+    chown $OLEGDB_USER:$OLEGDB_USER "$LOG_FILE"
+    su $OLEGDB_USER -c "$PROG $DATA_DIR $HOST $PORT &>> $LOG_FILE" &
+    return $?
+}
+
+stop_olegdb() {
+    if [ -f $PID_FILE ]
+    then
+        PID=`cat $PID_FILE`
+    fi
+    if [ -n "$PID" ]
+    then
+        if kill -0 $PID 2> /dev/null
+        then
+            if kill -TERM $PID 2> /dev/null
+            then
+                echo "OlegDB has stopped it's reign of terror."
+                rm $PID_FILE
+                return 0
+            else
+                echo "OlegDB is unstoppable!"
+                return -1
+            fi
+            echo "OlegDB PID is stale."
+            rm $PID_FILE
+        fi
+    else
+        echo "OlegDB is not running."
+    fi
+}
+
+case "$1" in
+    start)
+        echo "Starting OlegDB..."
+        if start_olegdb; then
+            echo "Started."
+        else
+            echo "Could not start OlegDB."
+        fi
+        ;;
+    stop)
+        echo "Stopping OlegDB..."
+        if stop_olegdb; then
+            echo "Stopped."
+        else
+            echo "Could not stop OlegDB."
+        fi
+        ;;
+    restart)
+        echo "Restarting OlegDB..."
+        stop_olegdb
+        start_olegdb
+        echo "Successfully restarted."
+        ;;
+    *)
+        echo "Usage: "`basename $0`" {start|stop}"
+        exit -1
+        ;;
+esac
+
