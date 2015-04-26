@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -177,8 +178,13 @@ func httpCurPrev(w http.ResponseWriter, op Operation) *HTTPError {
 func httpBulkUnjar(w http.ResponseWriter, op Operation) *HTTPError {
 	matched_keys := op.Database.BulkUnjar(op.Keys)
 
+	var write_buffer bytes.Buffer
 	for _, key := range matched_keys {
-		w.Write([]byte(fmt.Sprintf("%08d%s", len(key), key)))
+		write_buffer.Write([]byte(fmt.Sprintf("%08d%s", len(key), key)))
 	}
+	buf_len := len(write_buffer.Bytes())
+	w.Header().Add("Content-Length", strconv.Itoa(buf_len))
+	w.Write(write_buffer.Bytes())
+
 	return nil
 }
