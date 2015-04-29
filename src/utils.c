@@ -46,6 +46,7 @@ int _has_bucket_expired(const ol_bucket *bucket) {
 
 void _ol_free_bucket(ol_bucket **ptr) {
     free((*ptr)->expiration);
+    free((*ptr)->key);
     free((*ptr));
     *ptr = NULL;
 }
@@ -202,7 +203,7 @@ int _ol_get_value_from_bucket(const ol_database *db, const ol_bucket *bucket,
         processed = LZ4_decompress_fast((char *)data_ptr,
                                         (char *)*data,
                                         bucket->original_size);
-        check(processed == bucket->data_size, "Could not decompress data.");
+        check(processed == bucket->data_size, "Could not decompress data. Key: %s", bucket->key);
     } else {
         /* We know data isn't NULL by this point. */
         unsigned char *ret = memcpy(*data, data_ptr, bucket->original_size);

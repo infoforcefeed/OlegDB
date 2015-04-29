@@ -241,6 +241,9 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
         return 1;
 
     /* copy _key into new bucket */
+    new_bucket->key = malloc(_klen + 1);
+    check_mem(new_bucket->key);
+    new_bucket->key[_klen] = '\0';
     if (strncpy(new_bucket->key, _key, _klen) != new_bucket->key) {
         free(new_bucket);
         return 2;

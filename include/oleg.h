@@ -65,7 +65,7 @@ typedef char **ol_key_array;
 * xXx tx_id=If this record is a part of a transaction, then this will be a non-negative integer.
 */
 typedef struct ol_bucket {
-    char                key[KEY_SIZE]; /* The key used to reference the data */
+    char                *key;
     size_t              klen;
     size_t              data_offset;
     size_t              data_size;
