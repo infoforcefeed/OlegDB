@@ -151,11 +151,11 @@ func getRequestInfo(r *http.Request) (database string, keys []string, operation 
 		operation = "." + params[2]
 	} else
 	// 3. A second argument starting with a _ (but not another _)
-	if keys[0][0] == '_' {
+	if len(keys[0]) > 0 && keys[0][0] == '_' {
 		// To get _foobar you do __foobar
 		// To explain more: keys can start with underscores, but driver will have to
 		// escape them.
-		if keys[0][1] == '_' {
+		if len(keys[0]) > 1 && keys[0][1] == '_' {
 			keys = []string{keys[0][1:]}
 		} else {
 			operation = keys[0]
