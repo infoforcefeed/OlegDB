@@ -455,8 +455,15 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
              */
             uint32_t hash;
             MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
-            ol_bucket *copied = calloc(1, sizeof(ol_bucket));
+            ol_bucket *copied = malloc(sizeof(ol_bucket));
             check_mem(copied);
+
+            memcpy(copied, bucket, sizeof(ol_bucket));
+
+            copied->key = malloc(_klen + 1);
+            check_mem(copied->key);
+            copied->key[_klen] = '\0';
+            memcpy(copied->key, bucket->key, _klen);
 
             _ol_set_bucket_no_incr(operating_db, copied, hash);
         }
