@@ -38,8 +38,11 @@ int _has_bucket_expired(const ol_bucket *bucket) {
     }
 
     /* For some reason you can't compare 0 to a time_t. */
-    if (current < made)
-        return 0;
+    if (current < made) {
+        {   /* Double-wrap the braces in case the first ones are optimized out. */
+            return 0;
+        }
+    }
     return 1;
 }
 
