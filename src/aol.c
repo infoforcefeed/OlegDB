@@ -82,7 +82,7 @@ int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bct) {
         /* I'LL RIGOR YER MORTIS */
         const size_t write_buf_size =
             strlen(":") + uintlen(strlen(cmd)) + strlen(":") + strlen(cmd) +
-            strlen(":") + uintlen(bct->klen) + strlen(":") + strlen(bct->key) +
+            strlen(":") + uintlen(bct->klen) + strlen(":") + bct->klen +
             strlen(":1: ") +
             strlen(":") + uintlen(uintlen(bct->original_size)) + strlen(":") + uintlen(bct->original_size) +
             strlen(":") + uintlen(uintlen(bct->data_size)) + strlen(":") + uintlen(bct->data_size) +

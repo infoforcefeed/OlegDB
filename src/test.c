@@ -987,7 +987,7 @@ int test_compaction(const ol_feature_flags features) {
         char buf[20] = {0};
         sprintf(buf, "%i", i);
         strncat(key, buf, 30);
-        check(ol_scoop(db, key, strnlen(key, 64)) == 0, "Could not delete record %s.", key);
+        check(ol_scoop(db, key, strnlen(key, sizeof(key))) == 0, "Could not delete record %s.", key);
     }
 
     struct tm *now;
