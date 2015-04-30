@@ -262,10 +262,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
 
     /* Looks like we don't have an old hash */
     ol_bucket *new_bucket = calloc(1, sizeof(ol_bucket));
-    if (new_bucket == NULL)
-        /* Flag the transaction as dirty. */
-        tx->dirty = 1;
-        return 1;
+    check_mem(new_bucket);
 
     /* Lock the new bucket right off the bat. */
     check_warn(olt_lock_bucket(tx, new_bucket) == 0, "Could not lock bucket.");
