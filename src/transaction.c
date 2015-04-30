@@ -96,17 +96,26 @@ error:
     return NULL;
 }
 
-static int _olt_cleanup(ol_transaction *tx, char *values_filename, char *tx_aol_filename) {
+static void _olt_cleanup_common(ol_transaction *tx, char *values_filename, char *tx_aol_filename) {
     /* Yeah, come at me. */
-    const int ret = ol_close(tx->transaction_db);
     debug("Unlinking values file for transaction, %s", values_filename);
     unlink(values_filename);
 
-    debug(LOG_WARN, "Unlinking aol file for transaction, %s", tx_aol_filename);
+    debug("Unlinking aol file for transaction, %s", tx_aol_filename);
     unlink(tx_aol_filename);
 
     free(tx);
+}
 
+static int _olt_cleanup_fast(ol_transaction *tx, char *values_filename, char *tx_aol_filename) {
+    const int ret = ol_close_fast(tx->transaction_db);
+    _olt_cleanup_common(tx, values_filename, tx_aol_filename);
+    return ret;
+}
+
+static int _olt_cleanup(ol_transaction *tx, char *values_filename, char *tx_aol_filename) {
+    const int ret = ol_close(tx->transaction_db);
+    _olt_cleanup_common(tx, values_filename, tx_aol_filename);
     return ret;
 }
 
@@ -156,7 +165,7 @@ int olt_abort(ol_transaction *tx) {
     char values_filename[DB_NAME_SIZE] = {0};
     tx->transaction_db->get_db_file_name(tx->transaction_db, VALUES_FILENAME, values_filename);
 
-    return _olt_cleanup(tx, values_filename, tx_aol_filename);
+    return _olt_cleanup_fast(tx, values_filename, tx_aol_filename);
 
 error:
     return 1;
@@ -250,21 +259,21 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
     check_warn(_klen > 0, "Key length of zero not allowed.");
 
-    /* Check to see if we have an existing entry with that key */
-    if (bucket != NULL) {
-        check_warn(olt_lock_bucket(tx, bucket) == 0, "Could not lock bucket.");
-        return _ol_reallocate_bucket(db, bucket, value, vsize);
-    }
 
     /* Looks like we don't have an old hash */
     ol_bucket *new_bucket = calloc(1, sizeof(ol_bucket));
     if (new_bucket == NULL)
+        /* Flag the transaction as dirty. */
+        tx->dirty = 1;
         return 1;
 
     /* Lock the new bucket right off the bat. */
     check_warn(olt_lock_bucket(tx, new_bucket) == 0, "Could not lock bucket.");
 
     /* copy _key into new bucket */
+    new_bucket->key = malloc(_klen + 1);
+    check_mem(new_bucket->key);
+    new_bucket->key[_klen] = '\0';
     if (strncpy(new_bucket->key, _key, _klen) != new_bucket->key) {
         free(new_bucket);
         return 2;
@@ -336,7 +345,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     /* Remember to increment the tracked data size of the DB. */
     db->val_size += new_bucket->data_size;
 
-    int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
+    unsigned int bucket_max = ol_ht_bucket_max(db->cur_ht_size);
     /* TODO: rehash this shit at 80% */
     if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
         debug("Record count is now %i; growing hash table.", db->rcrd_cnt);
@@ -381,7 +390,7 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_database *operating_db = tx->transaction_db;
     /* First attempt to calculate the index in the transaction_db */
-    int index = _ol_calc_idx(tx->transaction_db->cur_ht_size, hash);
+    unsigned int index = _ol_calc_idx(tx->transaction_db->cur_ht_size, hash);
     /* If we couldn't find it in the transaction_db, look for the value in the
      * parent_db (the one we forked from) */
     if (tx->transaction_db->hashes[index] == NULL &&
@@ -390,7 +399,7 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
         operating_db = tx->parent_db;
     }
 
-    if (index < 0 || operating_db->hashes[index] == NULL)
+    if (operating_db->hashes[index] == NULL)
         return 1;
 
     /* Now that we know what database we're operating on, continue
@@ -466,7 +475,7 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
     ol_bucket *bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
     check_warn(_klen > 0, "Key length of zero not allowed.");
 
-    if (bucket == NULL) {
+    if (bucket == NULL && tx->parent_db != NULL) {
         /* Transaction DB doesn't have this key, but the parent does. */
         operating_db = tx->parent_db;
         bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
@@ -476,8 +485,15 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
              */
             uint32_t hash;
             MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
-            ol_bucket *copied = calloc(1, sizeof(ol_bucket));
+            ol_bucket *copied = malloc(sizeof(ol_bucket));
             check_mem(copied);
+
+            memcpy(copied, bucket, sizeof(ol_bucket));
+
+            copied->key = malloc(_klen + 1);
+            check_mem(copied->key);
+            copied->key[_klen] = '\0';
+            memcpy(copied->key, bucket->key, _klen);
 
             _ol_set_bucket_no_incr(operating_db, copied, hash);
         }

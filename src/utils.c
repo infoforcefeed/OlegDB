@@ -39,19 +39,22 @@ int _has_bucket_expired(const ol_bucket *bucket) {
 
     /* For some reason you can't compare 0 to a time_t. */
     if (current < made) {
-        return 0;
+        {   /* Double-wrap the braces in case the first ones are optimized out. */
+            return 0;
+        }
     }
     return 1;
 }
 
 void _ol_free_bucket(ol_bucket **ptr) {
     free((*ptr)->expiration);
+    free((*ptr)->key);
     free((*ptr));
     *ptr = NULL;
 }
 
-inline int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
-    int index;
+inline unsigned int _ol_calc_idx(const size_t ht_size, const uint32_t hash) {
+    unsigned int index;
     /* Powers of two, baby! */
     index = hash & (ol_ht_bucket_max(ht_size) - 1);
     return index;
@@ -67,7 +70,7 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 
     unsigned char *old_data_ptr = db->values + bucket->data_offset;
     /* Clear out the old data in the file. */
-    if (bucket->data_size > 0)
+    if (db->state != OL_S_STARTUP && bucket->data_size > 0)
         memset(old_data_ptr, '\0', bucket->data_size);
     /* Compute the new position of the data in the values file: */
     size_t new_offset = db->val_size;
@@ -75,20 +78,32 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 
     /* Compress using LZ4 if enabled */
     size_t cmsize = 0;
+    int extended_value_area = 0;
     if (db->is_enabled(OL_F_LZ4, &db->feature_set)) {
         int maxoutsize = LZ4_compressBound(vsize);
-        if (maxoutsize <=  bucket->data_size) {
+        if (maxoutsize <= bucket->data_size) {
             /* We don't need to put this value at the end of the file if the
              * new value is small enough. */
             new_data_ptr = old_data_ptr;
             new_offset = bucket->data_offset;
         } else {
             _ol_ensure_values_file_size(db, maxoutsize);
+            extended_value_area = 1;
             new_data_ptr = db->values + db->val_size;
         }
 
-        cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
-                                      (int)vsize);
+        if (db->state != OL_S_STARTUP) {
+            cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
+                                          (int)vsize);
+        } else {
+            /* We're starting up, so we don't want to actually write to the
+             * values file. We just want the size and stuff.
+             */
+            int maxoutsize = LZ4_compressBound(vsize);
+            char tmp_data[maxoutsize];
+            cmsize = (size_t)LZ4_compress((char *)value, (char *)tmp_data,
+                                                 (int)vsize);
+        }
     } else {
         if (vsize <= bucket->data_size) {
             /* We don't need to put this value at the end of the file if the
@@ -97,10 +112,14 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
             new_offset = bucket->data_offset;
         } else {
             _ol_ensure_values_file_size(db, vsize);
+            extended_value_area = 1;
             new_data_ptr = db->values + db->val_size;
         }
-        if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
-            return 4;
+        if (db->state != OL_S_STARTUP) {
+            /* Like above, avoid writing to the values file on startup. */
+            if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
+                return 4;
+        }
     }
 
     if (bucket->expiration != NULL) {
@@ -119,7 +138,8 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
     bucket->data_offset = new_offset;
 
     /* Remember to increment the tracked data size of the DB. */
-    db->val_size += bucket->data_size;
+    if (extended_value_area)
+        db->val_size += bucket->data_size;
 
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) && db->state != OL_S_STARTUP) {
         ol_aol_write_cmd(db, "JAR", bucket);
@@ -130,7 +150,7 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
 
 int _ol_set_bucket_no_incr(ol_database *db, ol_bucket *bucket, uint32_t hash) {
     /* TODO: error codes? */
-    int index = _ol_calc_idx(db->cur_ht_size, hash);
+    unsigned int index = _ol_calc_idx(db->cur_ht_size, hash);
     if (db->hashes[index] != NULL) {
         db->meta->key_collisions++;
         ol_bucket *tmp_bucket = db->hashes[index];
@@ -168,8 +188,9 @@ int _ol_get_value_from_bucket(const ol_database *db, const ol_bucket *bucket,
         unsigned char **data, size_t *dsize) {
     check(bucket != NULL, "Cannot retrieve value from NULL bucket.");
     /* Allocate memory to store memcpy'd data into. */
-    *data = calloc(1, bucket->original_size);
-    check(*data != NULL, "Could not allocate memory for compressed data.");
+    *data = malloc(bucket->original_size + 1);
+    check_mem(*data);
+    (*data)[bucket->original_size] = '\0';
 
     if (dsize != NULL) {
         /* "memcpy never fails!" */
@@ -184,7 +205,7 @@ int _ol_get_value_from_bucket(const ol_database *db, const ol_bucket *bucket,
         processed = LZ4_decompress_fast((char *)data_ptr,
                                         (char *)*data,
                                         bucket->original_size);
-        check(processed == bucket->data_size, "Could not decompress data.");
+        check(processed == bucket->data_size, "Could not decompress data. Key: %s", bucket->key);
     } else {
         /* We know data isn't NULL by this point. */
         unsigned char *ret = memcpy(*data, data_ptr, bucket->original_size);

@@ -12,7 +12,7 @@ static inline void _ol_rehash_insert_bucket(
         ol_bucket **tmp_hashes,
         const size_t to_alloc,
         ol_bucket *bucket) {
-    int new_index;
+    unsigned int new_index;
 
     uint32_t hash;
     MurmurHash3_x86_32(bucket->key, bucket->klen, DEVILS_SEED, &hash);
@@ -49,7 +49,6 @@ int _ol_grow_and_rehash_db(ol_database *db) {
                 ol_bucket *tmp_bucket = bucket;
                 do {
                     vector_append_ptr(orphans, tmp_bucket->next);
-
                     ol_bucket *next = tmp_bucket->next;
                     tmp_bucket->next = NULL;
                     tmp_bucket = next;

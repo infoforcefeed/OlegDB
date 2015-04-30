@@ -9,7 +9,7 @@ typedef struct ol_splay_tree_node {
     struct  ol_splay_tree_node *right;
     struct  ol_splay_tree_node *parent;
 
-    char    key[KEY_SIZE];
+    char    *key;
     size_t  klen;
     const void *ref_obj;
 } ol_splay_tree_node;

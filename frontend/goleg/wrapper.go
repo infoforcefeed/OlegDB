@@ -4,8 +4,10 @@ package goleg
 #cgo CFLAGS: -I../../include
 #cgo LDFLAGS: -loleg
 #include <stdlib.h>
+#include <string.h>
 #include "oleg.h"
 #include "cursor.h"
+#include "vector.h"
 */
 import "C"
 import (
@@ -48,7 +50,7 @@ func CUnjar(db *C.ol_database, key string, klen uintptr, dsize *uintptr) []byte 
 	// Pass them to ol_unjar
 	var ptr *C.uchar
 	res := C.ol_unjar(db, ckey, cklen, &ptr, cdsize)
-	if res == 1 {
+	if res != 0 {
 		return nil
 	}
 	// Retrieve data in Go []bytes
@@ -89,15 +91,15 @@ func CUptime(db *C.ol_database) int {
 	return int(C.ol_uptime(db))
 }
 
-func CExpirationTime(db *C.ol_database, key string, klen uintptr) (time.Time, bool) {
+func CSniff(db *C.ol_database, key string, klen uintptr) (time.Time, bool) {
 	// Turn parameters into their C counterparts
 	ckey := C.CString(key)
 	defer C.free(unsafe.Pointer(ckey))
 
 	cklen := (C.size_t)(klen)
 
-	// Pass them to ol_expiration_time
-	ctime := C.ol_expiration_time(db, ckey, cklen)
+	// Pass them to ol_sniff
+	ctime := C.ol_sniff(db, ckey, cklen)
 
 	// Does the expiration exist? If no, return false as second param
 	if ctime == nil {
@@ -197,6 +199,40 @@ func CPrefixMatch(db *C.ol_database, prefix string, plen uintptr) (int, []string
 	// Free structure
 	C.free(unsafe.Pointer(ptr))
 	return length, out
+}
+
+func CBulkUnjar(db *C.ol_database, keys []string) [][]byte {
+	var ckeys []*C.char
+
+	// Set array structure
+	for _, v := range keys {
+		ckey := C.CString(v)
+		defer C.free(unsafe.Pointer(ckey))
+		ckeys = append(ckeys, ckey)
+	}
+
+	var keysPtr C.ol_key_array
+	keysPtr = &ckeys[0]
+
+	values := (*C.vector)(C.ol_bulk_unjar(db, keysPtr, (C.size_t)(len(ckeys))))
+
+	var toReturn [][]byte
+	// TODO: Will not work for unsigned char data with nulls sprinkled
+	// throughout. :^)
+	for i := (uint)(0); i < (uint)(values.count); i++ {
+		raw_value := *(**C.char)(C.vector_get(values, (C.uint)(i)))
+		if raw_value != nil {
+			raw_len := C.strlen(raw_value)
+			coerced := C.GoBytes(unsafe.Pointer(raw_value), (C.int)(raw_len))
+			toReturn = append(toReturn, coerced)
+			C.free(unsafe.Pointer(raw_value))
+		} else {
+			toReturn = append(toReturn, []byte{})
+		}
+	}
+	C.vector_free(values)
+
+	return toReturn
 }
 
 func CDumpKeys(db *C.ol_database) (int, []string) {

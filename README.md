@@ -45,6 +45,8 @@ make test
 sudo make install
 ```
 
+Note that BSD users may have to use `gmake` where applicable.
+
 To run tests:
 
 ```bash
@@ -59,6 +61,11 @@ olegdb [-conf olegdb.conf] [-bind localhost:8080] [-dir data]
 For an explanation of the command line parameters, do `olegdb -h`
 
 curl2sudo&reg; install script coming soon.
+
+Un-Installation
+============
+
+`sudo make uninstall`
 
 Documentation
 =============

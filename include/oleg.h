@@ -65,7 +65,7 @@ typedef char **ol_key_array;
 * xXx tx_id=If this record is a part of a transaction, then this will be a non-zero integer.
 */
 typedef struct ol_bucket {
-    char                key[KEY_SIZE]; /* The key used to reference the data */
+    char                *key;
     size_t              klen;
     size_t              data_offset;
     size_t              data_size;
@@ -148,6 +148,13 @@ ol_database *ol_open(const char *path, const char *name, int features);
  */
 int ol_close(ol_database *database);
 
+/* xXx FUNCTION=ol_close_fast xXx
+ * xXx DESCRIPTION=Closes a database without syncing the AOL or Values file. Intended to be used for transaction that did nothing. xXx
+ * xXx RETURNS=0 on success, 1 if not everything could be freed. xXx
+ * xXx *database=The database to close. xXx
+ */
+int ol_close_fast(ol_database *database);
+
 /* xXx FUNCTION=ol_unjar xXx
  * xXx DESCRIPTION=This function retrieves a value from the database. <strong>data must be freed after calling this function!</strong> It also writes the size of the data to <code>dsize</code>. Pass dsize as NULL if you don't care. xXx
  * xXx RETURNS=0 on success, 1 on failure or if the key was not found.
@@ -170,14 +177,14 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
  */
 int ol_jar(ol_database *db, const char *key, size_t klen, const unsigned char *value, size_t vsize);
 
-/* xXx FUNCTION=ol_expiration xXx
+/* xXx FUNCTION=ol_sniff xXx
  * xXx DESCRIPTION=Retrieves the expiration time for a given key from the database. xXx
  * xXx RETURNS=Stored <code>struct tm *</code> representing the time that this key will expire, or NULL if not found. xXx
  * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
  */
-struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen);
+struct tm *ol_sniff(ol_database *db, const char *key, size_t klen);
 
 /* xXx FUNCTION=ol_scoop xXx
  * xXx DESCRIPTION=Removes an object from the database. Get that crap out of the mayo jar. xXx
@@ -210,7 +217,7 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
  * xXx RETURNS=The maximum possible bucket slots for db. xXx
  * xXx *ht_size=The size you want to divide by <code>sizeof(ol_bucket)</code>. xXx
  */
-int ol_ht_bucket_max(size_t ht_size);
+unsigned int ol_ht_bucket_max(size_t ht_size);
 
 /* xXx FUNCTION=ol_prefix_match xXx
  * xXx DESCRIPTION=Returns values of keys that match a given prefix. xXx
@@ -272,6 +279,15 @@ int ol_squish(ol_database *db);
 int ol_cas(ol_database *db, const char *key, const size_t klen,
                             unsigned char *value, size_t vsize,
                             const unsigned char *ovalue, const size_t ovsize);
+
+/* xXx FUNCTION=ol_bulk_unjar xXx
+ * xXx DESCRIPTION=Bulk unjar operation. xXx
+ * xXx RETURNS=An immutable <code>vector</code> of pointers to matched values. The vector must be freed using <code>vector_free</code>, in addition to it's values with <code>free</code>. xXx
+ * xXx *db=The database to unjar from. xXx
+ * xXx *keys=An <code>ol_key_array</code> of keys to unjar. xXx
+ * xXx num_keys=The number of keys in <code>*keys</code>. xXx
+ */
+struct vector *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys);
 
 #ifdef __cplusplus
 }

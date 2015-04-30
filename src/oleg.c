@@ -22,8 +22,10 @@
 #include "utils.h"
 #include "lz4.h"
 #include "transaction.h"
+#include "stack.h"
+#include "vector.h"
 
-inline int ol_ht_bucket_max(size_t ht_size) {
+inline unsigned int ol_ht_bucket_max(size_t ht_size) {
     return (ht_size/sizeof(ol_bucket *));
 }
 
@@ -94,6 +96,7 @@ ol_database *ol_open(const char *path, const char *name, int features){
 
     new_db->feature_set = features;
     new_db->state = OL_S_STARTUP;
+    debug("Initializing tree.");
     /* Allocate a splay tree if we're into that */
     if (new_db->is_enabled(OL_F_SPLAYTREE, &new_db->feature_set)) {
         ols_init(&new_db->tree);
@@ -102,22 +105,26 @@ ol_database *ol_open(const char *path, const char *name, int features){
     /* We figure out the filename now incase someone flips the aol_init bit
      * later.
      */
+    debug("Getting DB filename.");
     new_db->get_db_file_name(new_db, AOL_FILENAME, new_db->aol_file);
 
     /* Are we a TX database? Well, if not then we require AOL. Because we might
      * transact and thats crazy. */
+    debug("Initialzing transaction tree.");
     if (!new_db->is_enabled(OL_F_DISABLE_TX, &new_db->feature_set)) {
         new_db->enable(OL_F_APPENDONLY, &new_db->feature_set);
         ols_init(&(new_db->cur_transactions));
         check(new_db->cur_transactions != NULL, "Could not init transaction tree.");
     }
 
+    debug("Initialzing AOL.");
     if (new_db->is_enabled(OL_F_APPENDONLY, &new_db->feature_set)) {
         ol_aol_init(new_db);
         check(ol_aol_restore(new_db) == 0, "Error restoring from AOL file");
     }
     new_db->state = OL_S_AOKAY;
 
+    debug("Everything worked.");
     return new_db;
 
 error:
@@ -126,7 +133,7 @@ error:
     return NULL;
 }
 
-int ol_close(ol_database *db){
+static inline int _ol_close_common(ol_database *db) {
     debug("Closing \"%s\" database.", db->name);
 
     /* TODO: Commit/abort transactions here. */
@@ -135,7 +142,7 @@ int ol_close(ol_database *db){
     }
     */
 
-    int iterations = ol_ht_bucket_max(db->cur_ht_size);
+    unsigned int iterations = ol_ht_bucket_max(db->cur_ht_size);
     int rcrd_cnt = db->rcrd_cnt;
     int freed = 0;
     debug("Freeing %d records.", rcrd_cnt);
@@ -152,39 +159,61 @@ int ol_close(ol_database *db){
             }
         }
     }
-    if (!db->is_enabled(OL_F_DISABLE_TX, &db->feature_set))
-        check(freed >= rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
 
-    if (db->is_enabled(OL_F_SPLAYTREE, &db->feature_set) && db->tree != NULL) {
+    if (!db->is_enabled(OL_F_DISABLE_TX, &db->feature_set)) {
+        ols_close(db->cur_transactions);
+        free(db->cur_transactions);
+        check(freed >= rcrd_cnt, "Error: Couldn't free all records.\nRecords freed: %d", freed);
+    }
+
+    if (db->tree != NULL) {
         debug("Destroying tree.");
         ols_close(db->tree);
         free(db->tree);
         db->tree = NULL;
     }
 
-    if (db->aolfd) {
-        debug("Force flushing files");
-        fflush(db->aolfd);
-        flock(fileno(db->aolfd), LOCK_UN);
-        fclose(db->aolfd);
-        debug("Files flushed to disk");
-    }
+    return 0;
 
-    /* Sync and close values file. */
-    msync(db->values, db->val_size, MS_SYNC);
+error:
+    return 1;
+}
+
+static inline void _ol_close_final(ol_database *db) {
+    fclose(db->aolfd);
     _ol_close_values(db);
 
     db->feature_set = 0;
     free(db->meta);
     free(db->hashes);
-    memset(db, '\0', sizeof(ol_database));
+    memset(db, 0, sizeof(ol_database));
     free(db);
 
     debug("Database closed. Remember to drink your coffee.");
-    return 0;
+}
 
-error:
-    return 1;
+int ol_close(ol_database *db) {
+    int rc = _ol_close_common(db);
+
+    if (db->aolfd) {
+        debug("Force flushing files");
+        fflush(db->aolfd);
+        debug("Files flushed to disk");
+        flock(fileno(db->aolfd), LOCK_UN);
+    }
+
+    /* Sync and close values file. */
+    msync(db->values, db->val_size, MS_SYNC);
+
+    _ol_close_final(db);
+
+    return rc;
+}
+
+int ol_close_fast(ol_database *db) {
+    int rc = _ol_close_common(db);
+    _ol_close_final(db);
+    return rc;
 }
 
 int ol_exists(ol_database *db, const char *key, size_t klen) {
@@ -201,7 +230,7 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
 
     MurmurHash3_x86_32(*_key, *_klen, DEVILS_SEED, &hash);
 
-    int index = _ol_calc_idx(db->cur_ht_size, hash);
+    unsigned int index = _ol_calc_idx(db->cur_ht_size, hash);
     if (db->hashes[index] != NULL) {
         size_t larger_key = 0;
         ol_bucket *tmp_bucket;
@@ -298,6 +327,7 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
         return olt_spoil(&stack_tx, key, klen, expiration_date);
     }
 
+    debug("Beginning ol_spoil.");
     ol_transaction *tx = olt_begin(db);
     int spoil_ret = 10;
     check(tx != NULL, "Could not begin implicit transaction.");
@@ -305,10 +335,12 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
     spoil_ret = olt_spoil(tx, key, klen, expiration_date);
     check(spoil_ret == 0, "Could not spoil value. Aborting.");
     check(olt_commit(tx) == 0, "Could not commit transaction.");
+    debug("End of ol_spoil.");
 
     return spoil_ret;
 
 error:
+    debug("Error in ol_spoil.");
     if (tx != NULL && spoil_ret != 10)
         olt_abort(tx);
 
@@ -410,7 +442,7 @@ int ol_squish(ol_database *db) {
 
     /* Iterate through the hash table instead of using the tree just
      * so you can use this in case the tree isn't enabled. */
-    const int iterations = ol_ht_bucket_max(db->cur_ht_size);
+    const unsigned int iterations = ol_ht_bucket_max(db->cur_ht_size);
 
     int i = 0;
     for (; i < iterations; i++) {
@@ -464,7 +496,37 @@ error:
     return 1;
 }
 
-struct tm *ol_expiration_time(ol_database *db, const char *key, size_t klen) {
+vector *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys) {
+    ol_transaction *tx = NULL;
+    vector *to_return = NULL;
+    check(db != NULL, "Cannot unjar on NULL database.");
+    check((tx = olt_begin(db)) != NULL, "Could not begin transaction.");
+
+    to_return = vector_new(sizeof(unsigned char *), 256);
+
+    unsigned int i;
+    for (i = 0; i < num_keys; i++) {
+        const char *key = keys[i];
+        unsigned char *item = NULL;
+        size_t item_size = 0;
+        olt_unjar(tx, key, strnlen(key, KEY_SIZE), &item, &item_size);
+
+        if (item != NULL) {
+            vector_append_ptr(to_return, item);
+        } else {
+            vector_append_ptr(to_return, NULL);
+        }
+    }
+
+    check(olt_commit(tx) == 0, "Could not commit unjar transaction.");
+
+    return to_return;
+
+error:
+    return NULL;
+}
+
+struct tm *ol_sniff(ol_database *db, const char *key, size_t klen) {
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);

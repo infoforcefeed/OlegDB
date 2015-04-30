@@ -133,7 +133,10 @@ ol_splay_tree_node *ols_insert(ol_splay_tree *tree, const char *key, const size_
     current_node->right = NULL;
     current_node->parent = NULL;
     current_node->klen = 0;
-    memset(current_node->key, '\0', KEY_SIZE);
+    current_node->key = malloc(klen + 1);
+    current_node->key[klen] = '\0';
+    check_mem(current_node->key);
+
     if (strncpy(current_node->key, key, klen) != current_node->key) {
         free(current_node);
         return NULL;
@@ -247,6 +250,7 @@ static inline void _ols_free_node(ol_splay_tree_node *node) {
         if (cur_node->right != NULL) {
             spush(&stack, (void *)cur_node->right);
         }
+        free(cur_node->key);
         free(cur_node);
     }
     debug("Tree cleared. Iterations: %i", iters);
