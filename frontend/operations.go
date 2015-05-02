@@ -23,6 +23,7 @@ const (
 	OpCursorPrev  = "._prev"
 	OpPrefixMatch = "._match"
 	OpBulkUnjar   = "_bulk_unjar"
+	OpSquish	  = "_squish"
 )
 
 func httpGet(w http.ResponseWriter, op Operation) *HTTPError {
@@ -186,5 +187,12 @@ func httpBulkUnjar(w http.ResponseWriter, op Operation) *HTTPError {
 	w.Header().Add("Content-Length", strconv.Itoa(buf_len))
 	w.Write(write_buffer.Bytes())
 
+	return nil
+}
+
+func httpSquish(w http.ResponseWriter, op Operation) *HTTPError {
+	res := op.Database.Squish()
+
+	fmt.Fprintf(w, "%d", res)
 	return nil
 }

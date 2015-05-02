@@ -110,6 +110,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		err = httpCurPrev(w, operation)
 	case OpBulkUnjar:
 		err = httpBulkUnjar(w, operation)
+	case OpSquish:
+		err = httpSquish(w, operation)
 	default:
 		err = &HTTPError{Message: "I don't get what you're trying to do", Code: 400}
 	}
