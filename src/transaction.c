@@ -459,13 +459,14 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
             check_mem(copied);
 
             memcpy(copied, bucket, sizeof(ol_bucket));
+            copied->next = NULL;
 
             copied->key = malloc(_klen + 1);
             check_mem(copied->key);
             copied->key[_klen] = '\0';
             memcpy(copied->key, bucket->key, _klen);
 
-            _ol_set_bucket_no_incr(operating_db, copied, hash);
+            _ol_set_bucket_no_incr(tx->transaction_db, copied, hash);
         }
     }
 

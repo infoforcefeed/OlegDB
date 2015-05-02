@@ -62,7 +62,7 @@ uninstall:
 	rm -rf $(INSTALL_BIN)olegdb
 	rm -rf $(INSTALL_INCLUDE)
 
-olegdb: liboleg $(BIN_DIR) $(BIN_OUT)
+olegdb: liboleg $(LIB_OUT) $(BIN_DIR) $(BIN_OUT)
 $(BIN_OUT):
 	go build -o $(BIN_OUT) ./frontend/
 
