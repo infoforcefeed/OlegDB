@@ -193,6 +193,6 @@ func httpBulkUnjar(w http.ResponseWriter, op Operation) *HTTPError {
 func httpSquish(w http.ResponseWriter, op Operation) *HTTPError {
 	res := op.Database.Squish()
 
-	fmt.Fprintf(w, "%d", res)
+	fmt.Fprintf(w, "%t", res)
 	return nil
 }
