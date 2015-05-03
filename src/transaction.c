@@ -388,20 +388,23 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
         to_free = bucket;
         return_level = 0;
     } else { /* Keys weren't the same, traverse the bucket LL */
-        do {
+        while (bucket->next != NULL) {
             ol_bucket *last = bucket;
             bucket = bucket->next;
             larger_key = bucket->klen > klen ? bucket->klen : klen;
             if (strncmp(bucket->key, _key, larger_key) == 0) {
-                if (bucket->next != NULL)
-                    last->next = bucket->next;
-                else
-                    last->next = NULL;
+                if (operating_db == tx->transaction_db) {
+                    if (bucket->next != NULL)
+                        last->next = bucket->next;
+                    else
+                        last->next = NULL;
+                }
+
                 to_free = bucket;
                 return_level = 0;
                 break;
             }
-        } while (bucket->next != NULL);
+        }
     }
 
     if (to_free != NULL) {
