@@ -35,6 +35,16 @@ typedef enum {
     OL_F_DISABLE_TX                 = 1 << 4
 } ol_feature_flags;
 
+/* xXx ENUM=ol_error xXx
+* xXx DESCRIPTION=Error codes. xXx
+* xXx OL_NO_ERROR=Everything is fine. xXx
+* xXx OL_GENERIC_ERROR=Uknown error of some kind. xXx
+*/
+typedef enum {
+    OL_NO_ERROR,
+    OL_GENERIC_ERROR,
+} ol_feature_flags;
+
 /* xXx ENUM=ol_state_flags xXx
 * xXx DESCRIPTION=State flags tell the database what it should be doing. xXx
 * xXx OL_S_STARTUP=Startup state. The DB is starting, duh. xXx
@@ -84,6 +94,7 @@ typedef struct ol_bucket {
 typedef struct ol_meta {
     time_t      created;
     int         key_collisions;
+    ol_error    last_error;
 } ol_meta;
 
 /* xXx STRUCT=ol_database xXx
@@ -288,6 +299,13 @@ int ol_cas(ol_database *db, const char *key, const size_t klen,
  * xXx num_keys=The number of keys in <code>*keys</code>. xXx
  */
 struct vector *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys);
+
+/* xXx FUNCTION=ol_last_error xXx
+ * xXx DESCRIPTION=Turns error codes on the database object into human readable strings. xXx
+ * xXx RETURNS=Returns a human readable string representing the last error that happened to <code>*db.</code> xXx
+ * xXx *db=The database to check. xXx
+ */
+const char *ol_last_error(const ol_database *db);
 
 #ifdef __cplusplus
 }
