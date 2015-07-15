@@ -192,13 +192,13 @@ int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **
         if (!_has_bucket_expired(bucket)) {
             /* We don't need to fill out the data so just return 'we found the key'. */
             if (data == NULL)
-                return 0;
+                return OL_SUCCESS;
 
             const int ret = _ol_get_value_from_bucket(operating_db, bucket, data, dsize);
             check(ret == 0, "Could not retrieve value from bucket.");
 
             /* Key found, tell somebody. */
-            return 0;
+            return OL_SUCCESS;
         } else {
             /* It's dead, get rid of it. */
             /* NOTE: We explicitly say the transaction_db here because ITS A
@@ -207,10 +207,12 @@ int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **
         }
     }
 
-    return 1;
+    /* TODO: Set error code here (could not find key) */
+    return OL_FAILURE;
 
 error:
-    return 2;
+    /* TODO: Set error code here (generic error? Theres a couple failure modes here.)*/
+    return OL_FAILURE;
 }
 
 int olt_exists(ol_transaction *tx, const char *key, size_t klen) {

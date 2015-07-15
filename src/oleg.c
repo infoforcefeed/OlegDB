@@ -173,10 +173,11 @@ static inline int _ol_close_common(ol_database *db) {
         db->tree = NULL;
     }
 
-    return 0;
+    return OL_SUCCESS;
 
 error:
-    return 1;
+    db->meta->last_error = OL_E_COULD_NOT_FREE;
+    return OL_FAILURE;
 }
 
 static inline void _ol_close_final(ol_database *db) {
@@ -265,21 +266,23 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
     }
 
     ol_transaction *tx = olt_begin(db);
-    int unjar_ret = 10;
+    /* TODO: Set error code here */
     check(tx != NULL, "Could not begin transaction.");
 
-    unjar_ret = olt_unjar(tx, key, klen, data, dsize);
-    check(unjar_ret != 2, "Could not unjar.");
+    /* TODO: Set error code here */
+    int unjar_ret = olt_unjar(tx, key, klen, data, dsize);
+    check(unjar_ret == OL_SUCCESS, "Could not unjar.");
 
-    check(olt_commit(tx) == 0, "Could not commit transaction.");
+    /* TODO: Set error code here */
+    check(olt_commit(tx) == OL_SUCCESS, "Could not commit transaction.");
 
-    return unjar_ret;
+    return OL_SUCCESS;
 
 error:
-    if (tx != NULL && unjar_ret != 10)
+    if (tx != NULL && unjar_ret != OL_SUCCESS)
         olt_abort(tx);
 
-    return unjar_ret;
+    return OL_FAILURE;
 }
 
 int ol_jar(ol_database *db, const char *key, size_t klen,

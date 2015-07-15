@@ -41,9 +41,10 @@ typedef enum {
 * xXx OL_GENERIC_ERROR=Uknown error of some kind. xXx
 */
 typedef enum {
-    OL_NO_ERROR,
-    OL_GENERIC_ERROR,
-} ol_feature_flags;
+    OL_E_NO_ERROR,
+    OL_E_GENERIC_ERROR,
+    OL_E_COULD_NOT_FREE
+} ol_error;
 
 /* xXx ENUM=ol_state_flags xXx
 * xXx DESCRIPTION=State flags tell the database what it should be doing. xXx
@@ -154,21 +155,21 @@ ol_database *ol_open(const char *path, const char *name, int features);
 
 /* xXx FUNCTION=ol_close xXx
  * xXx DESCRIPTION=Closes a database cleanly and frees memory. xXx
- * xXx RETURNS=0 on success, 1 if not everything could be freed. xXx
+ * xXx RETURNS=OL_SUCCESS on success, OL_FAILURE if not everything could be freed. xXx
  * xXx *database=The database to close. xXx
  */
 int ol_close(ol_database *database);
 
 /* xXx FUNCTION=ol_close_fast xXx
  * xXx DESCRIPTION=Closes a database without syncing the AOL or Values file. Intended to be used for transaction that did nothing. xXx
- * xXx RETURNS=0 on success, 1 if not everything could be freed. xXx
+ * xXx RETURNS=OL_SUCCESS on success, OL_FAILURE if not everything could be freed. xXx
  * xXx *database=The database to close. xXx
  */
 int ol_close_fast(ol_database *database);
 
 /* xXx FUNCTION=ol_unjar xXx
  * xXx DESCRIPTION=This function retrieves a value from the database. <strong>data must be freed after calling this function!</strong> It also writes the size of the data to <code>dsize</code>. Pass dsize as NULL if you don't care. xXx
- * xXx RETURNS=0 on success, 1 on failure or if the key was not found.
+ * xXx RETURNS=OL_SUCCESS on success, OL_FAILURE on failure or if the key was not found.
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key to use. xXx
