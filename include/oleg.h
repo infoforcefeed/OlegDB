@@ -38,12 +38,11 @@ typedef enum {
 /* xXx ENUM=ol_error xXx
 * xXx DESCRIPTION=Error codes. xXx
 * xXx OL_NO_ERROR=Everything is fine. xXx
-* xXx OL_GENERIC_ERROR=Uknown error of some kind. xXx
+* xXx OL_GENERIC_ERROR=Uknown error of some kind. Like, whatever. xXx
 */
 typedef enum {
     OL_E_NO_ERROR,
-    OL_E_GENERIC_ERROR,
-    OL_E_COULD_NOT_FREE
+    OL_E_GENERIC_ERROR
 } ol_error;
 
 /* xXx ENUM=ol_state_flags xXx
@@ -169,7 +168,7 @@ int ol_close_fast(ol_database *database);
 
 /* xXx FUNCTION=ol_unjar xXx
  * xXx DESCRIPTION=This function retrieves a value from the database. <strong>data must be freed after calling this function!</strong> It also writes the size of the data to <code>dsize</code>. Pass dsize as NULL if you don't care. xXx
- * xXx RETURNS=OL_SUCCESS on success, OL_FAILURE on failure or if the key was not found.
+ * xXx RETURNS=OL_SUCCESS on success, OL_FAILURE on failure or if the key was not found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key to use. xXx
@@ -180,7 +179,7 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
 
 /* xXx FUNCTION=ol_jar xXx
  * xXx DESCRIPTION=This is OlegDB's canonical 'set' function. Put a value into the mayo (the database). It's easy to piss in a bucket, it's not easy to piss in 19 jars. xXx
- * xXx RETURNS=0 on success. xXx
+ * xXx RETURNS=OL_SUCCESS on success, OL_FAILURE on an obtuse set of different failure modes. xXx
  * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
@@ -200,7 +199,7 @@ struct tm *ol_sniff(ol_database *db, const char *key, size_t klen);
 
 /* xXx FUNCTION=ol_scoop xXx
  * xXx DESCRIPTION=Removes an object from the database. Get that crap out of the mayo jar. xXx
- * xXx RETURNS=0 on success, and 1 or 2 if the object could not be deleted. xXx
+ * xXx RETURNS=OL_SUCCESS when it succeeds, OL_FAILURE when it doesn't. xXx
  * xXx *db=Database to remove the value from. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx

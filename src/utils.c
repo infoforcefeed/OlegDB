@@ -118,7 +118,7 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
         if (db->state != OL_S_STARTUP) {
             /* Like above, avoid writing to the values file on startup. */
             if (memcpy(new_data_ptr, value, vsize) != new_data_ptr)
-                return 4;
+                return OL_FAILURE;
         }
     }
 
@@ -145,7 +145,7 @@ int _ol_reallocate_bucket(ol_database *db, ol_bucket *bucket,
         ol_aol_write_cmd(db, "JAR", bucket);
     }
 
-    return 0;
+    return OL_SUCCESS;
 }
 
 int _ol_set_bucket_no_incr(ol_database *db, ol_bucket *bucket, uint32_t hash) {

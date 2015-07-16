@@ -176,7 +176,6 @@ static inline int _ol_close_common(ol_database *db) {
     return OL_SUCCESS;
 
 error:
-    db->meta->last_error = OL_E_COULD_NOT_FREE;
     return OL_FAILURE;
 }
 
@@ -266,14 +265,12 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
     }
 
     ol_transaction *tx = olt_begin(db);
-    /* TODO: Set error code here */
+    int unjar_ret = OL_SUCCESS;
     check(tx != NULL, "Could not begin transaction.");
 
-    /* TODO: Set error code here */
-    int unjar_ret = olt_unjar(tx, key, klen, data, dsize);
+    unjar_ret = olt_unjar(tx, key, klen, data, dsize);
     check(unjar_ret == OL_SUCCESS, "Could not unjar.");
 
-    /* TODO: Set error code here */
     check(olt_commit(tx) == OL_SUCCESS, "Could not commit transaction.");
 
     return OL_SUCCESS;
@@ -301,21 +298,21 @@ int ol_jar(ol_database *db, const char *key, size_t klen,
     }
 
     ol_transaction *tx = olt_begin(db);
-    int jar_ret = 10;
+    int jar_ret = OL_SUCCESS;
     check(tx != NULL, "Could not begin implicit transaction.");
 
     jar_ret = olt_jar(tx, key, klen, value, vsize);
-    check(jar_ret == 0, "Could not jar value. Aborting.");
+    check(jar_ret == OL_SUCCESS, "Could not jar value. Aborting.");
 
-    check(olt_commit(tx) == 0, "Could not commit transaction.");
+    check(olt_commit(tx) == OL_SUCCESS, "Could not commit transaction.");
 
-    return jar_ret;
+    return OL_SUCCESS;
 
 error:
-    if (tx != NULL && jar_ret != 10)
+    if (tx != NULL && jar_ret != OL_SUCCESS)
         olt_abort(tx);
 
-    return jar_ret;
+    return OL_FAILURE;
 }
 
 int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiration_date) {
@@ -363,21 +360,21 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
     }
 
     ol_transaction *tx = olt_begin(db);
-    int scoop_ret = 10;
+    int scoop_ret = OL_SUCCESS;
     check(tx != NULL, "Could not begin implicit transaction.");
 
     scoop_ret = olt_scoop(tx, key, klen);
-    check(scoop_ret == 0, "Could not scoop value. Aborting.");
+    check(scoop_ret == OL_SUCCESS, "Could not scoop value. Aborting.");
 
-    check(olt_commit(tx) == 0, "Could not commit transaction.");
+    check(olt_commit(tx) == OL_SUCCESS, "Could not commit transaction.");
 
-    return scoop_ret;
+    return OL_SUCCESS;
 
 error:
     if (tx != NULL && scoop_ret != 10)
         olt_abort(tx);
 
-    return scoop_ret;
+    return OL_FAILURE;
 }
 
 int ol_cas(ol_database *db, const char *key, const size_t klen,
