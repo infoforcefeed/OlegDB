@@ -180,7 +180,8 @@ error:
 }
 
 static inline void _ol_close_final(ol_database *db) {
-    fclose(db->aolfd);
+    if (db->is_enabled(OL_F_APPENDONLY, &db->feature_set))
+        fclose(db->aolfd);
     _ol_close_values(db);
 
     db->feature_set = 0;
