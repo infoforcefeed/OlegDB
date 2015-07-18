@@ -222,6 +222,9 @@ int ol_exists(ol_database *db, const char *key, size_t klen) {
 }
 
 ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t klen, char (*_key)[KEY_SIZE], size_t *_klen) {
+    if (db == NULL)
+        return NULL;
+
     uint32_t hash;
     _ol_trunc(key, klen, *_key);
     *_klen = strnlen(*_key, KEY_SIZE);
