@@ -355,7 +355,7 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
     char _key[KEY_SIZE] = {'\0'};
     _ol_trunc(key, klen, _key);
     size_t _klen = strnlen(_key, KEY_SIZE);
-    check_warn(_klen > 0, "Key length cannot be zero.");
+    check(_klen > 0, "Key length cannot be zero.");
 
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_database *operating_db = tx->transaction_db;
