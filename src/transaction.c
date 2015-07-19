@@ -176,7 +176,7 @@ int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **
     size_t _klen = 0;
     ol_database *operating_db = NULL;
     ol_bucket *bucket = ol_get_bucket(tx->transaction_db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
+    check(_klen > 0, "Key length of zero not allowed.");
 
     /* Fall through to the parent db: */
     if (bucket == NULL) {
@@ -226,7 +226,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     ol_database *db = tx->transaction_db;
 
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
+    check(_klen > 0, "Key length of zero not allowed.");
 
     /* We only want to hit this codepath within the same database, otherwise
      * weird stuff happens. Like fires and stuff.
@@ -357,7 +357,7 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
     char _key[KEY_SIZE] = {'\0'};
     _ol_trunc(key, klen, _key);
     size_t _klen = strnlen(_key, KEY_SIZE);
-    check_warn(_klen > 0, "Key length cannot be zero.");
+    check(_klen > 0, "Key length cannot be zero.");
 
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ol_database *operating_db = tx->transaction_db;
@@ -448,7 +448,7 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
     ol_database *operating_db = tx->transaction_db;
 
     ol_bucket *bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
+    check(_klen > 0, "Key length of zero not allowed.");
 
     if (bucket == NULL && tx->parent_db != NULL) {
         /* Transaction DB doesn't have this key, but the parent does. */
