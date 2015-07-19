@@ -329,22 +329,23 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
 
     debug("Beginning ol_spoil.");
     ol_transaction *tx = olt_begin(db);
-    int spoil_ret = 10;
+    int spoil_ret = OL_SUCCESS;
     check(tx != NULL, "Could not begin implicit transaction.");
 
     spoil_ret = olt_spoil(tx, key, klen, expiration_date);
-    check(spoil_ret == 0, "Could not spoil value. Aborting.");
-    check(olt_commit(tx) == 0, "Could not commit transaction.");
+    check(spoil_ret == OL_SUCCESS, "Could not spoil value. Aborting.");
+
+    check(olt_commit(tx) == OL_SUCCESS, "Could not commit transaction.");
     debug("End of ol_spoil.");
 
-    return spoil_ret;
+    return OL_SUCCESS;
 
 error:
     debug("Error in ol_spoil.");
-    if (tx != NULL && spoil_ret != 10)
+    if (tx != NULL && spoil_ret != OL_SUCCESS)
         olt_abort(tx);
 
-    return spoil_ret;
+    return OL_FAILURE;
 }
 
 int ol_scoop(ol_database *db, const char *key, size_t klen) {

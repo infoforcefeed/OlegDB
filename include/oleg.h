@@ -215,7 +215,7 @@ int ol_uptime(ol_database *db);
 
 /* xXx FUNCTION=ol_spoil xXx
  * xXx DESCRIPTION=Sets the expiration value of a key. Will fail if no <a href="#ol_bucket">ol_bucket</a> under the chosen key exists. xXx
- * xXx RETURNS=0 upon success, 1 if otherwise. xXx
+ * xXx RETURNS=OL_SUCCESS upon success, OL_FAILURE if otherwise. xXx
  * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
