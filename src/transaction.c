@@ -501,11 +501,11 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
         /* Flag the transaction as dirty. */
         tx->dirty = 1;
 
-        return 0;
+        return OL_SUCCESS;
     }
 
-    return 1;
+    return OL_FAILURE;
 
 error:
-    return 1;
+    return OL_FAILURE;
 }

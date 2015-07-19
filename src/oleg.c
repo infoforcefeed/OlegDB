@@ -389,14 +389,14 @@ int ol_cas(ol_database *db, const char *key, const size_t klen,
     size_t _klen = 0;
 
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
+    check(_klen > 0, "Key length of zero not allowed.");
 
     if (bucket == NULL)
-        return 1;
+        return OL_FAILURE;
 
     /* Quick fail if the two sizes don't match */
     if (bucket->original_size != ovsize)
-        return 1;
+        return OL_FAILURE;
 
     /* ATOMIC, GOOOO! */
     const unsigned char *data_ptr = db->values + bucket->data_offset;
@@ -417,10 +417,10 @@ int ol_cas(ol_database *db, const char *key, const size_t klen,
             return ol_jar(db, key, klen, value, vsize);
     }
 
-    return 1;
+    return OL_FAILURE;
 
 error:
-    return 1;
+    return OL_FAILURE;
 }
 
 int ol_squish(ol_database *db) {
@@ -495,10 +495,10 @@ int ol_squish(ol_database *db) {
         db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
     }
 
-    return 0;
+    return OL_SUCCESS;
 
 error:
-    return 1;
+    return OL_FAILURE;
 }
 
 vector *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys) {
