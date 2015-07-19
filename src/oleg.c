@@ -66,6 +66,7 @@ ol_database *ol_open(const char *path, const char *name, int features){
     new_db->meta = malloc(sizeof(ol_meta));
     new_db->meta->created = created;
     new_db->meta->key_collisions = 0;
+    new_db->meta->last_error = 0;
     new_db->rcrd_cnt = 0;
     new_db->val_size = 0;
     new_db->cur_transactions = NULL;
@@ -557,4 +558,13 @@ int ol_uptime(ol_database *db) {
     time(&now);
     diff = difftime(now, db->meta->created);
     return diff;
+}
+
+const char *ol_last_error(const ol_database *db) {
+    static const char *human_readable[] = {
+        "No error.",
+        "Generic error."
+    };
+
+    return human_readable[db->meta->last_error];
 }
