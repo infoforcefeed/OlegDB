@@ -38,7 +38,7 @@ typedef enum {
 /* xXx ENUM=ol_error xXx
 * xXx DESCRIPTION=Error codes. xXx
 * xXx OL_NO_ERROR=Everything is fine. xXx
-* xXx OL_GENERIC_ERROR=Uknown error of some kind. Like, whatever. xXx
+* xXx OL_GENERIC_ERROR=Unkown error of some kind. Like, whatever. xXx
 */
 typedef enum {
     OL_E_NO_ERROR,
