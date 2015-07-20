@@ -92,9 +92,9 @@ typedef struct ol_bucket {
 * xXx key_collisions=The number of keys that have collided over the lifetime of this database. xXx
 */
 typedef struct ol_meta {
-    time_t      created;
-    int         key_collisions;
-    ol_error    last_error;
+    time_t     created;
+    int        key_collisions;
+    uint16_t   last_error;
 } ol_meta;
 
 /* xXx STRUCT=ol_database xXx

@@ -567,7 +567,7 @@ const char *ol_last_error(const ol_database *db) {
     };
     const size_t err_codes_siz = sizeof(human_readable)/sizeof(human_readable[0]);
 
-    if (db->meta->last_error > err_codes_siz || db->meta->last_error < 0)
+    if (db->meta->last_error > err_codes_siz)
         return NULL;
 
     return human_readable[db->meta->last_error];
