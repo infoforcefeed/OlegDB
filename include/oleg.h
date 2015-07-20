@@ -41,8 +41,8 @@ typedef enum {
 * xXx OL_GENERIC_ERROR=Unkown error of some kind. Like, whatever. xXx
 */
 typedef enum {
-    OL_E_NO_ERROR,
-    OL_E_GENERIC_ERROR
+    OL_E_NO_ERROR       = 0,
+    OL_E_GENERIC_ERROR  = 1
 } ol_error;
 
 /* xXx ENUM=ol_state_flags xXx
