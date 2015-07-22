@@ -1014,6 +1014,36 @@ error:
     return 9;
 }
 
+int test_error_is_safe(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+
+    db->meta->last_error = -1;
+    check(ol_last_error(db) == NULL, "Got something weird.");
+
+    db->meta->last_error = 666;
+    check(ol_last_error(db) == NULL, "Got something weird.");
+
+    _test_db_close(db);
+    return 0;
+
+error:
+    _test_db_close(db);
+    return 1;
+}
+
+int test_error_msg(const ol_feature_flags features) {
+    ol_database *db = _test_db_open(features);
+
+    check(strcmp(ol_last_error(db), "No error.") == 0, "Got wrong error message.");
+
+    _test_db_close(db);
+    return 0;
+
+error:
+    _test_db_close(db);
+    return 1;
+}
+
 int test_can_match_prefixes(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
     int next_records = 10;
@@ -1133,6 +1163,8 @@ void run_tests(int results[2]) {
         /* OL_F_AOL_FFLUSH is slow as balls and we don't care about it */
         const ol_feature_flags feature_set = (i | OL_F_AOL_FFLUSH) & OL_F_APPENDONLY;
         /* Fucking macros man */
+        ol_run_test(test_error_msg);
+        ol_run_test(test_error_is_safe);
         ol_run_test(test_jar);
         ol_run_test(test_cas);
         ol_run_test(test_unjar);

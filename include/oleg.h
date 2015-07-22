@@ -35,6 +35,16 @@ typedef enum {
     OL_F_DISABLE_TX                 = 1 << 4
 } ol_feature_flags;
 
+/* xXx ENUM=ol_error xXx
+* xXx DESCRIPTION=Error codes. xXx
+* xXx OL_NO_ERROR=Everything is fine. xXx
+* xXx OL_GENERIC_ERROR=Unkown error of some kind. Like, whatever. xXx
+*/
+typedef enum {
+    OL_E_NO_ERROR       = 0,
+    OL_E_GENERIC_ERROR  = 1
+} ol_error;
+
 /* xXx ENUM=ol_state_flags xXx
 * xXx DESCRIPTION=State flags tell the database what it should be doing. xXx
 * xXx OL_S_STARTUP=Startup state. The DB is starting, duh. xXx
@@ -82,8 +92,9 @@ typedef struct ol_bucket {
 * xXx key_collisions=The number of keys that have collided over the lifetime of this database. xXx
 */
 typedef struct ol_meta {
-    time_t      created;
-    int         key_collisions;
+    time_t     created;
+    int        key_collisions;
+    uint16_t   last_error;
 } ol_meta;
 
 /* xXx STRUCT=ol_database xXx
@@ -143,21 +154,21 @@ ol_database *ol_open(const char *path, const char *name, int features);
 
 /* xXx FUNCTION=ol_close xXx
  * xXx DESCRIPTION=Closes a database cleanly and frees memory. xXx
- * xXx RETURNS=0 on success, 1 if not everything could be freed. xXx
+ * xXx RETURNS=OL_SUCCESS on success, OL_FAILURE if not everything could be freed. xXx
  * xXx *database=The database to close. xXx
  */
 int ol_close(ol_database *database);
 
 /* xXx FUNCTION=ol_close_fast xXx
  * xXx DESCRIPTION=Closes a database without syncing the AOL or Values file. Intended to be used for transaction that did nothing. xXx
- * xXx RETURNS=0 on success, 1 if not everything could be freed. xXx
+ * xXx RETURNS=OL_SUCCESS on success, OL_FAILURE if not everything could be freed. xXx
  * xXx *database=The database to close. xXx
  */
 int ol_close_fast(ol_database *database);
 
 /* xXx FUNCTION=ol_unjar xXx
  * xXx DESCRIPTION=This function retrieves a value from the database. <strong>data must be freed after calling this function!</strong> It also writes the size of the data to <code>dsize</code>. Pass dsize as NULL if you don't care. xXx
- * xXx RETURNS=0 on success, 1 on failure or if the key was not found.
+ * xXx RETURNS=OL_SUCCESS on success, OL_FAILURE on failure or if the key was not found. xXx
  * xXx *db=Database to retrieve value from. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key to use. xXx
@@ -168,7 +179,7 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
 
 /* xXx FUNCTION=ol_jar xXx
  * xXx DESCRIPTION=This is OlegDB's canonical 'set' function. Put a value into the mayo (the database). It's easy to piss in a bucket, it's not easy to piss in 19 jars. xXx
- * xXx RETURNS=0 on success. xXx
+ * xXx RETURNS=OL_SUCCESS on success, OL_FAILURE on an obtuse set of different failure modes. xXx
  * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
@@ -188,7 +199,7 @@ struct tm *ol_sniff(ol_database *db, const char *key, size_t klen);
 
 /* xXx FUNCTION=ol_scoop xXx
  * xXx DESCRIPTION=Removes an object from the database. Get that crap out of the mayo jar. xXx
- * xXx RETURNS=0 on success, and 1 or 2 if the object could not be deleted. xXx
+ * xXx RETURNS=OL_SUCCESS when it succeeds, OL_FAILURE when it doesn't. xXx
  * xXx *db=Database to remove the value from. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
@@ -204,7 +215,7 @@ int ol_uptime(ol_database *db);
 
 /* xXx FUNCTION=ol_spoil xXx
  * xXx DESCRIPTION=Sets the expiration value of a key. Will fail if no <a href="#ol_bucket">ol_bucket</a> under the chosen key exists. xXx
- * xXx RETURNS=0 upon success, 1 if otherwise. xXx
+ * xXx RETURNS=OL_SUCCESS upon success, OL_FAILURE if otherwise. xXx
  * xXx *db=Database to set the value to. xXx
  * xXx *key=The key to use. xXx
  * xXx klen=The length of the key. xXx
@@ -221,7 +232,7 @@ unsigned int ol_ht_bucket_max(size_t ht_size);
 
 /* xXx FUNCTION=ol_prefix_match xXx
  * xXx DESCRIPTION=Returns values of keys that match a given prefix. xXx
- * xXx RETURNS=-1 on failure and a positive integer representing the number of matched prefices in the database. xXx
+ * xXx RETURNS=-1 on failure, otherwise a positive integer representing the number of matched prefices in the database. xXx
  * xXx *db=Database to retrieve values from. xXx
  * xXx *prefix=The prefix to attempt matches on. xXx
  * xXx plen=The length of the prefix. xXx
@@ -231,7 +242,7 @@ int ol_prefix_match(ol_database *db, const char *prefix, size_t plen, ol_key_arr
 
 /* xXx FUNCTION=ol_key_dump xXx
  * xXx DESCRIPTION=Like ol_prefix_match, except that it takes no prefix and just dumps the entire tree. xXx
- * xXx RETURNS=-1 on failure and a positive integer representing the number of keys in the database. xXx
+ * xXx RETURNS=-1 on failure, otherwise a positive integer representing the number of keys in the database on success. xXx
  * xXx *db=Database to retrieve values from. xXx
  * xXx *data=A pointer to an <code>ol_key_array</code> object where the list of keys will be stored. <strong>Both the list and it's items must be freed after use.</strong> xXx
  */
@@ -239,7 +250,7 @@ int ol_key_dump(ol_database *db, ol_key_array *data);
 
 /* xXx FUNCTION=ol_exists xXx
  * xXx DESCRIPTION=Returns whether the given key exists on the database xXx
- * xXx RETURNS=0 if the key exists, 1 otherwise. xXx
+ * xXx RETURNS=OL_SUCCESS if the key exists, OL_FAILURE otherwise. xXx
  * xXx *db=Database the key should be in. xXx
  * xXx *key=The key to check. xXx
  * xXx klen=The length of the key. xXx
@@ -260,14 +271,14 @@ ol_bucket *ol_get_bucket(const ol_database *db, const char *key, const size_t kl
 
 /* xXx FUNCTION=ol_squish xXx
  * xXx DESCRIPTION=Compacts both the aol file (if enabled) and the values file. This is a blocking operation. xXx
- * xXx RETURNS=0 if successful, 1 if otherwise. xXx
+ * xXx RETURNS=OL_SUCCESS if successful, OL_FAILURE if otherwise. xXx
  * xXx *db=The database to compact. xXx
  */
 int ol_squish(ol_database *db);
 
 /* xXx FUNCTION=ol_cas xXx
  * xXx DESCRIPTION=ol_jar operation that atomically compares-and-swaps old data for new data. xXx
- * xXx RETURNS=0 on success. xXx
+ * xXx RETURNS=OL_SUCCESS on success, OL_FAILURE otherwise. xXx
  * xXx *db=The database to operate on. xXx
  * xXx *key=The key to check. xXx
  * xXx klen=The length of the key. xXx
@@ -288,6 +299,13 @@ int ol_cas(ol_database *db, const char *key, const size_t klen,
  * xXx num_keys=The number of keys in <code>*keys</code>. xXx
  */
 struct vector *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys);
+
+/* xXx FUNCTION=ol_last_error xXx
+ * xXx DESCRIPTION=Turns error codes on the database object into human readable strings. xXx
+ * xXx RETURNS=Returns a human readable string representing the last error that happened to <code>*db.</code> xXx
+ * xXx *db=The database to check. xXx
+ */
+const char *ol_last_error(const ol_database *db);
 
 #ifdef __cplusplus
 }

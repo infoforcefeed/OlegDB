@@ -192,13 +192,13 @@ int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **
         if (!_has_bucket_expired(bucket)) {
             /* We don't need to fill out the data so just return 'we found the key'. */
             if (data == NULL)
-                return 0;
+                return OL_SUCCESS;
 
             const int ret = _ol_get_value_from_bucket(operating_db, bucket, data, dsize);
             check(ret == 0, "Could not retrieve value from bucket.");
 
             /* Key found, tell somebody. */
-            return 0;
+            return OL_SUCCESS;
         } else {
             /* It's dead, get rid of it. */
             /* NOTE: We explicitly say the transaction_db here because ITS A
@@ -207,10 +207,12 @@ int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **
         }
     }
 
-    return 1;
+    /* TODO: Set error code here (could not find key) */
+    return OL_FAILURE;
 
 error:
-    return 2;
+    /* TODO: Set error code here (generic error? Theres a couple failure modes here.)*/
+    return OL_FAILURE;
 }
 
 int olt_exists(ol_transaction *tx, const char *key, size_t klen) {
@@ -238,7 +240,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     /* Looks like we don't have an old hash */
     ol_bucket *new_bucket = calloc(1, sizeof(ol_bucket));
     if (new_bucket == NULL)
-        return 1;
+        return OL_FAILURE;
 
     /* copy _key into new bucket */
     new_bucket->key = malloc(_klen + 1);
@@ -246,7 +248,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     new_bucket->key[_klen] = '\0';
     if (strncpy(new_bucket->key, _key, _klen) != new_bucket->key) {
         free(new_bucket);
-        return 2;
+        return OL_FAILURE;
     }
 
     new_bucket->klen = _klen;
@@ -271,7 +273,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
             if (cmsize == 0) {
                 /* Free allocated data */
                 free(new_bucket);
-                return 1;
+                return OL_FAILURE;
             }
 
             new_bucket->data_size = cmsize;
@@ -284,7 +286,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
             if (memcpy(new_data_ptr, value, vsize) != new_data_ptr) {
                 /* Free allocated memory since we're not going to use them */
                 free(new_bucket);
-                return 3;
+                return OL_FAILURE;
             }
         }
     } else {
@@ -323,7 +325,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
         if (ret > 0) {
             ol_log_msg(LOG_ERR, "Problem rehashing DB. Error code: %i", ret);
             free(new_bucket);
-            return 4;
+            return OL_FAILURE;
         }
     }
 
@@ -343,10 +345,10 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     /* Flag the transaction as dirty. */
     tx->dirty = 1;
 
-    return 0;
+    return OL_SUCCESS;
 
 error:
-    return 1;
+    return OL_FAILURE;
 }
 
 int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
@@ -370,12 +372,12 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
     }
 
     if (operating_db->hashes[index] == NULL)
-        return 1;
+        return OL_FAILURE;
 
     /* Now that we know what database we're operating on, continue
      * as usual. */
     ol_bucket *to_free = NULL;
-    int return_level = 2;
+    int return_level = OL_FAILURE;
 
     size_t larger_key = 0;
     ol_bucket *bucket = operating_db->hashes[index];
@@ -386,7 +388,7 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
             operating_db->hashes[index] = bucket->next;
 
         to_free = bucket;
-        return_level = 0;
+        return_level = OL_SUCCESS;
     } else { /* Keys weren't the same, traverse the bucket LL */
         while (bucket->next != NULL) {
             ol_bucket *last = bucket;
@@ -401,7 +403,7 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
                 }
 
                 to_free = bucket;
-                return_level = 0;
+                return_level = OL_SUCCESS;
                 break;
             }
         }
@@ -436,7 +438,7 @@ int olt_scoop(ol_transaction *tx, const char *key, size_t klen) {
 
     return return_level;
 error:
-    return 1;
+    return OL_FAILURE;
 }
 
 int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expiration_date) {
@@ -499,11 +501,11 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
         /* Flag the transaction as dirty. */
         tx->dirty = 1;
 
-        return 0;
+        return OL_SUCCESS;
     }
 
-    return 1;
+    return OL_FAILURE;
 
 error:
-    return 1;
+    return OL_FAILURE;
 }

@@ -66,6 +66,7 @@ ol_database *ol_open(const char *path, const char *name, int features){
     new_db->meta = malloc(sizeof(ol_meta));
     new_db->meta->created = created;
     new_db->meta->key_collisions = 0;
+    new_db->meta->last_error = 0;
     new_db->rcrd_cnt = 0;
     new_db->val_size = 0;
     new_db->cur_transactions = NULL;
@@ -173,10 +174,10 @@ static inline int _ol_close_common(ol_database *db) {
         db->tree = NULL;
     }
 
-    return 0;
+    return OL_SUCCESS;
 
 error:
-    return 1;
+    return OL_FAILURE;
 }
 
 static inline void _ol_close_final(ol_database *db) {
@@ -269,21 +270,21 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
     }
 
     ol_transaction *tx = olt_begin(db);
-    int unjar_ret = 10;
+    int unjar_ret = OL_SUCCESS;
     check(tx != NULL, "Could not begin transaction.");
 
     unjar_ret = olt_unjar(tx, key, klen, data, dsize);
-    check(unjar_ret != 2, "Could not unjar.");
+    check(unjar_ret == OL_SUCCESS, "Could not unjar.");
 
-    check(olt_commit(tx) == 0, "Could not commit transaction.");
+    check(olt_commit(tx) == OL_SUCCESS, "Could not commit transaction.");
 
-    return unjar_ret;
+    return OL_SUCCESS;
 
 error:
-    if (tx != NULL && unjar_ret != 10)
+    if (tx != NULL && unjar_ret != OL_SUCCESS)
         olt_abort(tx);
 
-    return unjar_ret;
+    return OL_FAILURE;
 }
 
 int ol_jar(ol_database *db, const char *key, size_t klen,
@@ -302,21 +303,21 @@ int ol_jar(ol_database *db, const char *key, size_t klen,
     }
 
     ol_transaction *tx = olt_begin(db);
-    int jar_ret = 10;
+    int jar_ret = OL_SUCCESS;
     check(tx != NULL, "Could not begin implicit transaction.");
 
     jar_ret = olt_jar(tx, key, klen, value, vsize);
-    check(jar_ret == 0, "Could not jar value. Aborting.");
+    check(jar_ret == OL_SUCCESS, "Could not jar value. Aborting.");
 
-    check(olt_commit(tx) == 0, "Could not commit transaction.");
+    check(olt_commit(tx) == OL_SUCCESS, "Could not commit transaction.");
 
-    return jar_ret;
+    return OL_SUCCESS;
 
 error:
-    if (tx != NULL && jar_ret != 10)
+    if (tx != NULL && jar_ret != OL_SUCCESS)
         olt_abort(tx);
 
-    return jar_ret;
+    return OL_FAILURE;
 }
 
 int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiration_date) {
@@ -333,22 +334,23 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
 
     debug("Beginning ol_spoil.");
     ol_transaction *tx = olt_begin(db);
-    int spoil_ret = 10;
+    int spoil_ret = OL_SUCCESS;
     check(tx != NULL, "Could not begin implicit transaction.");
 
     spoil_ret = olt_spoil(tx, key, klen, expiration_date);
-    check(spoil_ret == 0, "Could not spoil value. Aborting.");
-    check(olt_commit(tx) == 0, "Could not commit transaction.");
+    check(spoil_ret == OL_SUCCESS, "Could not spoil value. Aborting.");
+
+    check(olt_commit(tx) == OL_SUCCESS, "Could not commit transaction.");
     debug("End of ol_spoil.");
 
-    return spoil_ret;
+    return OL_SUCCESS;
 
 error:
     debug("Error in ol_spoil.");
-    if (tx != NULL && spoil_ret != 10)
+    if (tx != NULL && spoil_ret != OL_SUCCESS)
         olt_abort(tx);
 
-    return spoil_ret;
+    return OL_FAILURE;
 }
 
 int ol_scoop(ol_database *db, const char *key, size_t klen) {
@@ -364,21 +366,21 @@ int ol_scoop(ol_database *db, const char *key, size_t klen) {
     }
 
     ol_transaction *tx = olt_begin(db);
-    int scoop_ret = 10;
+    int scoop_ret = OL_SUCCESS;
     check(tx != NULL, "Could not begin implicit transaction.");
 
     scoop_ret = olt_scoop(tx, key, klen);
-    check(scoop_ret == 0, "Could not scoop value. Aborting.");
+    check(scoop_ret == OL_SUCCESS, "Could not scoop value. Aborting.");
 
-    check(olt_commit(tx) == 0, "Could not commit transaction.");
+    check(olt_commit(tx) == OL_SUCCESS, "Could not commit transaction.");
 
-    return scoop_ret;
+    return OL_SUCCESS;
 
 error:
     if (tx != NULL && scoop_ret != 10)
         olt_abort(tx);
 
-    return scoop_ret;
+    return OL_FAILURE;
 }
 
 int ol_cas(ol_database *db, const char *key, const size_t klen,
@@ -388,14 +390,14 @@ int ol_cas(ol_database *db, const char *key, const size_t klen,
     size_t _klen = 0;
 
     ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
-    check_warn(_klen > 0, "Key length of zero not allowed.");
+    check(_klen > 0, "Key length of zero not allowed.");
 
     if (bucket == NULL)
-        return 1;
+        return OL_FAILURE;
 
     /* Quick fail if the two sizes don't match */
     if (bucket->original_size != ovsize)
-        return 1;
+        return OL_FAILURE;
 
     /* ATOMIC, GOOOO! */
     const unsigned char *data_ptr = db->values + bucket->data_offset;
@@ -416,10 +418,10 @@ int ol_cas(ol_database *db, const char *key, const size_t klen,
             return ol_jar(db, key, klen, value, vsize);
     }
 
-    return 1;
+    return OL_FAILURE;
 
 error:
-    return 1;
+    return OL_FAILURE;
 }
 
 int ol_squish(ol_database *db) {
@@ -494,10 +496,10 @@ int ol_squish(ol_database *db) {
         db->aolfd = fopen(db->aol_file, AOL_FILEMODE);
     }
 
-    return 0;
+    return OL_SUCCESS;
 
 error:
-    return 1;
+    return OL_FAILURE;
 }
 
 vector *ol_bulk_unjar(ol_database *db, const ol_key_array keys, const size_t num_keys) {
@@ -556,4 +558,17 @@ int ol_uptime(ol_database *db) {
     time(&now);
     diff = difftime(now, db->meta->created);
     return diff;
+}
+
+const char *ol_last_error(const ol_database *db) {
+    static const char *human_readable[] = {
+        "No error.",
+        "Generic error."
+    };
+    const size_t err_codes_siz = sizeof(human_readable)/sizeof(human_readable[0]);
+
+    if (db->meta->last_error > err_codes_siz)
+        return NULL;
+
+    return human_readable[db->meta->last_error];
 }

@@ -51,3 +51,12 @@
  */
 #define AOL_FILENAME "aol"
 
+/* xXx DEFINE=OL_SUCCESS xXx
+ * xXx DESCRIPTION=Used to indicate an operation went according to plan.
+ */
+#define OL_SUCCESS 0
+
+/* xXx DEFINE=OL_FAILURE xXx
+ * xXx DESCRIPTION=Used to indicate an operation failed.
+ */
+#define OL_FAILURE 1
