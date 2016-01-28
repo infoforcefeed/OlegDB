@@ -220,12 +220,14 @@ int olt_exists(ol_transaction *tx, const char *key, size_t klen) {
 }
 
 int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned char *value, size_t vsize) {
-    int ret;
+    int ret = 0;
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
     ol_database *db = tx->transaction_db;
 
-    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
+    ol_bucket *new_bucket = NULL;
+    ol_bucket *bucket = NULL;
+    bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
     check(_klen > 0, "Key length of zero not allowed.");
 
     /* We only want to hit this codepath within the same database, otherwise
@@ -238,17 +240,19 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     }
 
     /* Looks like we don't have an old hash */
-    ol_bucket *new_bucket = calloc(1, sizeof(ol_bucket));
-    if (new_bucket == NULL)
-        return OL_FAILURE;
+    new_bucket = calloc(1, sizeof(ol_bucket));
+    if (new_bucket == NULL) {
+        ol_log_msg(LOG_ERR, "Could not allocate new bucket.");
+        goto error;
+    }
 
     /* copy _key into new bucket */
     new_bucket->key = malloc(_klen + 1);
     check_mem(new_bucket->key);
     new_bucket->key[_klen] = '\0';
     if (strncpy(new_bucket->key, _key, _klen) != new_bucket->key) {
-        free(new_bucket);
-        return OL_FAILURE;
+        ol_log_msg(LOG_ERR, "Could not copy key into bucket.");
+        goto error;
     }
 
     new_bucket->klen = _klen;
@@ -271,9 +275,8 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
             size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
                                                  (int)vsize);
             if (cmsize == 0) {
-                /* Free allocated data */
-                free(new_bucket);
-                return OL_FAILURE;
+                ol_log_msg(LOG_ERR, "Could not compress data.");
+                goto error;
             }
 
             new_bucket->data_size = cmsize;
@@ -284,9 +287,8 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
             memset(new_data_ptr, '\0', new_bucket->data_size);
 
             if (memcpy(new_data_ptr, value, vsize) != new_data_ptr) {
-                /* Free allocated memory since we're not going to use them */
-                free(new_bucket);
-                return OL_FAILURE;
+                ol_log_msg(LOG_ERR, "Could not copy data into bucket.");
+                goto error;
             }
         }
     } else {
@@ -321,12 +323,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     /* TODO: rehash this shit at 80% */
     if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
         debug("Record count is now %i; growing hash table.", db->rcrd_cnt);
-        ret = _ol_grow_and_rehash_db(db);
-        if (ret > 0) {
-            ol_log_msg(LOG_ERR, "Problem rehashing DB. Error code: %i", ret);
-            free(new_bucket);
-            return OL_FAILURE;
-        }
+        check(_ol_grow_and_rehash_db(db) <= 0, "Problem rehashing DB. Error code: %i", ret);
     }
 
 
@@ -334,8 +331,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ret = _ol_set_bucket(db, new_bucket, hash);
 
-    if(ret > 0)
-        ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);
+    check(ret <= 0, "Problem inserting item: Error code: %i", ret);
 
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
             db->state != OL_S_STARTUP) {
@@ -348,6 +344,8 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     return OL_SUCCESS;
 
 error:
+    if (new_bucket != NULL)
+        free(new_bucket);
     return OL_FAILURE;
 }
 
