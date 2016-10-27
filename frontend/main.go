@@ -1,7 +1,6 @@
 package main
 
 import (
-	"./goleg"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+
+	"github.com/infoforcefeed/goleg"
 )
 
 type Config struct {
