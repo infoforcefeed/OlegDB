@@ -93,3 +93,5 @@ clean:
 	rm -f $(BIN_DIR)*
 	rm -f $(LIB_DIR)*
 	rm -f *.o
+
+.PHONY: clean test libinstall install uninstall static all
