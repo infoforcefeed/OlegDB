@@ -43,6 +43,7 @@ func DBRequester() chan DBOpenRequest {
 				if config.SplayTreeEnabled {
 					flags = flags | goleg.F_SPLAYTREE
 				}
+				flags = flags | goleg.F_AOL_FFLUSH
 				databases[dbname], dberr = goleg.Open(config.DataDir, dbname, flags)
 				database = databases[dbname]
 			}
