@@ -188,21 +188,27 @@ int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **
         operating_db = tx->transaction_db;
     }
 
+    debug("Checking expiry");
     if (bucket != NULL) {
         if (!_has_bucket_expired(bucket)) {
             /* We don't need to fill out the data so just return 'we found the key'. */
-            if (data == NULL)
+            if (data == NULL) {
+                debug("Data is NULL");
                 return OL_SUCCESS;
+            }
 
+            debug("Getting value from bucket");
             const int ret = _ol_get_value_from_bucket(operating_db, bucket, data, dsize);
             check(ret == 0, "Could not retrieve value from bucket.");
 
             /* Key found, tell somebody. */
+            debug("Everything worked");
             return OL_SUCCESS;
         } else {
             /* It's dead, get rid of it. */
             /* NOTE: We explicitly say the transaction_db here because ITS A
              * FUCKING TRANSACTION. ACID, bro. */
+            debug("Bucket has expired.");
             check(olt_scoop(tx, key, klen) == 0, "Scoop failed");
         }
     }
@@ -445,39 +451,48 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
 
     ol_database *operating_db = tx->transaction_db;
 
+    debug("Fetching bucket");
     ol_bucket *bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
     check(_klen > 0, "Key length of zero not allowed.");
 
     if (bucket == NULL && tx->parent_db != NULL) {
         /* Transaction DB doesn't have this key, but the parent does. */
+        debug("Have to get bucket from parent.");
         operating_db = tx->parent_db;
         bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
         if (bucket != NULL) {
             /* Copy that value into our current transaction db,
              * and then spoil it.
              */
+            debug("Retrieved buckey.");
             uint32_t hash;
             MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
             ol_bucket *copied = malloc(sizeof(ol_bucket));
             check_mem(copied);
 
+            debug("Copying into new buckey.");
             memcpy(copied, bucket, sizeof(ol_bucket));
             copied->next = NULL;
 
+            debug("Malloc()ing key");
             copied->key = malloc(_klen + 1);
             check_mem(copied->key);
             copied->key[_klen] = '\0';
+            debug("Copying into key.");
             memcpy(copied->key, bucket->key, _klen);
 
+            debug("Setting buckey.");
             _ol_set_bucket_no_incr(tx->transaction_db, copied, hash);
         }
     }
 
     if (bucket != NULL) {
+        debug("Setting the expiration.");
         if (bucket->expiration == NULL)
-            bucket->expiration = malloc(sizeof(struct tm));
+            bucket->expiration = calloc(1, sizeof(struct tm));
         else
             debug("Hmmm, bucket->expiration wasn't null.");
+        debug("Copying into expiration.");
         memcpy(bucket->expiration, expiration_date, sizeof(struct tm));
         debug("New expiration time: %lu", (long)mktime(bucket->expiration));
 

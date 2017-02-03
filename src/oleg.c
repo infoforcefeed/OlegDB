@@ -269,13 +269,16 @@ int ol_unjar(ol_database *db, const char *key, size_t klen, unsigned char **data
         return olt_unjar(&stack_tx, key, klen, data, dsize);
     }
 
+    debug("Beginning ol_unjar tx");
     ol_transaction *tx = olt_begin(db);
     int unjar_ret = OL_SUCCESS;
     check(tx != NULL, "Could not begin transaction.");
 
+    debug("Beginning olt_unjar");
     unjar_ret = olt_unjar(tx, key, klen, data, dsize);
     check(unjar_ret == OL_SUCCESS, "Could not unjar.");
 
+    debug("Commiting olt_unjar");
     check(olt_commit(tx) == OL_SUCCESS, "Could not commit transaction.");
 
     return OL_SUCCESS;
@@ -337,9 +340,11 @@ int ol_spoil(ol_database *db, const char *key, size_t klen, struct tm *expiratio
     int spoil_ret = OL_SUCCESS;
     check(tx != NULL, "Could not begin implicit transaction.");
 
+    debug("ol_spoilt tx created.");
     spoil_ret = olt_spoil(tx, key, klen, expiration_date);
     check(spoil_ret == OL_SUCCESS, "Could not spoil value. Aborting.");
 
+    debug("Spoil succeeded, now commiting.");
     check(olt_commit(tx) == OL_SUCCESS, "Could not commit transaction.");
     debug("End of ol_spoil.");
 
