@@ -1,0 +1,10 @@
+{
+    "listen": "localhost:38080",
+    "datadir": "data",
+    "usehttps": false,
+    "certfile": "",
+    "pkeyfile": "",
+    "lz4enabled": true,
+    "aolenabled": true,
+    "splaytreeenabled": true
+}

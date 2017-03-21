@@ -1,0 +1,14 @@
+[Unit]
+Description=OlegDB Key/Value Store
+
+[Service]
+Type=forking
+PIDFile=/var/run/olegdb/olegdb.pid
+ExecStart=/usr/local/bin/olegdb /var/run/olegdb &
+User=olegdb
+Group=olegdb
+RemainAfterExit=yes
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
