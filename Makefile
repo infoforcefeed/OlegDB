@@ -1,4 +1,6 @@
 CFLAGS=-Wall -Werror -g -O2 -Wstrict-aliasing=2
+LFLAGS=-loleg -l38moths
+INCLUDES=-I./include
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
 ifndef CC
@@ -20,8 +22,6 @@ LIB_OUT=$(LIB_DIR)liboleg.so
 STATIC_LIB_OUT=$(LIB_DIR)liboleg.a
 BIN_OUT=$(BIN_DIR)olegdb
 export CGO_LDFLAGS=-L$(BUILD_DIR)lib
-
-INCLUDES=-I./include
 
 MATH_LINKER=
 ifeq ($(uname_S),Darwin)
@@ -45,15 +45,12 @@ $(BIN_DIR): $(BUILD_DIR)
 test.o: ./src/test.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 
-main.o: ./src/main.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c $<
-
 %.o: ./src/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -fPIC $<
 
 oleg_test:  liboleg $(BIN_DIR) $(TEST_OUT)
-$(TEST_OUT): test.o main.o
-	$(CC) $(INCLUDES) -L$(LIB_DIR) -o $(TEST_OUT) test.o main.o $(MATH_LINKER) -loleg
+$(TEST_OUT): test.o
+	$(CC) $(INCLUDES) -L$(LIB_DIR) -o $(TEST_OUT) test.o $(MATH_LINKER) -loleg
 
 liboleg: $(LIB_DIR) $(LIB_OUT)
 $(LIB_OUT): $(OBJ_FILES)
@@ -69,12 +66,12 @@ uninstall:
 
 olegdb: liboleg $(LIB_OUT) $(BIN_DIR) $(BIN_OUT)
 $(BIN_OUT):
-	go build -o $(BIN_OUT) ./frontend/
+	$(CC) $(INCLUDES) -o $(BIN_OUT) $^ $(MATH_LINKER) $(LFLAGS)
 
 install: goinstall
 
 goinstall: olegdb libinstall
-	@ cp $(BIN_OUT) $(INSTALL_BIN)olegdb
+	@cp $(BIN_OUT) $(INSTALL_BIN)olegdb
 
 libinstall: liboleg
 	@mkdir -p $(INSTALL_LIB)
