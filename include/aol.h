@@ -5,6 +5,14 @@
 /* Filemode used for writing AOL commands. Restore just uses "r" */
 #define AOL_FILEMODE "ab+"
 
+typedef struct bogo_file {
+    int fd;
+    size_t filesize;
+    size_t read_offset;
+    unsigned char *filestart;
+    unsigned char *read_ptr;
+} bogo_file;
+
 int ol_aol_init(ol_database *db);
 int ol_aol_write_cmd(ol_database *db, const char *cmd, ol_bucket *bucket);
 /* Restore this database's AOL file. */
