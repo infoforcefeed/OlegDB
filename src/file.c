@@ -144,7 +144,7 @@ int _ol_open_values(ol_database *db) {
 
     /* Figure out the filename */
     db->get_db_file_name(db, VALUES_FILENAME, values_filename);
-    size_t filesize = _ol_get_file_size(values_filename);
+    const size_t filesize = _ol_get_file_size(values_filename);
 
     debug("Opening %s for values", values_filename);
     values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);

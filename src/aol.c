@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <sys/mman.h>
 
 #define APPEND_UINT(X) {\
     strncat(write_buf, ":", write_buf_size);\
@@ -213,15 +214,35 @@ error:
     return -1;
 }
 
-ol_string _ol_read_data(FILE *fd) {
+int _bogo_fread(char *buf, const size_t len, bogo_file *file_ptr) {
+    char *dest = strncpy(buf, (char *)file_ptr->read_ptr, len);
+    if (buf != dest) {
+        debug("_bogo_fread: Could not strncpy into buf.");
+        return 0;
+    }
+
+    file_ptr->read_ptr += len;
+    file_ptr->read_offset += len;
+
+    return 1;
+}
+
+int _bogo_fgetc(bogo_file *file_ptr) {
+    int c = (int)file_ptr->read_ptr[0];
+    file_ptr->read_ptr++;
+    file_ptr->read_offset++;
+    return c;
+}
+
+ol_string _ol_read_data(bogo_file *file_ptr) {
     ol_string data = {0};
 
-    int c = fgetc(fd);
+    int c = _bogo_fgetc(file_ptr);
     if (c == ':'){
         int i = 0;
         size_t l = 0;
         char buf[20] = {0};
-        while ((c = fgetc(fd)) != ':') {
+        while ((c = _bogo_fgetc(file_ptr)) != ':') {
             check(isdigit(c) != 0, "Wrong data read, should be a digit.");
             buf[i] = c;
             ++i;
@@ -230,7 +251,7 @@ ol_string _ol_read_data(FILE *fd) {
         l = (size_t)strtol(buf, NULL, 10);
         const size_t total_size = l+1;
         data.data = calloc(1, total_size);
-        check(fread(data.data, l, 1, fd) == 1, "Could not read from AOL file.");
+        check(_bogo_fread(data.data, l, file_ptr) == 1, "Could not read from AOL file.");
         data.data[l] = '\0';
         data.dlen = l; /* Don't use total_size here because it's an off-by-1. */
     } else if (c == EOF) {
@@ -256,35 +277,40 @@ int ol_aol_restore_from_file(ol_database *target_db,
               read_data_size = {0},
               value = {0};
 
-    FILE *fd = fopen(aol_fname, "r");
-    check(fd, "Error opening file");
-
     ol_log_msg(LOG_INFO, "Starting restore of %s.", aol_fname);
     clock_t start = clock();
     clock_t end = {0};
 
-    while (!feof(fd)) {
-        command = _ol_read_data(fd);
+    bogo_file file_ptr = {0};
+    file_ptr.filesize = _ol_get_file_size(aol_fname);
+    file_ptr.fd = open(aol_fname, O_RDONLY);
+    check(file_ptr.fd != 0, "Error opening file");
+
+    file_ptr.read_ptr = _ol_mmap(file_ptr.filesize, file_ptr.fd);
+    check(file_ptr.read_ptr != NULL, "Could not mmap AOL.");
+
+    while (file_ptr.read_offset < file_ptr.filesize) {
+        command = _ol_read_data(&file_ptr);
 
         /* Kind of a hack to check for EOF. If the struct is blank, then we
          * read past EOF in _ol_read_data. feof is rarely useful I guess... */
         if (command.data == NULL)
             break;
 
-        key = _ol_read_data(fd);
+        key = _ol_read_data(&file_ptr);
         check(key.data, "Error reading"); /* Everything needs a key */
 
         if (strncmp(command.data, "JAR", 3) == 0) {
-            ct = _ol_read_data(fd);
+            ct = _ol_read_data(&file_ptr);
             check(ct.data, "Error reading");
 
-            read_org_size = _ol_read_data(fd);
+            read_org_size = _ol_read_data(&file_ptr);
             check(read_org_size.data, "Error reading");
 
-            read_data_size = _ol_read_data(fd);
+            read_data_size = _ol_read_data(&file_ptr);
             check(read_data_size.data, "Error reading");
 
-            value = _ol_read_data(fd);
+            value = _ol_read_data(&file_ptr);
             check(value.data, "Error reading");
 
             size_t original_size = (size_t)strtol(read_org_size.data, NULL, 10);
@@ -357,7 +383,7 @@ int ol_aol_restore_from_file(ol_database *target_db,
         } else if (strncmp(command.data, "SCOOP", 5) == 0) {
             ol_scoop(target_db, key.data, key.dlen);
         } else if (strncmp(command.data, "SPOIL", 5) == 0) {
-            ol_string spoil = _ol_read_data(fd);
+            ol_string spoil = _ol_read_data(&file_ptr);
             check(spoil.data, "Could not read the rest of SPOIL command for AOL.");
 
             struct tm time = {0};
@@ -369,13 +395,14 @@ int ol_aol_restore_from_file(ol_database *target_db,
 
         /* Strip the newline char after each "record" */
         char c;
-        check(fread(&c, 1, 1, fd) != 0, "Error reading");
+        check(_bogo_fread(&c, 1, &file_ptr) != 0, "Error reading");
         check(c == '\n', "Could not strip newline");
 
         free(command.data);
         free(key.data);
     }
-    fclose(fd);
+    close(file_ptr.fd);
+    munmap(file_ptr.filestart, file_ptr.filesize);
 
     end = clock();
     const double cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
@@ -392,9 +419,12 @@ error:
     free(ct.data);
     free(read_org_size.data);
     free(read_data_size.data);
-    if (fd != NULL) {
-        fclose(fd);
-    }
+
+    if (file_ptr.fd)
+        close(file_ptr.fd);
+
+    if (file_ptr.filestart)
+        munmap(file_ptr.filestart, file_ptr.filesize);
 
     return -1;
 }
