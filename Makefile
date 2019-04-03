@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Werror -g -O2 -Wstrict-aliasing=2
+CFLAGS=-Wall -Werror -g -O2 -Wstrict-aliasing=2 -Wno-format-truncation
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
 ifndef CC
