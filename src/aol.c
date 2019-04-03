@@ -259,6 +259,10 @@ int ol_aol_restore_from_file(ol_database *target_db,
     FILE *fd = fopen(aol_fname, "r");
     check(fd, "Error opening file");
 
+    ol_log_msg(LOG_INFO, "Starting restore of %s.", aol_fname);
+    clock_t start = clock();
+    clock_t end = {0};
+
     while (!feof(fd)) {
         command = _ol_read_data(fd);
 
@@ -372,6 +376,10 @@ int ol_aol_restore_from_file(ol_database *target_db,
         free(key.data);
     }
     fclose(fd);
+
+    end = clock();
+    const double cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+    ol_log_msg(LOG_INFO, "Finished restore of %s in %f seconds", aol_fname, cpu_time_used);
     return 0;
 
 error:
