@@ -286,10 +286,15 @@ int ol_aol_restore_from_file(ol_database *target_db,
     file_ptr.fd = open(aol_fname, O_RDONLY);
     check(file_ptr.fd != 0, "Error opening file");
 
-    file_ptr.read_ptr = _ol_mmap(file_ptr.filesize, file_ptr.fd);
-    check(file_ptr.read_ptr != NULL, "Could not mmap AOL.");
+    if (file_ptr.fd && file_ptr.filesize) {
+        file_ptr.read_ptr = _ol_mmap_readonly(file_ptr.filesize, file_ptr.fd);
+        file_ptr.filestart = file_ptr.read_ptr;
+        check(file_ptr.read_ptr != NULL, "Could not mmap AOL.");
+    } else {
+        debug("No data in AOL file.");
+    }
 
-    while (file_ptr.read_offset < file_ptr.filesize) {
+    while (file_ptr.filesize > 0 && file_ptr.read_offset < file_ptr.filesize) {
         command = _ol_read_data(&file_ptr);
 
         /* Kind of a hack to check for EOF. If the struct is blank, then we
@@ -402,7 +407,8 @@ int ol_aol_restore_from_file(ol_database *target_db,
         free(key.data);
     }
     close(file_ptr.fd);
-    munmap(file_ptr.filestart, file_ptr.filesize);
+    if (file_ptr.filestart)
+        munmap(file_ptr.filestart, file_ptr.filesize);
 
     end = clock();
     const double cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
