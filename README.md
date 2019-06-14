@@ -78,6 +78,6 @@ Roadmap
 Roadmap is full of lies and half-truths, please ignore.
 
 - [ ] Witch hunt
-- [ ] Wordard generation
+- [ ] Wordart generation
 - [ ] Feeding tube integration
 - [ ] Being more stable than redis
