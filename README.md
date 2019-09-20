@@ -1,7 +1,7 @@
 OlegDB
 ============
 
-<img src="https://olegdb.org/static/img/olegdb_stars.png" />
+<img src="http://olegdb.org/static/img/olegdb_stars.png" />
 
 [![Build Status](https://travis-ci.org/infoforcefeed/OlegDB.svg?branch=master)](https://travis-ci.org/infoforcefeed/OlegDB)
 ![OlegDB MAYO](http://b.repl.ca/v1/OlegDB-MAYO-brightgreen.png)
