@@ -14,6 +14,8 @@
     if (test_return_val != 0 || errno != 0) {\
         tests_failed++;\
         ol_log_msg(LOG_ERR, "%c[%dmFailed.%c[%dm", 0x1B, 31, 0x1B, 0);\
+        if (errno != 0) ol_log_msg(LOG_ERR, "errno is not 0!");\
+        if (test_return_val != 0) ol_log_msg(LOG_ERR, "Retval: %d", test_return_val);\
         ol_log_msg(LOG_ERR, "ERRNO: %s\n", clean_errno());\
         goto error;\
     } else {\

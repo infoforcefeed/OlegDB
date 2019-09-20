@@ -188,21 +188,27 @@ int olt_unjar(ol_transaction *tx, const char *key, size_t klen, unsigned char **
         operating_db = tx->transaction_db;
     }
 
+    debug("Checking expiry");
     if (bucket != NULL) {
         if (!_has_bucket_expired(bucket)) {
             /* We don't need to fill out the data so just return 'we found the key'. */
-            if (data == NULL)
+            if (data == NULL) {
+                debug("Data is NULL");
                 return OL_SUCCESS;
+            }
 
+            debug("Getting value from bucket");
             const int ret = _ol_get_value_from_bucket(operating_db, bucket, data, dsize);
             check(ret == 0, "Could not retrieve value from bucket.");
 
             /* Key found, tell somebody. */
+            debug("Everything worked");
             return OL_SUCCESS;
         } else {
             /* It's dead, get rid of it. */
             /* NOTE: We explicitly say the transaction_db here because ITS A
              * FUCKING TRANSACTION. ACID, bro. */
+            debug("Bucket has expired.");
             check(olt_scoop(tx, key, klen) == 0, "Scoop failed");
         }
     }
@@ -220,12 +226,14 @@ int olt_exists(ol_transaction *tx, const char *key, size_t klen) {
 }
 
 int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned char *value, size_t vsize) {
-    int ret;
+    int ret = 0;
     char _key[KEY_SIZE] = {'\0'};
     size_t _klen = 0;
     ol_database *db = tx->transaction_db;
 
-    ol_bucket *bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
+    ol_bucket *new_bucket = NULL;
+    ol_bucket *bucket = NULL;
+    bucket = ol_get_bucket(db, key, klen, &_key, &_klen);
     check(_klen > 0, "Key length of zero not allowed.");
 
     /* We only want to hit this codepath within the same database, otherwise
@@ -238,17 +246,19 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     }
 
     /* Looks like we don't have an old hash */
-    ol_bucket *new_bucket = calloc(1, sizeof(ol_bucket));
-    if (new_bucket == NULL)
-        return OL_FAILURE;
+    new_bucket = calloc(1, sizeof(ol_bucket));
+    if (new_bucket == NULL) {
+        ol_log_msg(LOG_ERR, "Could not allocate new bucket.");
+        goto error;
+    }
 
     /* copy _key into new bucket */
     new_bucket->key = malloc(_klen + 1);
     check_mem(new_bucket->key);
     new_bucket->key[_klen] = '\0';
     if (strncpy(new_bucket->key, _key, _klen) != new_bucket->key) {
-        free(new_bucket);
-        return OL_FAILURE;
+        ol_log_msg(LOG_ERR, "Could not copy key into bucket.");
+        goto error;
     }
 
     new_bucket->klen = _klen;
@@ -271,9 +281,8 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
             size_t cmsize = (size_t)LZ4_compress((char*)value, (char*)new_data_ptr,
                                                  (int)vsize);
             if (cmsize == 0) {
-                /* Free allocated data */
-                free(new_bucket);
-                return OL_FAILURE;
+                ol_log_msg(LOG_ERR, "Could not compress data.");
+                goto error;
             }
 
             new_bucket->data_size = cmsize;
@@ -284,9 +293,8 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
             memset(new_data_ptr, '\0', new_bucket->data_size);
 
             if (memcpy(new_data_ptr, value, vsize) != new_data_ptr) {
-                /* Free allocated memory since we're not going to use them */
-                free(new_bucket);
-                return OL_FAILURE;
+                ol_log_msg(LOG_ERR, "Could not copy data into bucket.");
+                goto error;
             }
         }
     } else {
@@ -321,12 +329,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     /* TODO: rehash this shit at 80% */
     if (db->rcrd_cnt > 0 && db->rcrd_cnt == bucket_max) {
         debug("Record count is now %i; growing hash table.", db->rcrd_cnt);
-        ret = _ol_grow_and_rehash_db(db);
-        if (ret > 0) {
-            ol_log_msg(LOG_ERR, "Problem rehashing DB. Error code: %i", ret);
-            free(new_bucket);
-            return OL_FAILURE;
-        }
+        check(_ol_grow_and_rehash_db(db) <= 0, "Problem rehashing DB. Error code: %i", ret);
     }
 
 
@@ -334,8 +337,7 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
     ret = _ol_set_bucket(db, new_bucket, hash);
 
-    if(ret > 0)
-        ol_log_msg(LOG_ERR, "Problem inserting item: Error code: %i", ret);
+    check(ret <= 0, "Problem inserting item: Error code: %i", ret);
 
     if(db->is_enabled(OL_F_APPENDONLY, &db->feature_set) &&
             db->state != OL_S_STARTUP) {
@@ -348,6 +350,8 @@ int olt_jar(ol_transaction *tx, const char *key, size_t klen, const unsigned cha
     return OL_SUCCESS;
 
 error:
+    if (new_bucket != NULL)
+        free(new_bucket);
     return OL_FAILURE;
 }
 
@@ -447,39 +451,48 @@ int olt_spoil(ol_transaction *tx, const char *key, size_t klen, struct tm *expir
 
     ol_database *operating_db = tx->transaction_db;
 
+    debug("Fetching bucket");
     ol_bucket *bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
     check(_klen > 0, "Key length of zero not allowed.");
 
     if (bucket == NULL && tx->parent_db != NULL) {
         /* Transaction DB doesn't have this key, but the parent does. */
+        debug("Have to get bucket from parent.");
         operating_db = tx->parent_db;
         bucket = ol_get_bucket(operating_db, key, klen, &_key, &_klen);
         if (bucket != NULL) {
             /* Copy that value into our current transaction db,
              * and then spoil it.
              */
+            debug("Retrieved buckey.");
             uint32_t hash;
             MurmurHash3_x86_32(_key, _klen, DEVILS_SEED, &hash);
             ol_bucket *copied = malloc(sizeof(ol_bucket));
             check_mem(copied);
 
+            debug("Copying into new buckey.");
             memcpy(copied, bucket, sizeof(ol_bucket));
             copied->next = NULL;
 
+            debug("Malloc()ing key");
             copied->key = malloc(_klen + 1);
             check_mem(copied->key);
             copied->key[_klen] = '\0';
+            debug("Copying into key.");
             memcpy(copied->key, bucket->key, _klen);
 
+            debug("Setting buckey.");
             _ol_set_bucket_no_incr(tx->transaction_db, copied, hash);
         }
     }
 
     if (bucket != NULL) {
+        debug("Setting the expiration.");
         if (bucket->expiration == NULL)
-            bucket->expiration = malloc(sizeof(struct tm));
+            bucket->expiration = calloc(1, sizeof(struct tm));
         else
             debug("Hmmm, bucket->expiration wasn't null.");
+        debug("Copying into expiration.");
         memcpy(bucket->expiration, expiration_date, sizeof(struct tm));
         debug("New expiration time: %lu", (long)mktime(bucket->expiration));
 

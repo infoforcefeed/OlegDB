@@ -14,6 +14,9 @@ void _ol_close_values(ol_database *db);
 /* Wraps mmap so that we mmap() consistently. */
 void *_ol_mmap(size_t to_mmap, int fd);
 
+/* _ol_mmap with different mmap flags. */
+void *_ol_mmap_readonly(size_t to_mmap, int fd);
+
 /* Called whenever a value is inserted into the database. Truncates the value
  * file to the correct size, aligned by VALUES_DEFAULT_SIZE chunks. */
 int _ol_ensure_values_file_size(ol_database *db, const size_t desired_size);

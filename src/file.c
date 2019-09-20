@@ -35,11 +35,11 @@ size_t _ol_get_file_size(const char *filepath) {
     return 0;
 }
 
-void *_ol_mmap(size_t to_mmap, int fd) {
+void *_ol_mmap_internal(size_t to_mmap, int fd, const int flags) {
     /* TODO: Investigate usage of madvise here. */
     void *to_return = NULL;
 
-    to_return = mmap(NULL, to_mmap, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    to_return = mmap(NULL, to_mmap, flags, MAP_SHARED, fd, 0);
     check(to_return != MAP_FAILED, "Could not mmap file.");
 
     const int check = madvise(to_return, to_mmap, MADV_RANDOM);
@@ -50,6 +50,14 @@ error:
     if (to_return)
         munmap(to_return, to_mmap);
     return NULL;
+}
+
+void *_ol_mmap_readonly(size_t to_mmap, int fd) {
+    return _ol_mmap_internal(to_mmap, fd, PROT_READ);
+}
+
+void *_ol_mmap(size_t to_mmap, int fd) {
+    return _ol_mmap_internal(to_mmap, fd, PROT_READ | PROT_WRITE);
 }
 
 int _ol_open_values_with_fd(ol_database *db, const int fd, const size_t filesize) {
@@ -89,7 +97,8 @@ void _ol_close_values(ol_database *db) {
     db->get_db_file_name(db, VALUES_FILENAME, values_filename);
     const size_t siz = _ol_get_file_size(values_filename);
 
-    munmap(db->values, siz);
+    if (db->values)
+        munmap(db->values, siz);
     flock(db->valuesfd, LOCK_UN);
     close(db->valuesfd);
 }
@@ -144,7 +153,7 @@ int _ol_open_values(ol_database *db) {
 
     /* Figure out the filename */
     db->get_db_file_name(db, VALUES_FILENAME, values_filename);
-    size_t filesize = _ol_get_file_size(values_filename);
+    const size_t filesize = _ol_get_file_size(values_filename);
 
     debug("Opening %s for values", values_filename);
     values_fd = open(values_filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);

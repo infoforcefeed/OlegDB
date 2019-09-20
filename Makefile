@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Werror -g -O2 -Wstrict-aliasing=2
+CFLAGS=-Wall -Werror -g -O2 -Wstrict-aliasing=2 -Wno-format-truncation
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
 ifndef CC
@@ -13,9 +13,11 @@ PREFIX?=/usr/local
 INSTALL_LIB=$(PREFIX)/lib/
 INSTALL_BIN=$(PREFIX)/bin/
 INSTALL_INCLUDE=$(PREFIX)/include/olegdb/
+OBJ_FILES=vector.o murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o transaction.o
 
 TEST_OUT=$(BIN_DIR)oleg_test
 LIB_OUT=$(LIB_DIR)liboleg.so
+STATIC_LIB_OUT=$(LIB_DIR)liboleg.a
 BIN_OUT=$(BIN_DIR)olegdb
 export CGO_LDFLAGS=-L$(BUILD_DIR)lib
 
@@ -54,8 +56,11 @@ $(TEST_OUT): test.o main.o
 	$(CC) $(INCLUDES) -L$(LIB_DIR) -o $(TEST_OUT) test.o main.o $(MATH_LINKER) -loleg
 
 liboleg: $(LIB_DIR) $(LIB_OUT)
-$(LIB_OUT): vector.o murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o transaction.o
+$(LIB_OUT): $(OBJ_FILES)
 	$(CC) $(INCLUDES) -o $(LIB_OUT) $^ -fpic -shared $(MATH_LINKER)
+
+static: $(LIB_OUT) $(OBJ_FILES)
+	ar rcs $(STATIC_LIB_OUT) $(OBJ_FILES)
 
 uninstall:
 	rm -rf $(INSTALL_LIB)liboleg*
@@ -88,3 +93,5 @@ clean:
 	rm -f $(BIN_DIR)*
 	rm -f $(LIB_DIR)*
 	rm -f *.o
+
+.PHONY: clean test libinstall install uninstall static all
