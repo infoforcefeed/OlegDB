@@ -1,10 +1,11 @@
 package main
 
 import (
-	"./goleg"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/infoforcefeed/olegdb/pkg/goleg"
 )
 
 type Operation struct {

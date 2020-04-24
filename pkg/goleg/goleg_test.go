@@ -141,7 +141,7 @@ func TestBulkUnjarOnlyReturnsKeysWeGiveIt(t *testing.T) {
 
 	for i, value := range values {
 		if subset[i][3] != string(value)[5] {
-			t.Fatalf("Expected %s, got %s", subset[i][3], string(value)[5])
+			t.Fatalf("Expected %b, got %b", subset[i][3], string(value)[5])
 		}
 	}
 }

@@ -126,9 +126,9 @@ typedef struct ol_database {
     void            (*enable)(int, int*);
     void            (*disable)(int, int*);
     bool            (*is_enabled)(const int, const int*);
-    char            name[DB_NAME_SIZE];
-    char            path[PATH_LENGTH];
-    char            aol_file[AOL_FILENAME_ALLOC];
+    char            name[DB_NAME_SIZE+1];
+    char            path[PATH_LENGTH+1];
+    char            aol_file[AOL_FILENAME_ALLOC+1];
     FILE            *aolfd;
     int             feature_set;
     short int       state;

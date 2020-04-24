@@ -23,7 +23,7 @@ const (
 	OpCursorPrev  = "._prev"
 	OpPrefixMatch = "._match"
 	OpBulkUnjar   = "_bulk_unjar"
-	OpSquish	  = "_squish"
+	OpSquish      = "_squish"
 )
 
 func httpGet(w http.ResponseWriter, op Operation) *HTTPError {

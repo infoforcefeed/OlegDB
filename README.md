@@ -24,7 +24,7 @@ Dependencies
 ============
 
 * A healthy fear of the end
-* Go (>= 1.1)
+* Go (>= 1.14)
 
 Installation
 ============

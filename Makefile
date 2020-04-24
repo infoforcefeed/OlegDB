@@ -69,7 +69,7 @@ uninstall:
 
 olegdb: liboleg $(LIB_OUT) $(BIN_DIR) $(BIN_OUT)
 $(BIN_OUT):
-	go build -o $(BIN_OUT) ./frontend/
+	go build -o $(BIN_OUT) ./cmd/olegdb
 
 install: goinstall
 

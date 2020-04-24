@@ -45,12 +45,12 @@ static int _test_db_close(ol_database *db) {
     char values_filename[DB_NAME_SIZE] = { 0 };
     db->get_db_file_name(db, VALUES_FILENAME, values_filename);
 
-    char aol_filename[DB_NAME_SIZE] = { 0 };
-    strncpy(aol_filename, db->aol_file, DB_NAME_SIZE);
+    char aol_filename[sizeof(db->aol_file) + 1] = { 0 };
+    strncpy(aol_filename, db->aol_file, sizeof(aol_filename));
     int should_delete_aol = db->is_enabled(OL_F_APPENDONLY, &db->feature_set);
 
-    char DB_PATH[DB_NAME_SIZE] = {0};
-    strncpy(DB_PATH, db->path, DB_NAME_SIZE);
+    char DB_PATH[sizeof(db->path) + 1] = { 0 };
+    strncpy(DB_PATH, db->path, sizeof(DB_PATH));
 
     int ret = ol_close(db);
 
@@ -670,8 +670,8 @@ int _test_aol(const ol_feature_flags features, ol_database **db) {
         return 4;
     }
 
-    char DB_PATH[DB_NAME_SIZE + 1] = {0};
-    strncpy(DB_PATH, (*db)->path, DB_NAME_SIZE);
+    char DB_PATH[sizeof((*db)->path) + 1] = {0};
+    strncpy(DB_PATH, (*db)->path, sizeof(DB_PATH));
 
     /* We don't want to use test_db_close here because we want to retrieve
      * values again. */
@@ -714,8 +714,8 @@ int test_aol_and_compaction(const ol_feature_flags features) {
     ol_log_msg(LOG_INFO, "Squishing database.");
     ol_squish(db);
 
-    char DB_PATH[DB_NAME_SIZE + 1] = {0};
-    strncpy(DB_PATH, db->path, DB_NAME_SIZE);
+    char DB_PATH[sizeof(db->path)+1] = {0};
+    strncpy(DB_PATH, db->path, sizeof(DB_PATH));
 
     ol_close(db);
 
