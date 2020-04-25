@@ -7,6 +7,9 @@ CFLAGS=-Wall -Werror -g -O2 -Wstrict-aliasing=2 -Wno-format-truncation
 SOFLAGS=-Wl,-soname,$(NAME).$(SOVERSION)
 OBJ_FILES=vector.o murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o transaction.o
 
+CGO_CFLAGS=-I$(PWD)/include
+CGO_LDFLAGS=-L$(PWD) -loleg
+
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 
 DESTDIR?=
@@ -56,7 +59,7 @@ uninstall:
 	rm -rf $(INSTALL_INCLUDE)
 
 $(BIN): liboleg $(LIB_OUT)
-	CGO_LDFLAGS=-L$(PWD) go build -o $(BIN) ./cmd/olegdb
+	CGO_LDFLAGS="$(CGO_LDFLAGS)" CGO_CFLAGS="$(CGO_CFLAGS)" go build -o $(BIN) ./cmd/olegdb
 
 install: goinstall
 
@@ -72,9 +75,13 @@ libinstall: liboleg
 	@install ./include/*.h $(INSTALL_INCLUDE)
 	@echo "OlegDB installed to $(PREFIX) :^)."
 
-test: $(LIB_OUT) $(TEST_OUT)
+test: $(LIB_OUT) $(TEST_OUT) testc testgo
+
+testc:
 	./run_tests.sh
-	CGO_LDFLAGS=-L$(PWD) go test -v ./...
+
+testgo:
+	CGO_LDFLAGS="$(CGO_LDFLAGS)" CGO_CFLAGS="$(CGO_CFLAGS)" go test -v ./...
 
 clean:
 	rm -f $(BIN)
