@@ -18,7 +18,6 @@ jobs:
     - make test
   - name: build
     script:
-    - CGO_LDFLAGS=-L$(PWD) go test ./...
     - make olegdb
 
 env:

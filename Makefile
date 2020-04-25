@@ -74,6 +74,7 @@ libinstall: liboleg
 
 test: $(LIB_OUT) $(TEST_OUT)
 	./run_tests.sh
+	CGO_LDFLAGS=-L$(PWD) go test -v ./...
 
 clean:
 	rm -f $(BIN)
