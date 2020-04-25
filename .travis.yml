@@ -15,6 +15,7 @@ jobs:
   include:
   - stage: test
     script:
+    - sudo make libinstall
     - make test
   - name: build
     script:
