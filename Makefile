@@ -1,46 +1,36 @@
+VERSION=0.1.6
+SOVERSION=0
+NAME=liboleg.so
+BIN=olegdb
+
 CFLAGS=-Wall -Werror -g -O2 -Wstrict-aliasing=2 -Wno-format-truncation
+SOFLAGS=-Wl,-soname,$(NAME).$(SOVERSION)
+OBJ_FILES=vector.o murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o transaction.o
+
+CGO_CFLAGS=-I$(PWD)/include
+CGO_LDFLAGS=-L$(PWD) -loleg
+
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+
+DESTDIR?=
+PREFIX?=${DESTDIR}/usr
+INSTALL_LIB=$(PREFIX)/lib/
+INSTALL_BIN=$(PREFIX)/bin/
+INSTALL_INCLUDE=$(PREFIX)/include/olegdb/
+
+TEST_OUT=liboleg.test
+LIB_OUT=$(NAME).$(VERSION)
+STATIC_LIB_OUT=liboleg.a
+
+INCLUDES=-I./include
 
 ifndef CC
 	CC = gcc
 endif
-VERSION=0.1.6
-SOVERSION=0
-BUILD_DIR=$(shell pwd)/build/
-LIB_DIR=$(BUILD_DIR)lib/
-BIN_DIR=$(BUILD_DIR)bin/
-PREFIX?=/usr/local
-INSTALL_LIB=$(PREFIX)/lib/
-INSTALL_BIN=$(PREFIX)/bin/
-INSTALL_INCLUDE=$(PREFIX)/include/olegdb/
-OBJ_FILES=vector.o murmur3.o oleg.o logging.o aol.o rehash.o file.o utils.o tree.o lz4.o stack.o cursor.o transaction.o
 
-TEST_OUT=$(BIN_DIR)oleg_test
-LIB_OUT=$(LIB_DIR)liboleg.so
-STATIC_LIB_OUT=$(LIB_DIR)liboleg.a
-BIN_OUT=$(BIN_DIR)olegdb
-export CGO_LDFLAGS=-L$(BUILD_DIR)lib
+MATH_LINKER=-lm
 
-INCLUDES=-I./include
-
-MATH_LINKER=
-ifeq ($(uname_S),Darwin)
-	# Do nothing
-else
-	MATH_LINKER=-lm
-endif
-
-all: oleg_test olegdb
-
-.PHONY: $(BUILD_DIR)
-$(BUILD_DIR):
-	@mkdir -p $(BUILD_DIR)
-
-$(LIB_DIR): $(BUILD_DIR)
-	@mkdir -p $(LIB_DIR)
-
-$(BIN_DIR): $(BUILD_DIR)
-	@mkdir -p $(BIN_DIR)
+all: $(TEST_OUT) $(BIN)
 
 test.o: ./src/test.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
@@ -51,13 +41,14 @@ main.o: ./src/main.c
 %.o: ./src/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c -fPIC $<
 
-oleg_test:  liboleg $(BIN_DIR) $(TEST_OUT)
-$(TEST_OUT): test.o main.o
-	$(CC) $(INCLUDES) -L$(LIB_DIR) -o $(TEST_OUT) test.o main.o $(MATH_LINKER) -loleg
+$(TEST_OUT): liboleg test.o main.o
+	$(CC) $(INCLUDES) -L$(PWD) -o $(TEST_OUT) test.o main.o $(MATH_LINKER) -loleg
 
-liboleg: $(LIB_DIR) $(LIB_OUT)
+liboleg: $(LIB_OUT)
 $(LIB_OUT): $(OBJ_FILES)
-	$(CC) $(INCLUDES) -o $(LIB_OUT) $^ -fpic -shared $(MATH_LINKER)
+	$(CC) $(INCLUDES) $(SOFLAGS) -o $(LIB_OUT) $^ -fpic -shared $(MATH_LINKER)
+	ln -s $(LIB_OUT) $(NAME)
+	ln -s $(LIB_OUT) $(NAME).$(SOVERSION)
 
 static: $(LIB_OUT) $(OBJ_FILES)
 	ar rcs $(STATIC_LIB_OUT) $(OBJ_FILES)
@@ -67,31 +58,37 @@ uninstall:
 	rm -rf $(INSTALL_BIN)olegdb
 	rm -rf $(INSTALL_INCLUDE)
 
-olegdb: liboleg $(LIB_OUT) $(BIN_DIR) $(BIN_OUT)
-$(BIN_OUT):
-	go build -o $(BIN_OUT) ./cmd/olegdb
+$(BIN): liboleg $(LIB_OUT)
+	CGO_LDFLAGS="$(CGO_LDFLAGS)" CGO_CFLAGS="$(CGO_CFLAGS)" go build -o $(BIN) ./cmd/olegdb
 
 install: goinstall
 
 goinstall: olegdb libinstall
-	@ cp $(BIN_OUT) $(INSTALL_BIN)olegdb
+	@install -D $(BIN) $(INSTALL_BIN)olegdb
 
 libinstall: liboleg
 	@mkdir -p $(INSTALL_LIB)
 	@mkdir -p $(INSTALL_INCLUDE)
-	@install $(LIB_OUT) $(INSTALL_LIB)liboleg.so.$(VERSION)
-	@ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so
-	@ln -fs $(INSTALL_LIB)liboleg.so.$(VERSION) $(INSTALL_LIB)liboleg.so.$(SOVERSION)
+	@install $(LIB_OUT) $(INSTALL_LIB)$(NAME).$(VERSION)
+	@ln -fsr $(INSTALL_LIB)$(NAME).$(VERSION) $(INSTALL_LIB)$(NAME)
+	@ln -fsr $(INSTALL_LIB)$(NAME).$(VERSION) $(INSTALL_LIB)$(NAME).$(SOVERSION)
 	@install ./include/*.h $(INSTALL_INCLUDE)
-	@ldconfig $(INSTALL_LIB)
 	@echo "OlegDB installed to $(PREFIX) :^)."
 
-test: $(LIB_OUT) $(TEST_OUT)
+test: $(LIB_OUT) $(TEST_OUT) testc testgo
+
+testc:
 	./run_tests.sh
 
+testgo:
+	CGO_LDFLAGS="$(CGO_LDFLAGS)" CGO_CFLAGS="$(CGO_CFLAGS)" go test -v ./...
+
 clean:
-	rm -f $(BIN_DIR)*
-	rm -f $(LIB_DIR)*
+	rm -f $(BIN)
+	rm -f $(NAME)
+	rm -f $(NAME).$(SOVERSION)
+	rm -f $(NAME).$(VERSION)
+	rm -f $(TEST_OUT)
 	rm -f *.o
 
 .PHONY: clean test libinstall install uninstall static all

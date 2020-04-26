@@ -2,5 +2,7 @@
 *.swp
 *.o
 *.dump
+/olegdb
+/liboleg.so*
+/liboleg.test
 data
-build

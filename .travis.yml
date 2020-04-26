@@ -15,12 +15,10 @@ jobs:
   include:
   - stage: test
     script:
-    - make liboleg oleg_test test
+    - sudo make libinstall
+    - make test
   - name: build
     script:
-    - mkdir -p build
-    - sudo make libinstall
-    - go test ./...
     - make olegdb
 
 env:
@@ -34,5 +32,5 @@ addons:
       description: "OlegDB, the ugly duckling K/V store"
     notification_email: qpfiffer@gmail.com
     build_command_prepend:
-    build_command: make liboleg oleg_test && export LD_LIBRARY_PATH=./build/lib:$LD_LIBRARY_PATH && ./build/bin/oleg_test
+    build_command: make liboleg liboleg.test && export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH && ./liboleg.test
     branch_pattern: coverity_scan

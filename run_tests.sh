@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-export LD_LIBRARY_PATH=./build/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 
 rm -rf /tmp/oleg_is_king
 
-CMD=./build/bin/oleg_test
+CMD=./liboleg.test
 if [ $# -eq 0 ]; then
     $CMD
 else
