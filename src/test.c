@@ -221,7 +221,7 @@ error:
 
 int test_cas(const ol_feature_flags features) {
     ol_database *db = _test_db_open(features);
-    char key[] = "menopause";
+    char key[250] = "menopause";
 
     unsigned char value[] = "<p>The jackal wishes you a merry christmas.</p>";
     size_t vsize = strlen((char *)value);

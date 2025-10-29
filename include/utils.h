@@ -42,4 +42,4 @@ void _ol_trunc(const char *key, size_t klen, char *out);
  * http://tia.mat.br/blog/html/2014/06/23/integer_to_string_conversion.html
  */
 #define MAX_SIZE_T_STR_SIZE (3 * sizeof(size_t))
-void sizet_to_a(const size_t src, const size_t dest_len, char dest[static MAX_SIZE_T_STR_SIZE]);
+void sizet_to_a(const size_t src, const size_t dest_len, char *dest);

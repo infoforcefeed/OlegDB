@@ -219,7 +219,7 @@ error:
 }
 
 static const char lookup[] = "0123456789";
-inline void sizet_to_a(const size_t src, const size_t dest_len, char dest[static MAX_SIZE_T_STR_SIZE]) {
+inline void sizet_to_a(const size_t src, const size_t dest_len, char *dest) {
     size_t copy = src;
     dest[dest_len] = '\0';
     uint i;
